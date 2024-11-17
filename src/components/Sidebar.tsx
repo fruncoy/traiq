@@ -8,7 +8,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isAdmin = false }: SidebarProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
 
   const adminLinks = [
@@ -36,7 +36,7 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
       <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-30 flex items-center">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="lg:hidden ml-4 p-2 hover:bg-gray-100 rounded-md"
+          className="ml-4 p-2 hover:bg-gray-100 rounded-md"
           aria-label="Toggle menu"
         >
           {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -49,8 +49,8 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
       {/* Sidebar */}
       <div className={cn(
         "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white shadow-lg transition-transform duration-300 z-40",
-        "w-64 lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "w-64",
+        isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-4">
           <nav className="space-y-2">
@@ -77,8 +77,11 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
       </div>
 
       {/* Main content padding */}
-      <div className="pt-16">
-        <div className="lg:ml-64">
+      <div className={cn(
+        "pt-16 transition-all duration-300",
+        isOpen ? "lg:ml-64" : "lg:ml-0"
+      )}>
+        <div className="p-4">
           {/* Your page content goes here */}
         </div>
       </div>
