@@ -8,9 +8,9 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {metrics.map((metric, index) => (
-        <div key={index} className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div key={index} className="bg-white p-6 rounded-lg">
           <p className="text-sm font-medium text-gray-600">{metric.label}</p>
-          <p className="mt-2 text-3xl font-semibold text-[#1E40AF]">
+          <p className="mt-2 text-3xl font-semibold text-gray-900">
             {metric.value}
           </p>
           {metric.change && (

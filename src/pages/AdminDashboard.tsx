@@ -1,6 +1,5 @@
 import Sidebar from "../components/Sidebar";
 import DashboardMetrics from "../components/DashboardMetrics";
-import TaskList from "../components/TaskList";
 import { useLocation } from "react-router-dom";
 
 const AdminDashboard = () => {
@@ -12,19 +11,9 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen">
       <Sidebar isAdmin />
-      <div className="p-8">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-8">
-          {location.pathname === "/admin" ? "Dashboard" : 
-           location.pathname === "/admin/tasks" ? "Tasks" :
-           location.pathname === "/admin/bidding" ? "Bidding" :
-           location.pathname === "/admin/finances" ? "Finances" :
-           location.pathname === "/admin/taskers" ? "Taskers" : "Settings"}
-        </h1>
-        {location.pathname === "/admin" && <DashboardMetrics metrics={metrics} />}
-        {location.pathname === "/admin/tasks" && <TaskList />}
-      </div>
+      {location.pathname === "/admin" && <DashboardMetrics metrics={metrics} />}
     </div>
   );
 };
