@@ -18,7 +18,16 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/tasks" element={<AdminDashboard />} />
+          <Route path="/admin/bidding" element={<AdminDashboard />} />
+          <Route path="/admin/finances" element={<AdminDashboard />} />
+          <Route path="/admin/taskers" element={<AdminDashboard />} />
+          <Route path="/admin/settings" element={<AdminDashboard />} />
           <Route path="/tasker" element={<TaskerDashboard />} />
+          <Route path="/tasker/tasks" element={<TaskerDashboard />} />
+          <Route path="/tasker/bidding" element={<TaskerDashboard />} />
+          <Route path="/tasker/buy-bids" element={<TaskerDashboard />} />
+          <Route path="/tasker/settings" element={<TaskerDashboard />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
