@@ -50,47 +50,64 @@ const tasks: Task[] = [
 const TaskList = () => {
   return (
     <div className="space-y-4">
-      {tasks.map((task) => (
-        <Card key={task.id}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-semibold">{task.title}</CardTitle>
-            <Badge
-              variant={
-                task.status === "Completed" ? "default" :
-                task.status === "In Progress" ? "secondary" : "outline"
-              }
-            >
-              {task.status}
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">{task.description}</p>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Submitted by: {task.submittedBy}</p>
-                  <p className="text-sm text-gray-500">Date: {task.submittedAt}</p>
+      <Tabs defaultValue="available">
+        <TabsList className="mb-4">
+          <TabsTrigger value="available">Available</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="completed">Completed</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="available">
+          {tasks.map((task) => (
+            <Card key={task.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-semibold">{task.title}</CardTitle>
+                <Badge
+                  variant={
+                    task.status === "Completed" ? "default" :
+                    task.status === "In Progress" ? "secondary" : "outline"
+                  }
+                >
+                  {task.status}
+                </Badge>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">{task.description}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500">Submitted by: {task.submittedBy}</p>
+                      <p className="text-sm text-gray-500">Date: {task.submittedAt}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Badge
+                        variant={
+                          task.difficulty === "Beginner" ? "secondary" :
+                          task.difficulty === "Intermediate" ? "default" : "destructive"
+                        }
+                      >
+                        {task.difficulty}
+                      </Badge>
+                      <span className="font-semibold text-primary">Ksh {task.payout}</span>
+                      <Button size="sm">
+                        Place Bid
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <Badge
-                    variant={
-                      task.difficulty === "Beginner" ? "secondary" :
-                      task.difficulty === "Intermediate" ? "default" : "destructive"
-                    }
-                  >
-                    {task.difficulty}
-                  </Badge>
-                  <span className="font-semibold text-primary">Ksh {task.payout}</span>
-                  <Button size="sm" variant="outline">
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="active">
+          {/* Active tasks content */}
+        </TabsContent>
+
+        <TabsContent value="completed">
+          {/* Completed tasks content */}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
