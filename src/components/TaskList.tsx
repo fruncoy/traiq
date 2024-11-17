@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 export interface Task {
   id: string;
@@ -50,6 +50,8 @@ interface TaskListProps {
 
 const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
   const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
 
   return (
     <div className="space-y-4">
@@ -77,9 +79,11 @@ const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-primary">KES {task.payout}</span>
-                    <Button className="text-white">
-                      Bid Now
-                    </Button>
+                    {!isAdmin && (
+                      <Button className="text-white">
+                        Bid Now
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -88,7 +92,7 @@ const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
         ))}
       </div>
 
-      {showViewMore && (
+      {showViewMore && !isAdmin && (
         <div className="flex justify-between items-center mt-6">
           <Link to="/tasker/tasks" className="text-primary hover:underline flex items-center gap-2">
             View all tasks <ArrowRight size={16} />

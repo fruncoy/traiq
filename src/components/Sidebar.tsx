@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Gavel, DollarSign, Users, Settings, LogOut, Bell, Upload } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, ClipboardList, Gavel, DollarSign, Users, Settings, LogOut, Bell, Upload, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -11,6 +12,7 @@ interface SidebarProps {
 const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const adminLinks = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -23,6 +25,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
 
   const taskerLinks = [
     { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
+    { name: "Buy Bids", path: "/tasker/buy-bids", icon: CreditCard },
     { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
     { name: "Submit Task", path: "/tasker/submit-task", icon: Upload },
     { name: "Bidding", path: "/tasker/bidding", icon: Gavel },
@@ -33,8 +36,8 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const links = isAdmin ? adminLinks : taskerLinks;
 
   const handleLogout = () => {
-    // Add logout logic here
-    console.log("Logging out...");
+    toast.success("Successfully logged out");
+    navigate("/");
   };
 
   const getHeaderTitle = (pathname: string) => {
@@ -46,6 +49,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
              pathname === "/admin/taskers" ? "Taskers" : "Settings";
     } else {
       return pathname === "/tasker" ? "Dashboard" : 
+             pathname === "/tasker/buy-bids" ? "Buy Bids" :
              pathname === "/tasker/tasks" ? "Tasks" :
              pathname === "/tasker/submit-task" ? "Submit Task" :
              pathname === "/tasker/bidding" ? "Bidding" :
@@ -55,7 +59,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
 
   return (
     <div className="flex h-screen bg-white">
-      {/* Sidebar */}
       <div className="w-64 border-r border-gray-200 flex-shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
           <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
@@ -83,9 +86,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         </nav>
       </div>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
           <h1 className="text-xl font-semibold text-gray-800">
             {getHeaderTitle(location.pathname)}
@@ -99,7 +100,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
           </button>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
           {children}
         </main>
