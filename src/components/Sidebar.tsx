@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Gavel, DollarSign, Users, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Gavel, DollarSign, Users, Settings, LogOut, Bell, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -24,7 +24,9 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const taskerLinks = [
     { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
     { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
+    { name: "Submit Task", path: "/tasker/submit-task", icon: Upload },
     { name: "Bidding", path: "/tasker/bidding", icon: Gavel },
+    { name: "Notifications", path: "/tasker/notifications", icon: Bell },
     { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
 
@@ -33,6 +35,22 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const handleLogout = () => {
     // Add logout logic here
     console.log("Logging out...");
+  };
+
+  const getHeaderTitle = (pathname: string) => {
+    if (isAdmin) {
+      return pathname === "/admin" ? "Dashboard" : 
+             pathname === "/admin/tasks" ? "Tasks" :
+             pathname === "/admin/bidding" ? "Bidding" :
+             pathname === "/admin/finances" ? "Finances" :
+             pathname === "/admin/taskers" ? "Taskers" : "Settings";
+    } else {
+      return pathname === "/tasker" ? "Dashboard" : 
+             pathname === "/tasker/tasks" ? "Tasks" :
+             pathname === "/tasker/submit-task" ? "Submit Task" :
+             pathname === "/tasker/bidding" ? "Bidding" :
+             pathname === "/tasker/notifications" ? "Notifications" : "Settings";
+    }
   };
 
   return (
@@ -70,11 +88,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         {/* Header */}
         <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
           <h1 className="text-xl font-semibold text-gray-800">
-            {location.pathname === "/admin" ? "Dashboard" : 
-             location.pathname === "/admin/tasks" ? "Tasks" :
-             location.pathname === "/admin/bidding" ? "Bidding" :
-             location.pathname === "/admin/finances" ? "Finances" :
-             location.pathname === "/admin/taskers" ? "Taskers" : "Settings"}
+            {getHeaderTitle(location.pathname)}
           </h1>
           <button
             onClick={handleLogout}

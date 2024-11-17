@@ -53,6 +53,9 @@ const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
 
   return (
     <div className="space-y-4">
+      {showViewMore && (
+        <h2 className="text-xl font-semibold mb-4">Available Tasks</h2>
+      )}
       <div className="grid gap-4">
         {displayedTasks.map((task) => (
           <Card key={task.id}>
@@ -74,7 +77,7 @@ const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-primary">KES {task.payout}</span>
-                    <Button>
+                    <Button className="text-white">
                       Bid Now
                     </Button>
                   </div>
