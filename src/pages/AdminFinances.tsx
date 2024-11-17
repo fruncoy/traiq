@@ -1,9 +1,8 @@
 import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface Transaction {
   id: string;
@@ -14,26 +13,15 @@ interface Transaction {
   date: string;
 }
 
-const transactions: Transaction[] = [
-  {
-    id: "1",
-    tasker: "John Doe",
-    amount: 2000,
-    type: "bid_purchase",
-    status: "completed",
-    date: "2024-02-20"
-  },
-  {
-    id: "2",
-    tasker: "Jane Smith",
-    amount: 3000,
-    type: "bid_purchase",
-    status: "completed",
-    date: "2024-02-19"
-  }
-];
-
 const AdminFinances = () => {
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: async () => {
+      // This would be replaced with actual API call
+      return [] as Transaction[];
+    }
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
@@ -47,7 +35,7 @@ const AdminFinances = () => {
               <CardTitle>Total Payouts</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Ksh 125,000</div>
+              <div className="text-2xl font-bold">Ksh 0</div>
             </CardContent>
           </Card>
 

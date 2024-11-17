@@ -1,37 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArrowUp, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface Bid {
   id: string;
   taskTitle: string;
   bidAmount: number;
-  position: number;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "failed";
   submittedAt: string;
 }
 
-const bids: Bid[] = [
-  {
-    id: "1",
-    taskTitle: "Translate Short Stories",
-    bidAmount: 2000,
-    position: 2,
-    status: "pending",
-    submittedAt: "2024-02-20"
-  },
-  {
-    id: "2",
-    taskTitle: "Cultural Essays",
-    bidAmount: 3000,
-    position: 1,
-    status: "accepted",
-    submittedAt: "2024-02-19"
-  }
-];
-
 const BiddingSection = () => {
+  const { data: bids = [] } = useQuery({
+    queryKey: ['bids'],
+    queryFn: async () => {
+      // This would be replaced with actual API call
+      return [] as Bid[];
+    }
+  });
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -40,7 +27,7 @@ const BiddingSection = () => {
             <CardTitle className="text-sm font-medium">Available Bids</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">0</div>
           </CardContent>
         </Card>
         <Card>
@@ -48,7 +35,7 @@ const BiddingSection = () => {
             <CardTitle className="text-sm font-medium">Active Bids</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">0</div>
           </CardContent>
         </Card>
         <Card>
@@ -56,7 +43,7 @@ const BiddingSection = () => {
             <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">75%</div>
+            <div className="text-2xl font-bold">0%</div>
           </CardContent>
         </Card>
       </div>
@@ -77,29 +64,17 @@ const BiddingSection = () => {
                   <Badge
                     variant={
                       bid.status === "accepted" ? "default" :
-                      bid.status === "rejected" ? "destructive" : "secondary"
+                      bid.status === "failed" ? "destructive" : "secondary"
                     }
                   >
                     {bid.status}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-sm">
-                      <span className="text-gray-500">Bid Amount:</span>
-                      <span className="font-semibold ml-2">Ksh {bid.bidAmount}</span>
-                    </div>
-                    <div className="text-sm">
-                      <span className="text-gray-500">Position:</span>
-                      <span className="font-semibold ml-2">#{bid.position}</span>
-                    </div>
+                  <div className="text-sm">
+                    <span className="text-gray-500">Bid Amount:</span>
+                    <span className="font-semibold ml-2">Ksh {bid.bidAmount}</span>
                   </div>
-                  {bid.status === "pending" && (
-                    <Button size="sm" variant="outline">
-                      <ArrowUp className="h-4 w-4 mr-2" />
-                      Increase Bid
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}

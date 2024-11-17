@@ -16,7 +16,13 @@ import NotificationsPage from "./components/tasker/NotificationsPage";
 import BuyBidsPage from "./components/tasker/BuyBidsPage";
 import SubmitTaskPage from "./components/tasker/SubmitTaskPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

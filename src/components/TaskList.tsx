@@ -1,7 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, ArrowRight, Edit, Trash2 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 export interface Task {
   id: string;
@@ -13,52 +16,50 @@ export interface Task {
   datePosted: string;
 }
 
-const tasks: Task[] = [
-  {
-    id: "1",
-    title: "Translate Short Stories",
-    description: "Translate 500 words into Swahili, Luhya, Kisii, Dholuo, Kikuyu, Kalenjin, or Maasai",
-    payout: 2000,
-    workingTime: "2 hours",
-    bidsNeeded: 2,
-    datePosted: "2024-02-20"
-  },
-  {
-    id: "2",
-    title: "Cultural Essays",
-    description: "Write 700 words on a traditional ceremony in Swahili or Dholuo",
-    payout: 3000,
-    workingTime: "3 hours",
-    bidsNeeded: 3,
-    datePosted: "2024-02-19"
-  },
-  {
-    id: "3",
-    title: "Language Assessment",
-    description: "Review and grade 10 Swahili language assessments",
-    payout: 1500,
-    workingTime: "1.5 hours",
-    bidsNeeded: 1,
-    datePosted: "2024-02-18"
-  }
-];
-
-interface TaskListProps {
+const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
   limit?: number;
   showViewMore?: boolean;
   isAdmin?: boolean;
-}
+}) => {
+  const { data: tasks = [], refetch } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: async () => {
+      // This would be replaced with actual API call
+      return [] as Task[];
+    }
+  });
 
-const TaskList = ({ limit, showViewMore = false, isAdmin = false }: TaskListProps) => {
-  const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
+  const deleteMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      // This would be replaced with actual API call
+      toast.success("Task deleted successfully");
+    },
+    onSuccess: () => {
+      refetch();
+    }
+  });
+
+  const bidMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      // This would be replaced with actual API call
+      toast.success("Bid placed successfully");
+    }
+  });
 
   const handleEditTask = (taskId: string) => {
-    console.log(`Edit task ${taskId}`);
+    // This would open edit task modal/page
+    toast.info("Edit task functionality to be implemented");
   };
 
   const handleDeleteTask = (taskId: string) => {
-    console.log(`Delete task ${taskId}`);
+    deleteMutation.mutate(taskId);
   };
+
+  const handleBidNow = (taskId: string) => {
+    bidMutation.mutate(taskId);
+  };
+
+  const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
 
   return (
     <div className="space-y-4">
@@ -87,7 +88,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: TaskListProp
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-primary">KES {task.payout}</span>
                     {!isAdmin ? (
-                      <Button className="text-white">
+                      <Button 
+                        className="text-white"
+                        onClick={() => handleBidNow(task.id)}
+                      >
                         Bid Now
                       </Button>
                     ) : (
@@ -117,7 +121,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: TaskListProp
         ))}
       </div>
 
-      {showViewMore && !isAdmin && (
+      {showViewMore && !isAdmin && tasks.length > 0 && (
         <div className="flex justify-between items-center mt-6">
           <Link to="/tasker/tasks" className="text-primary hover:underline flex items-center gap-2">
             View all tasks <ArrowRight size={16} />

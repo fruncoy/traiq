@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 interface Tasker {
   id: string;
@@ -15,34 +16,41 @@ interface Tasker {
   isSuspended: boolean;
 }
 
-const taskers: Tasker[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    tasksCompleted: 15,
-    totalPayouts: 45000,
-    pendingPayouts: 5000,
-    joinDate: "2024-01-15",
-    isSuspended: false
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    tasksCompleted: 8,
-    totalPayouts: 24000,
-    pendingPayouts: 3000,
-    joinDate: "2024-02-01",
-    isSuspended: true
-  }
-];
-
 const AdminTaskers = () => {
+  const { data: taskers = [], refetch } = useQuery({
+    queryKey: ['taskers'],
+    queryFn: async () => {
+      // This would be replaced with actual API call
+      return [] as Tasker[];
+    }
+  });
+
+  const suspendMutation = useMutation({
+    mutationFn: async (taskerId: string) => {
+      // This would be replaced with actual API call
+      toast.success("Tasker account status updated successfully");
+    },
+    onSuccess: () => {
+      refetch();
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (taskerId: string) => {
+      // This would be replaced with actual API call
+      toast.success("Tasker account deleted successfully");
+    },
+    onSuccess: () => {
+      refetch();
+    }
+  });
+
   const handleSuspendTasker = (taskerId: string) => {
-    toast.success("Tasker account suspended successfully");
+    suspendMutation.mutate(taskerId);
   };
 
   const handleDeleteTasker = (taskerId: string) => {
-    toast.success("Tasker account deleted successfully");
+    deleteMutation.mutate(taskerId);
   };
 
   return (
