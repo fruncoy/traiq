@@ -32,22 +32,27 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md"
-      >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-30 flex items-center">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="lg:hidden ml-4 p-2 hover:bg-gray-100 rounded-md"
+          aria-label="Toggle menu"
+        >
+          {isOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+        <div className="ml-4 lg:ml-64 flex items-center">
+          <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
+        </div>
+      </div>
 
+      {/* Sidebar */}
       <div className={cn(
-        "fixed top-0 left-0 h-full bg-white shadow-lg transition-transform duration-300 z-40",
+        "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white shadow-lg transition-transform duration-300 z-40",
         "w-64 lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="p-4">
-          <Link to="/" className="flex items-center space-x-2 mb-8">
-            <span className="text-2xl font-bold text-[#4169E1]">TRAIQ</span>
-          </Link>
           <nav className="space-y-2">
             {links.map((link) => {
               const Icon = link.icon;
@@ -58,7 +63,7 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
                   className={cn(
                     "flex items-center space-x-2 px-4 py-2 rounded-md transition-colors",
                     location.pathname === link.path
-                      ? "bg-[#4169E1] text-white"
+                      ? "bg-primary-DEFAULT text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   )}
                 >
@@ -68,6 +73,13 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
               );
             })}
           </nav>
+        </div>
+      </div>
+
+      {/* Main content padding */}
+      <div className="pt-16">
+        <div className="lg:ml-64">
+          {/* Your page content goes here */}
         </div>
       </div>
     </>
