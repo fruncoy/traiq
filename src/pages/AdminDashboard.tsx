@@ -22,9 +22,9 @@ const AdminDashboard = () => {
       description: "Pending review" 
     },
     { 
-      label: "Approval Rate", 
-      value: "0%", 
-      description: "Task approval rate" 
+      label: "Tasks Submitted", 
+      value: "0", 
+      description: "Total tasks submitted" 
     },
     { 
       label: "Total Earnings", 
@@ -36,7 +36,7 @@ const AdminDashboard = () => {
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "tasks":
-        navigate("/admin/tasks");
+        navigate("/admin/submitted-tasks");
         break;
       case "bids":
         navigate("/admin/bidding");

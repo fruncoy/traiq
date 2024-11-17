@@ -8,6 +8,7 @@ interface Transaction {
   tasker: string;
   amount: number;
   type: "bid_purchase" | "payout";
+  bidsCount: number;
   totalPayout: number;
   pendingPayout: number;
   date: string;
@@ -26,7 +27,7 @@ const AdminFinances = () => {
       <Sidebar isAdmin>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Financial Management</h2>
+            <h2 className="text-2xl font-bold text-[#1E40AF]">Financial Management</h2>
           </div>
 
           <Card>
@@ -40,6 +41,7 @@ const AdminFinances = () => {
                     <TableHead>Tasker</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Bids Count</TableHead>
                     <TableHead>Total Payout</TableHead>
                     <TableHead>Pending Payout</TableHead>
                     <TableHead>Date</TableHead>
@@ -53,6 +55,7 @@ const AdminFinances = () => {
                       <TableCell>
                         {transaction.type === "bid_purchase" ? "Bid Purchase" : "Payout"}
                       </TableCell>
+                      <TableCell>{transaction.bidsCount}</TableCell>
                       <TableCell>Ksh {transaction.totalPayout}</TableCell>
                       <TableCell>Ksh {transaction.pendingPayout}</TableCell>
                       <TableCell>{transaction.date}</TableCell>

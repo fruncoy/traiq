@@ -1,13 +1,7 @@
 import Sidebar from "../components/Sidebar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface SubmittedTask {
@@ -16,38 +10,13 @@ interface SubmittedTask {
   submittedBy: string;
   submittedDate: string;
   description: string;
-  attachments: string[];
-  status: "pending" | "approved" | "rejected";
 }
 
-const submittedTasks: SubmittedTask[] = [
-  {
-    id: "1",
-    taskTitle: "Translate Short Stories",
-    submittedBy: "John Doe",
-    submittedDate: "2024-02-20",
-    description: "Translated 5 short stories from English to Spanish",
-    attachments: ["story1.pdf", "story2.pdf"],
-    status: "pending"
-  },
-  {
-    id: "2",
-    taskTitle: "Data Entry Project",
-    submittedBy: "Jane Smith",
-    submittedDate: "2024-02-19",
-    description: "Completed data entry for 200 records",
-    attachments: ["data_sheet.xlsx"],
-    status: "pending"
-  }
-];
+const submittedTasks: SubmittedTask[] = [];
 
 const AdminSubmittedTasks = () => {
-  const handleStatusChange = (taskId: string, status: string) => {
-    toast.success(`Task ${taskId} status updated to ${status}`);
-  };
-
-  const handleDownload = (filename: string) => {
-    toast.info(`Downloading ${filename}`);
+  const handleSubmitResult = (taskId: string) => {
+    toast.success("Result submitted successfully");
   };
 
   return (
@@ -55,67 +24,45 @@ const AdminSubmittedTasks = () => {
       <Sidebar isAdmin>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Submitted Tasks</h2>
+            <h2 className="text-2xl font-bold text-[#1E40AF]">Submitted Tasks</h2>
           </div>
 
-          <div className="grid gap-4">
-            {submittedTasks.map((task) => (
-              <Card key={task.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-semibold">{task.taskTitle}</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Submitted by: {task.submittedBy}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Date: {task.submittedDate}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Select 
-                          onValueChange={(value) => handleStatusChange(task.id, value)}
-                          defaultValue={task.status}
+          <Card>
+            <CardHeader>
+              <CardTitle>All Submissions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Task Title</TableHead>
+                    <TableHead>Submitted By</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {submittedTasks.map((task) => (
+                    <TableRow key={task.id}>
+                      <TableCell>{task.taskTitle}</TableCell>
+                      <TableCell>{task.submittedBy}</TableCell>
+                      <TableCell>{task.submittedDate}</TableCell>
+                      <TableCell>{task.description}</TableCell>
+                      <TableCell>
+                        <Button 
+                          onClick={() => handleSubmitResult(task.id)}
+                          className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                         >
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="approved">Approve</SelectItem>
-                            <SelectItem value="rejected_incomplete">Reject - Incomplete</SelectItem>
-                            <SelectItem value="rejected_quality">Reject - Poor Quality</SelectItem>
-                            <SelectItem value="rejected_guidelines">Reject - Not Following Guidelines</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">Description</h4>
-                      <p className="text-gray-700">{task.description}</p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Attachments</h4>
-                      <div className="flex gap-2 flex-wrap">
-                        {task.attachments.map((file, index) => (
-                          <Button
-                            key={index}
-                            variant="outline"
-                            className="text-blue-600 bg-white hover:bg-blue-50"
-                            onClick={() => handleDownload(file)}
-                          >
-                            {file}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                          Submit Result
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </Sidebar>
     </div>

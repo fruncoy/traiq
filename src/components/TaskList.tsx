@@ -12,6 +12,7 @@ export interface Task {
   payout: number;
   workingTime: string;
   bidsNeeded: number;
+  currentBids: number;
   datePosted: string;
 }
 
@@ -22,7 +23,8 @@ const sampleTasks: Task[] = [
     description: "Write a 1000-word article about renewable energy",
     payout: 500,
     workingTime: "2 hours",
-    bidsNeeded: 1,
+    bidsNeeded: 10,
+    currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0]
   },
   {
@@ -31,7 +33,8 @@ const sampleTasks: Task[] = [
     description: "Enter customer information into database",
     payout: 300,
     workingTime: "1 hour",
-    bidsNeeded: 1,
+    bidsNeeded: 10,
+    currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0]
   },
   {
@@ -40,7 +43,8 @@ const sampleTasks: Task[] = [
     description: "Translate a document from English to Spanish",
     payout: 600,
     workingTime: "3 hours",
-    bidsNeeded: 1,
+    bidsNeeded: 10,
+    currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0]
   }
 ];
@@ -53,33 +57,16 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const { data: tasks = sampleTasks, refetch } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      return sampleTasks;
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      toast.success("Task deleted successfully");
-    },
-    onSuccess: () => {
-      refetch();
+      return sampleTasks.filter(task => task.currentBids < task.bidsNeeded);
     }
   });
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
+      // This would be replaced with actual API call
       toast.success("Bid request sent to admin");
     }
   });
-
-  const handleEditTask = (taskId: string) => {
-    // This would open edit task modal/page
-    toast.info("Edit task functionality to be implemented");
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    deleteMutation.mutate(taskId);
-  };
 
   const handleBidNow = (taskId: string) => {
     bidMutation.mutate(taskId);
@@ -109,35 +96,17 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
                       <span>{task.workingTime}</span>
                     </div>
                     <p className="text-sm text-gray-600">Posted: {task.datePosted}</p>
-                    <p className="text-sm text-gray-600">Bids needed: {task.bidsNeeded}</p>
+                    <p className="text-sm text-gray-600">Bids: {task.currentBids}/{task.bidsNeeded}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-semibold text-primary">KES {task.payout}</span>
-                    {!isAdmin ? (
+                    <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
+                    {!isAdmin && (
                       <Button 
-                        className="text-white"
+                        className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                         onClick={() => handleBidNow(task.id)}
                       >
                         Bid Now
                       </Button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleEditTask(task.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => handleDeleteTask(task.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
                     )}
                   </div>
                 </div>
@@ -149,10 +118,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
       {showViewMore && !isAdmin && tasks.length > 0 && (
         <div className="flex justify-between items-center mt-6">
-          <Link to="/tasker/tasks" className="text-primary hover:underline flex items-center gap-2">
+          <Link to="/tasker/tasks" className="text-[#1E40AF] hover:underline flex items-center gap-2">
             View all tasks <ArrowRight size={16} />
           </Link>
-          <Link to="/tasker/buy-bids" className="text-primary hover:underline flex items-center gap-2">
+          <Link to="/tasker/buy-bids" className="text-[#1E40AF] hover:underline flex items-center gap-2">
             Buy more bids <ArrowRight size={16} />
           </Link>
         </div>
