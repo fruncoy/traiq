@@ -1,6 +1,7 @@
 import Navbar from "../components/Navbar";
 import DashboardMetrics from "../components/DashboardMetrics";
 import TaskList from "../components/TaskList";
+import { Task } from "../types/task";
 
 const AdminDashboard = () => {
   const metrics = [
@@ -9,7 +10,7 @@ const AdminDashboard = () => {
     { label: "Total Earnings", value: "$12,543", change: "+18% from last month" },
   ];
 
-  const tasks = [
+  const tasks: Task[] = [
     {
       id: "1",
       title: "Hindi Voice Recording",
