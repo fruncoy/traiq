@@ -6,11 +6,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminTasks from "./pages/AdminTasks";
+import AdminSubmittedTasks from "./pages/AdminSubmittedTasks";
 import AdminBidding from "./pages/AdminBidding";
 import AdminFinances from "./pages/AdminFinances";
 import AdminTaskers from "./pages/AdminTaskers";
 import AdminSettings from "./pages/AdminSettings";
-import AdminSubmittedTasks from "./pages/AdminSubmittedTasks";
 import TaskerDashboard from "./pages/TaskerDashboard";
 import NotificationsPage from "./components/tasker/NotificationsPage";
 import BuyBidsPage from "./components/tasker/BuyBidsPage";
@@ -27,8 +27,6 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

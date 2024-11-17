@@ -31,15 +31,6 @@ const AdminFinances = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Total Payouts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">Ksh 0</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Recent Transactions</CardTitle>
             </CardHeader>
             <CardContent>

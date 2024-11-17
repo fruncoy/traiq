@@ -17,6 +17,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const adminLinks = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
     { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
+    { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload },
     { name: "Bidding", path: "/admin/bidding", icon: Gavel },
     { name: "Finances", path: "/admin/finances", icon: DollarSign },
     { name: "Taskers", path: "/admin/taskers", icon: Users },
@@ -44,6 +45,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     if (isAdmin) {
       return pathname === "/admin" ? "Dashboard" : 
              pathname === "/admin/tasks" ? "Tasks" :
+             pathname === "/admin/submitted-tasks" ? "Submitted Tasks" :
              pathname === "/admin/bidding" ? "Bidding" :
              pathname === "/admin/finances" ? "Finances" :
              pathname === "/admin/taskers" ? "Taskers" : "Settings";
