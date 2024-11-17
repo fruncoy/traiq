@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Sidebar from "../Sidebar";
 
 interface BidPackage {
@@ -45,6 +45,13 @@ const bidPackages: BidPackage[] = [
 
 const BuyBidsPage = () => {
   const [customBids, setCustomBids] = useState<number>(2);
+  
+  const { data: currentBids = 0 } = useQuery({
+    queryKey: ['user-bids'],
+    queryFn: async () => {
+      return 0; // Setting initial balance to 0
+    }
+  });
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
@@ -84,7 +91,7 @@ const BuyBidsPage = () => {
             <CardTitle>Current Balance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">8 Bids</div>
+            <div className="text-3xl font-bold">{currentBids} Bids</div>
             <p className="text-sm text-gray-500 mt-1">Available for use</p>
           </CardContent>
         </Card>

@@ -18,7 +18,14 @@ const AdminFinances = () => {
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
     queryFn: async () => {
-      return [] as Transaction[];
+      return [] as Transaction[]; // Empty initial transactions
+    }
+  });
+
+  const { data: totalBalance = 0 } = useQuery({
+    queryKey: ['total-balance'],
+    queryFn: async () => {
+      return 0; // Setting initial balance to 0
     }
   });
 
@@ -29,6 +36,15 @@ const AdminFinances = () => {
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-[#1E40AF]">Financial Management</h2>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Balance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">KES {totalBalance}</div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

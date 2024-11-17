@@ -64,7 +64,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const { data: userBids = 0 } = useQuery({
     queryKey: ['user-bids'],
     queryFn: async () => {
-      // This would be replaced with actual API call
       return 0; // Setting initial balance to 0
     }
   });

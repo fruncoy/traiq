@@ -6,13 +6,21 @@ import BuyBidsSection from "../components/tasker/BuyBidsSection";
 import TaskerSettings from "../components/tasker/TaskerSettings";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
 
 const TaskerDashboard = () => {
   const location = useLocation();
+  const { data: userBids = 0 } = useQuery({
+    queryKey: ['user-bids'],
+    queryFn: async () => {
+      return 0; // Setting initial balance to 0
+    }
+  });
+
   const metrics = [
     { 
       label: "Available Bids", 
-      value: "0",
+      value: userBids.toString(),
       description: "Use them wisely to secure tasks" 
     },
     { 
@@ -22,7 +30,7 @@ const TaskerDashboard = () => {
     },
     { 
       label: "Total Earned", 
-      value: "Ksh 0",
+      value: "KES 0",
     },
     { 
       label: "Success Rate", 
