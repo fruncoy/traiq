@@ -2,9 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, ArrowRight, Edit, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import { toast } from "sonner";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export interface Task {
   id: string;
@@ -16,22 +15,50 @@ export interface Task {
   datePosted: string;
 }
 
+const sampleTasks: Task[] = [
+  {
+    id: "1",
+    title: "Content Writing Task",
+    description: "Write a 1000-word article about renewable energy",
+    payout: 500,
+    workingTime: "2 hours",
+    bidsNeeded: 1,
+    datePosted: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: "2",
+    title: "Data Entry Project",
+    description: "Enter customer information into database",
+    payout: 300,
+    workingTime: "1 hour",
+    bidsNeeded: 1,
+    datePosted: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: "3",
+    title: "Translation Work",
+    description: "Translate a document from English to Spanish",
+    payout: 600,
+    workingTime: "3 hours",
+    bidsNeeded: 1,
+    datePosted: new Date().toISOString().split('T')[0]
+  }
+];
+
 const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
   limit?: number;
   showViewMore?: boolean;
   isAdmin?: boolean;
 }) => {
-  const { data: tasks = [], refetch } = useQuery({
+  const { data: tasks = sampleTasks, refetch } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      // This would be replaced with actual API call
-      return [] as Task[];
+      return sampleTasks;
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      // This would be replaced with actual API call
       toast.success("Task deleted successfully");
     },
     onSuccess: () => {
@@ -41,8 +68,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      // This would be replaced with actual API call
-      toast.success("Bid placed successfully");
+      toast.success("Bid request sent to admin");
     }
   });
 

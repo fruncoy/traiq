@@ -1,7 +1,6 @@
 import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 
 interface Transaction {
@@ -9,7 +8,8 @@ interface Transaction {
   tasker: string;
   amount: number;
   type: "bid_purchase" | "payout";
-  status: "completed" | "pending";
+  totalPayout: number;
+  pendingPayout: number;
   date: string;
 }
 
@@ -17,7 +17,6 @@ const AdminFinances = () => {
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
     queryFn: async () => {
-      // This would be replaced with actual API call
       return [] as Transaction[];
     }
   });
@@ -50,7 +49,8 @@ const AdminFinances = () => {
                     <TableHead>Tasker</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Total Payout</TableHead>
+                    <TableHead>Pending Payout</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -62,11 +62,8 @@ const AdminFinances = () => {
                       <TableCell>
                         {transaction.type === "bid_purchase" ? "Bid Purchase" : "Payout"}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={transaction.status === "completed" ? "default" : "secondary"}>
-                          {transaction.status}
-                        </Badge>
-                      </TableCell>
+                      <TableCell>Ksh {transaction.totalPayout}</TableCell>
+                      <TableCell>Ksh {transaction.pendingPayout}</TableCell>
                       <TableCell>{transaction.date}</TableCell>
                     </TableRow>
                   ))}

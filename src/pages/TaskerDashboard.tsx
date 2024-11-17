@@ -11,22 +11,21 @@ const TaskerDashboard = () => {
   const metrics = [
     { 
       label: "Available Bids", 
-      value: "8",
+      value: "0",
       description: "Use them wisely to secure tasks" 
     },
     { 
       label: "Active Tasks", 
-      value: "3",
+      value: "0",
       description: "Tasks in progress" 
     },
     { 
       label: "Total Earned", 
-      value: "Ksh 89,000",
-      change: "+12% from last month" 
+      value: "Ksh 0",
     },
     { 
       label: "Success Rate", 
-      value: "92%",
+      value: "0%",
       description: "Based on last 50 tasks" 
     }
   ];

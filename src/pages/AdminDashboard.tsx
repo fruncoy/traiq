@@ -1,6 +1,4 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
 import Sidebar from "../components/Sidebar";
 import DashboardMetrics from "../components/DashboardMetrics";
 import ActivityFeed from "../components/ActivityFeed";
@@ -8,59 +6,29 @@ import QuickActions from "../components/QuickActions";
 import { Activity } from "@/types/activity";
 
 const AdminDashboard = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const activities: Activity[] = [
-    {
-      id: "1",
-      type: "submission",
-      message: "New task submission from John Doe",
-      timestamp: "2 minutes ago"
-    },
-    {
-      id: "2",
-      type: "approval",
-      message: "Task #123 approved",
-      timestamp: "5 minutes ago"
-    },
-    {
-      id: "3",
-      type: "rejection",
-      message: "Bid rejected for Task #456",
-      timestamp: "10 minutes ago"
-    },
-    {
-      id: "4",
-      type: "pending",
-      message: "New tasker registration pending approval",
-      timestamp: "15 minutes ago"
-    }
-  ];
+  const activities: Activity[] = [];
 
   const metrics = [
     { 
       label: "Total Tasks", 
-      value: "156", 
-      change: "+12% from last month",
+      value: "3", 
       description: "Active tasks in the system" 
     },
     { 
       label: "Submissions", 
-      value: "43", 
-      change: "+5% from last month",
+      value: "0", 
       description: "Pending review" 
     },
     { 
       label: "Approval Rate", 
-      value: "89%", 
-      change: "+2% from last month",
+      value: "0%", 
       description: "Task approval rate" 
     },
     { 
       label: "Total Earnings", 
-      value: "Ksh 12,543", 
-      change: "+18% from last month",
+      value: "Ksh 0", 
       description: "Platform revenue" 
     }
   ];
@@ -81,17 +49,6 @@ const AdminDashboard = () => {
         break;
     }
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      toast({
-        title: "New Submission",
-        description: "A new task submission requires your review",
-      });
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   return (
     <div className="min-h-screen bg-gray-50">
