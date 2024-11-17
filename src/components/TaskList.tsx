@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ArrowRight } from "lucide-react";
+import { Clock, ArrowRight, Edit, Trash2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export interface Task {
@@ -46,12 +46,19 @@ const tasks: Task[] = [
 interface TaskListProps {
   limit?: number;
   showViewMore?: boolean;
+  isAdmin?: boolean;
 }
 
-const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
+const TaskList = ({ limit, showViewMore = false, isAdmin = false }: TaskListProps) => {
   const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
-  const location = useLocation();
-  const isAdmin = location.pathname.startsWith("/admin");
+
+  const handleEditTask = (taskId: string) => {
+    console.log(`Edit task ${taskId}`);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    console.log(`Delete task ${taskId}`);
+  };
 
   return (
     <div className="space-y-4">
@@ -79,10 +86,28 @@ const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-primary">KES {task.payout}</span>
-                    {!isAdmin && (
+                    {!isAdmin ? (
                       <Button className="text-white">
                         Bid Now
                       </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEditTask(task.id)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="text-red-500 hover:text-red-600"
+                          onClick={() => handleDeleteTask(task.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
