@@ -4,8 +4,53 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "sonner";
+
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+const adminUsers: AdminUser[] = [
+  {
+    id: "1",
+    name: "Admin One",
+    email: "admin1@example.com",
+    role: "Super Admin"
+  },
+  {
+    id: "2",
+    name: "Admin Two",
+    email: "admin2@example.com",
+    role: "Admin"
+  }
+];
+
+const notifications = [
+  {
+    id: "1",
+    message: "New task submitted",
+    date: "2024-02-20"
+  },
+  {
+    id: "2",
+    message: "Tasker account suspended",
+    date: "2024-02-19"
+  }
+];
 
 const AdminSettings = () => {
+  const handleSaveChanges = () => {
+    toast.success("Settings saved successfully");
+  };
+
+  const handleDeleteAdmin = (adminId: string) => {
+    toast.success("Admin account deleted successfully");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
@@ -18,29 +63,26 @@ const AdminSettings = () => {
             <TabsList>
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="email">Email</TabsTrigger>
               <TabsTrigger value="admins">Admin Accounts</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general">
               <Card>
                 <CardHeader>
-                  <CardTitle>General Settings</CardTitle>
+                  <CardTitle>Admin Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="platform-name">Platform Name</Label>
-                    <Input id="platform-name" defaultValue="TRAIQ" />
+                    <Label htmlFor="admin-name">Name</Label>
+                    <Input id="admin-name" defaultValue="John Admin" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="min-bid">Minimum Bid Amount (Ksh)</Label>
-                    <Input id="min-bid" type="number" defaultValue="500" />
+                    <Label htmlFor="admin-email">Email</Label>
+                    <Input id="admin-email" type="email" defaultValue="admin@example.com" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="platform-fee">Platform Fee (%)</Label>
-                    <Input id="platform-fee" type="number" defaultValue="10" />
-                  </div>
-                  <Button>Save Changes</Button>
+                  <Button onClick={handleSaveChanges} className="text-white bg-primary hover:bg-primary/90">
+                    Save Changes
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -48,41 +90,17 @@ const AdminSettings = () => {
             <TabsContent value="notifications">
               <Card>
                 <CardHeader>
-                  <CardTitle>Notification Settings</CardTitle>
+                  <CardTitle>Recent Notifications</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-task">New Task Notifications</Label>
-                    <Input id="new-task" type="text" placeholder="Message template" />
+                <CardContent>
+                  <div className="space-y-4">
+                    {notifications.map((notification) => (
+                      <div key={notification.id} className="flex justify-between items-center p-4 bg-white rounded-lg border">
+                        <span>{notification.message}</span>
+                        <span className="text-sm text-gray-500">{notification.date}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bid-received">Bid Received Notifications</Label>
-                    <Input id="bid-received" type="text" placeholder="Message template" />
-                  </div>
-                  <Button>Update Templates</Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="email">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Email Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="smtp-host">SMTP Host</Label>
-                    <Input id="smtp-host" type="text" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smtp-port">SMTP Port</Label>
-                    <Input id="smtp-port" type="number" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smtp-user">SMTP Username</Label>
-                    <Input id="smtp-user" type="text" />
-                  </div>
-                  <Button>Save Email Settings</Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -90,18 +108,47 @@ const AdminSettings = () => {
             <TabsContent value="admins">
               <Card>
                 <CardHeader>
-                  <CardTitle>Admin Account Management</CardTitle>
+                  <CardTitle>Admin Accounts</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="admin-email">Admin Email</Label>
-                    <Input id="admin-email" type="email" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="admin-role">Admin Role</Label>
-                    <Input id="admin-role" type="text" />
-                  </div>
-                  <Button>Add Admin</Button>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adminUsers.map((admin) => (
+                        <TableRow key={admin.id}>
+                          <TableCell>{admin.name}</TableCell>
+                          <TableCell>{admin.email}</TableCell>
+                          <TableCell>{admin.role}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-white bg-primary hover:bg-primary/90"
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteAdmin(admin.id)}
+                                className="text-white bg-destructive hover:bg-destructive/90"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>

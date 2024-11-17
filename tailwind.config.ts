@@ -28,6 +28,7 @@ export default {
           DEFAULT: "#1E40AF",
           light: "#3B82F6",
           dark: "#1E3A8A",
+          foreground: "#FFFFFF",
         },
         accent: {
           DEFAULT: "#F97316",
