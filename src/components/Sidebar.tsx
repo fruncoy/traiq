@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, LayoutDashboard, ClipboardList, Gavel, DollarSign, Users, Settings, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,20 @@ interface SidebarProps {
 const Sidebar = ({ isAdmin = false }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
+  
+  // Always show sidebar on desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsOpen(true);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial check
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const adminLinks = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -33,42 +47,45 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
   return (
     <>
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-30 flex items-center">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center px-4">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="ml-4 p-2 hover:bg-gray-100 rounded-md"
+          className="lg:hidden p-2 hover:bg-gray-100 rounded-md"
           aria-label="Toggle menu"
         >
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-        <div className="ml-4 lg:ml-64 flex items-center">
-          <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
+        <div className="ml-4 flex items-center">
+          <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
         </div>
       </div>
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white shadow-lg transition-transform duration-300 z-40",
+        "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 z-40",
         "w-64",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "lg:translate-x-0",
+        !isOpen && "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="p-4">
-          <nav className="space-y-2">
+        <div className="p-6">
+          <nav className="space-y-4">
             {links.map((link) => {
               const Icon = link.icon;
+              const isActive = location.pathname === link.path;
               return (
                 <Link
                   key={link.path}
                   to={link.path}
                   className={cn(
-                    "flex items-center space-x-2 px-4 py-2 rounded-md transition-colors",
-                    location.pathname === link.path
-                      ? "bg-primary-DEFAULT text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                    "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
+                    "hover:bg-blue-50",
+                    isActive 
+                      ? "bg-blue-100 text-[#1E40AF] font-medium" 
+                      : "text-gray-600"
                   )}
                 >
                   <Icon size={20} />
-                  <span>{link.name}</span>
+                  <span className="text-sm">{link.name}</span>
                 </Link>
               );
             })}
@@ -79,9 +96,9 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
       {/* Main content padding */}
       <div className={cn(
         "pt-16 transition-all duration-300",
-        isOpen ? "lg:ml-64" : "lg:ml-0"
+        "lg:ml-64"
       )}>
-        <div className="p-4">
+        <div className="p-6">
           {/* Your page content goes here */}
         </div>
       </div>
