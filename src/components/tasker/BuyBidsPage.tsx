@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "../Sidebar";
 
 interface BidPackage {
@@ -45,29 +45,34 @@ const bidPackages: BidPackage[] = [
 
 const BuyBidsPage = () => {
   const [customBids, setCustomBids] = useState<number>(2);
+  const queryClient = useQueryClient();
   
   const { data: currentBids = 0, refetch } = useQuery({
     queryKey: ['user-bids'],
     queryFn: async () => {
-      return 0;
+      const storedBids = localStorage.getItem('userBids');
+      return storedBids ? parseInt(storedBids) : 0;
     }
   });
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
-      // Simulate API call for payment processing
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({ success: true, bids, amount });
-        }, 1000);
-      });
+      const currentBids = parseInt(localStorage.getItem('userBids') || '0');
+      localStorage.setItem('userBids', (currentBids + bids).toString());
+      
+      // Track total spent for admin dashboard
+      const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
+      localStorage.setItem('totalSpent', (totalSpent + amount).toString());
+      
+      return { success: true, bids, amount };
     },
     onSuccess: (_, variables) => {
       toast.success(`Successfully purchased ${variables.bids} bids`);
-      refetch(); // Refetch the current bids after successful purchase
+      queryClient.invalidateQueries({ queryKey: ['user-bids'] });
+      refetch();
     },
     onError: () => {
-      toast.error("Failed to process payment. Please try again.");
+      toast.error("Failed to process purchase. Please try again.");
     }
   });
 

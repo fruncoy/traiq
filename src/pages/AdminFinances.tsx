@@ -3,29 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 
-interface Transaction {
-  id: string;
-  tasker: string;
-  amount: number;
-  type: "bid_purchase" | "payout";
-  bidsCount: number;
-  totalPayout: number;
-  pendingPayout: number;
-  date: string;
-}
-
 const AdminFinances = () => {
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions'],
+  const { data: totalBalance = 0 } = useQuery({
+    queryKey: ['total-spent'],
     queryFn: async () => {
-      return [] as Transaction[]; // Empty initial transactions
+      return parseFloat(localStorage.getItem('totalSpent') || '0');
     }
   });
 
-  const { data: totalBalance = 0 } = useQuery({
-    queryKey: ['total-balance'],
+  const { data: potentialPayouts = 0 } = useQuery({
+    queryKey: ['potential-payouts'],
     queryFn: async () => {
-      return 0; // Setting initial balance to 0
+      return parseFloat(localStorage.getItem('potentialEarnings') || '0');
     }
   });
 
@@ -37,50 +26,37 @@ const AdminFinances = () => {
             <h2 className="text-2xl font-bold text-[#1E40AF]">Financial Management</h2>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">KES {totalBalance}</div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Total Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">KES {totalBalance}</div>
+                <p className="text-sm text-gray-500">From bid purchases</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tasker</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Bids Count</TableHead>
-                    <TableHead>Total Payout</TableHead>
-                    <TableHead>Pending Payout</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>{transaction.tasker}</TableCell>
-                      <TableCell>Ksh {transaction.amount}</TableCell>
-                      <TableCell>
-                        {transaction.type === "bid_purchase" ? "Bid Purchase" : "Payout"}
-                      </TableCell>
-                      <TableCell>{transaction.bidsCount}</TableCell>
-                      <TableCell>Ksh {transaction.totalPayout}</TableCell>
-                      <TableCell>Ksh {transaction.pendingPayout}</TableCell>
-                      <TableCell>{transaction.date}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Potential Payouts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">KES {potentialPayouts}</div>
+                <p className="text-sm text-gray-500">From active tasks</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Net Balance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">KES {totalBalance - potentialPayouts}</div>
+                <p className="text-sm text-gray-500">Revenue - Potential Payouts</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </Sidebar>
     </div>

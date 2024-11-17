@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export interface Task {
@@ -14,6 +14,7 @@ export interface Task {
   bidsNeeded: number;
   currentBids: number;
   datePosted: string;
+  status?: "pending" | "completed";
 }
 
 const sampleTasks: Task[] = [
@@ -23,7 +24,7 @@ const sampleTasks: Task[] = [
     description: "Write a 1000-word article about renewable energy",
     payout: 500,
     workingTime: "2 hours",
-    bidsNeeded: 10,
+    bidsNeeded: 5,
     currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0]
   },
@@ -33,17 +34,7 @@ const sampleTasks: Task[] = [
     description: "Enter customer information into database",
     payout: 300,
     workingTime: "1 hour",
-    bidsNeeded: 10,
-    currentBids: 0,
-    datePosted: new Date().toISOString().split('T')[0]
-  },
-  {
-    id: "3",
-    title: "Translation Work",
-    description: "Translate a document from English to Spanish",
-    payout: 600,
-    workingTime: "3 hours",
-    bidsNeeded: 10,
+    bidsNeeded: 3,
     currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0]
   }
@@ -54,33 +45,45 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   showViewMore?: boolean;
   isAdmin?: boolean;
 }) => {
+  const queryClient = useQueryClient();
+
   const { data: tasks = sampleTasks, refetch } = useQuery({
     queryKey: ['tasks'],
-    queryFn: async () => {
-      return sampleTasks.filter(task => task.currentBids < task.bidsNeeded);
-    }
+    queryFn: async () => sampleTasks
   });
 
   const { data: userBids = 0 } = useQuery({
     queryKey: ['user-bids'],
     queryFn: async () => {
-      return 0;
+      const storedBids = localStorage.getItem('userBids');
+      return storedBids ? parseInt(storedBids) : 0;
     }
   });
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      if (userBids <= 0) {
-        throw new Error("insufficient_bids");
-      }
-      
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error("Task not found");
       
-      return Promise.resolve({ success: true });
+      const currentBids = parseInt(localStorage.getItem('userBids') || '0');
+      if (currentBids <= 0) throw new Error("insufficient_bids");
+      
+      // Update user's bids
+      localStorage.setItem('userBids', (currentBids - 1).toString());
+      
+      // Update task's current bids
+      task.currentBids += 1;
+      
+      // Add to user's earnings potential
+      const currentEarnings = parseFloat(localStorage.getItem('potentialEarnings') || '0');
+      localStorage.setItem('potentialEarnings', (currentEarnings + task.payout).toString());
+      
+      return task;
     },
     onSuccess: () => {
       toast.success("Bid placed successfully!");
+      queryClient.invalidateQueries({ queryKey: ['user-bids'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       refetch();
     },
     onError: (error: Error) => {
