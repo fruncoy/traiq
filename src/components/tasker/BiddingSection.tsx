@@ -11,18 +11,16 @@ interface Bid {
 }
 
 const BiddingSection = () => {
-  const { data: activeBids = [] } = useQuery({
-    queryKey: ['active-bids'],
+  const { data: userBids = 0 } = useQuery({
+    queryKey: ['user-bids'],
     queryFn: async () => {
-      // This would be replaced with actual API call
-      return [] as Bid[];
+      return 0;
     }
   });
 
-  const { data: previousBids = [] } = useQuery({
-    queryKey: ['previous-bids'],
+  const { data: allBids = [] } = useQuery({
+    queryKey: ['all-bids'],
     queryFn: async () => {
-      // This would be replaced with actual API call
       return [] as Bid[];
     }
   });
@@ -35,15 +33,7 @@ const BiddingSection = () => {
             <CardTitle className="text-sm font-medium">Available Bids</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Active Bids</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeBids.length}</div>
+            <div className="text-2xl font-bold">{userBids}</div>
           </CardContent>
         </Card>
         <Card>
@@ -58,58 +48,36 @@ const BiddingSection = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Active Bids</CardTitle>
+          <CardTitle>All Bids</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activeBids.map((bid) => (
-              <div key={bid.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-semibold">{bid.taskTitle}</h3>
-                    <p className="text-sm text-gray-500">Submitted: {bid.submittedAt}</p>
+            {allBids.length === 0 ? (
+              <p className="text-center text-gray-500 py-4">You have no bids yet</p>
+            ) : (
+              allBids.map((bid) => (
+                <div key={bid.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-semibold">{bid.taskTitle}</h3>
+                      <p className="text-sm text-gray-500">Submitted: {bid.submittedAt}</p>
+                    </div>
+                    <Badge
+                      variant={bid.status === "completed" ? "default" : 
+                              bid.status === "active" ? "secondary" : "destructive"}
+                    >
+                      {bid.status}
+                    </Badge>
                   </div>
-                  <Badge variant="default">Active</Badge>
-                </div>
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm">
-                    <span className="text-gray-500">Bid Amount:</span>
-                    <span className="font-semibold ml-2">KES {bid.bidAmount}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Previous Bids</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {previousBids.slice(0, 5).map((bid) => (
-              <div key={bid.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-semibold">{bid.taskTitle}</h3>
-                    <p className="text-sm text-gray-500">Submitted: {bid.submittedAt}</p>
-                  </div>
-                  <Badge
-                    variant={bid.status === "completed" ? "default" : "destructive"}
-                  >
-                    {bid.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm">
-                    <span className="text-gray-500">Bid Amount:</span>
-                    <span className="font-semibold ml-2">KES {bid.bidAmount}</span>
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm">
+                      <span className="text-gray-500">Bid Amount:</span>
+                      <span className="font-semibold ml-2">KES {bid.bidAmount}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

@@ -46,10 +46,10 @@ const bidPackages: BidPackage[] = [
 const BuyBidsPage = () => {
   const [customBids, setCustomBids] = useState<number>(2);
   
-  const { data: currentBids = 0 } = useQuery({
+  const { data: currentBids = 0, refetch } = useQuery({
     queryKey: ['user-bids'],
     queryFn: async () => {
-      return 0; // Setting initial balance to 0
+      return 0;
     }
   });
 
@@ -64,6 +64,7 @@ const BuyBidsPage = () => {
     },
     onSuccess: (_, variables) => {
       toast.success(`Successfully purchased ${variables.bids} bids`);
+      refetch(); // Refetch the current bids after successful purchase
     },
     onError: () => {
       toast.error("Failed to process payment. Please try again.");

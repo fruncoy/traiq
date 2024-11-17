@@ -64,7 +64,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const { data: userBids = 0 } = useQuery({
     queryKey: ['user-bids'],
     queryFn: async () => {
-      return 0; // Setting initial balance to 0
+      return 0;
     }
   });
 
@@ -125,12 +125,16 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
                       <span>{task.workingTime}</span>
                     </div>
                     <p className="text-sm text-gray-600">Posted: {task.datePosted}</p>
-                    <p className="text-sm text-gray-600">
-                      Bids: {task.currentBids}/{task.bidsNeeded}
-                      <span className="ml-2 text-blue-600">
-                        (Requires {task.bidsNeeded} bids)
-                      </span>
-                    </p>
+                    {!isAdmin && (
+                      <p className="text-sm text-blue-600">
+                        Requires {task.bidsNeeded} bids
+                      </p>
+                    )}
+                    {isAdmin && (
+                      <p className="text-sm text-gray-600">
+                        Bids: {task.currentBids}/{task.bidsNeeded}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
