@@ -1,5 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -10,7 +9,6 @@ export interface Task {
   description: string;
   payout: number;
   workingTime: string;
-  requirements: "Beginner" | "Intermediate" | "Advanced";
   bidsNeeded: number;
   datePosted: string;
 }
@@ -22,7 +20,6 @@ const tasks: Task[] = [
     description: "Translate 500 words into Swahili, Luhya, Kisii, Dholuo, Kikuyu, Kalenjin, or Maasai",
     payout: 2000,
     workingTime: "2 hours",
-    requirements: "Intermediate",
     bidsNeeded: 2,
     datePosted: "2024-02-20"
   },
@@ -32,7 +29,6 @@ const tasks: Task[] = [
     description: "Write 700 words on a traditional ceremony in Swahili or Dholuo",
     payout: 3000,
     workingTime: "3 hours",
-    requirements: "Advanced",
     bidsNeeded: 3,
     datePosted: "2024-02-19"
   },
@@ -42,7 +38,6 @@ const tasks: Task[] = [
     description: "Review and grade 10 Swahili language assessments",
     payout: 1500,
     workingTime: "1.5 hours",
-    requirements: "Beginner",
     bidsNeeded: 1,
     datePosted: "2024-02-18"
   }
@@ -63,19 +58,9 @@ const TaskList = ({ limit, showViewMore = false }: TaskListProps) => {
           <Card key={task.id}>
             <CardContent className="p-6">
               <div className="space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-semibold">{task.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-                  </div>
-                  <Badge
-                    variant={
-                      task.requirements === "Beginner" ? "secondary" :
-                      task.requirements === "Intermediate" ? "default" : "destructive"
-                    }
-                  >
-                    {task.requirements}
-                  </Badge>
+                <div>
+                  <h3 className="text-lg font-semibold">{task.title}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{task.description}</p>
                 </div>
                 
                 <div className="flex items-center justify-between">
