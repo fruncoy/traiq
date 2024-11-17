@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isAdmin?: boolean;
+  children?: React.ReactNode;
 }
 
-const Sidebar = ({ isAdmin = false }: SidebarProps) => {
+const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
 
@@ -37,7 +38,7 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
   return (
     <div className="flex h-screen bg-white">
       {/* Sidebar */}
-      <div className="w-64 border-r border-gray-200">
+      <div className="w-64 border-r border-gray-200 flex-shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
           <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
         </div>
@@ -65,7 +66,7 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
           <h1 className="text-xl font-semibold text-gray-800">
@@ -86,7 +87,7 @@ const Sidebar = ({ isAdmin = false }: SidebarProps) => {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
-          {/* Your page content goes here */}
+          {children}
         </main>
       </div>
     </div>

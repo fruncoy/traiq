@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import DashboardMetrics from "../components/DashboardMetrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ interface Activity {
 const AdminDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [activities] = useState<Activity[]>([
+  const activities = [
     {
       id: "1",
       type: "submission",
@@ -42,7 +42,7 @@ const AdminDashboard = () => {
       message: "New tasker registration pending approval",
       timestamp: "15 minutes ago"
     }
-  ]);
+  ];
 
   const metrics = [
     { 
@@ -102,7 +102,6 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    // Simulate new notification
     const timer = setTimeout(() => {
       toast({
         title: "New Submission",
@@ -115,8 +114,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar isAdmin />
-      <div className="lg:pl-64">
+      <Sidebar isAdmin>
         <main className="py-6 px-4 sm:px-6 lg:px-8">
           {/* Metrics Grid */}
           <div className="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -206,7 +204,7 @@ const AdminDashboard = () => {
             </Card>
           </div>
         </main>
-      </div>
+      </Sidebar>
     </div>
   );
 };
