@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface Activity {
   id: string;
@@ -15,7 +16,8 @@ interface Activity {
 
 const AdminDashboard = () => {
   const { toast } = useToast();
-  const [activities, setActivities] = useState<Activity[]>([
+  const navigate = useNavigate();
+  const [activities] = useState<Activity[]>([
     {
       id: "1",
       type: "submission",
@@ -79,6 +81,23 @@ const AdminDashboard = () => {
         return <XCircle className="h-4 w-4 text-red-500" />;
       case "pending":
         return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+    }
+  };
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case "tasks":
+        navigate("/admin/tasks");
+        break;
+      case "bids":
+        navigate("/admin/bidding");
+        break;
+      case "payments":
+        navigate("/admin/finances");
+        break;
+      case "taskers":
+        navigate("/admin/taskers");
+        break;
     }
   };
 
@@ -147,26 +166,38 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Quick Links */}
+            {/* Quick Actions */}
             <Card className="col-span-1">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <button className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <button 
+                    onClick={() => handleQuickAction("tasks")}
+                    className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
                     <h3 className="font-medium">Review Tasks</h3>
                     <p className="text-sm text-gray-500">Check pending submissions</p>
                   </button>
-                  <button className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <button 
+                    onClick={() => handleQuickAction("bids")}
+                    className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
                     <h3 className="font-medium">Manage Bids</h3>
                     <p className="text-sm text-gray-500">Review and approve bids</p>
                   </button>
-                  <button className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <button 
+                    onClick={() => handleQuickAction("payments")}
+                    className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
                     <h3 className="font-medium">Process Payments</h3>
                     <p className="text-sm text-gray-500">Handle pending payouts</p>
                   </button>
-                  <button className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <button 
+                    onClick={() => handleQuickAction("taskers")}
+                    className="p-4 text-left rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
                     <h3 className="font-medium">Tasker Approvals</h3>
                     <p className="text-sm text-gray-500">Review new registrations</p>
                   </button>
