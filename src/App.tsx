@@ -11,6 +11,9 @@ import AdminFinances from "./pages/AdminFinances";
 import AdminTaskers from "./pages/AdminTaskers";
 import AdminSettings from "./pages/AdminSettings";
 import TaskerDashboard from "./pages/TaskerDashboard";
+import NotificationsPage from "./components/tasker/NotificationsPage";
+import BuyBidsPage from "./components/tasker/BuyBidsPage";
+import SubmitTaskPage from "./components/tasker/SubmitTaskPage";
 
 const queryClient = new QueryClient();
 
@@ -31,8 +34,10 @@ const App = () => (
           <Route path="/tasker" element={<TaskerDashboard />} />
           <Route path="/tasker/tasks" element={<TaskerDashboard />} />
           <Route path="/tasker/bidding" element={<TaskerDashboard />} />
-          <Route path="/tasker/buy-bids" element={<TaskerDashboard />} />
+          <Route path="/tasker/buy-bids" element={<BuyBidsPage />} />
+          <Route path="/tasker/notifications" element={<NotificationsPage />} />
           <Route path="/tasker/settings" element={<TaskerDashboard />} />
+          <Route path="/tasker/submit-task" element={<SubmitTaskPage />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
