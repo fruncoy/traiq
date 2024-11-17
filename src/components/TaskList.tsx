@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, ArrowRight, Edit, Trash2 } from "lucide-react";
+import { Clock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -57,14 +57,35 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const { data: tasks = sampleTasks, refetch } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
+      // This would be replaced with actual API call
       return sampleTasks.filter(task => task.currentBids < task.bidsNeeded);
     }
   });
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      // This would be replaced with actual API call
-      toast.success("Bid request sent to admin");
+      // Simulate API call
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error("Task not found");
+      
+      // Check if user has enough bids
+      const availableBids = 5; // This would come from user context/API
+      if (availableBids <= 0) {
+        throw new Error("No bids available");
+      }
+
+      return Promise.resolve({ success: true });
+    },
+    onSuccess: () => {
+      toast.success("Bid placed successfully!");
+      refetch();
+    },
+    onError: (error: Error) => {
+      if (error.message === "No bids available") {
+        toast.error("You don't have enough bids. Please purchase more.");
+      } else {
+        toast.error("Failed to place bid. Please try again.");
+      }
     }
   });
 
@@ -104,8 +125,9 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
                       <Button 
                         className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                         onClick={() => handleBidNow(task.id)}
+                        disabled={bidMutation.isPending}
                       >
-                        Bid Now
+                        {bidMutation.isPending ? "Bidding..." : "Bid Now"}
                       </Button>
                     )}
                   </div>
