@@ -12,8 +12,7 @@ interface SubmittedTask {
   title: string;
   submittedAt: string;
   status: "accepted" | "failed";
-  reason?: string;
-  file?: string;
+  amount?: number;
 }
 
 const submittedTasks: SubmittedTask[] = [
@@ -22,14 +21,13 @@ const submittedTasks: SubmittedTask[] = [
     title: "Translate Short Stories",
     submittedAt: "2024-02-20",
     status: "accepted",
-    file: "translation.pdf"
+    amount: 500
   },
   {
     id: "2",
     title: "Cultural Essays",
     submittedAt: "2024-02-19",
-    status: "failed",
-    reason: "Low quality translation"
+    status: "failed"
   }
 ];
 
@@ -99,15 +97,12 @@ const SubmitTaskPage = () => {
                   <div>
                     <h3 className="font-semibold">{task.title}</h3>
                     <p className="text-sm text-gray-500">Submitted: {task.submittedAt}</p>
-                    {task.reason && (
-                      <p className="text-sm text-red-500">Reason: {task.reason}</p>
-                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {task.file && (
-                      <Button variant="outline" size="sm">
-                        Download
-                      </Button>
+                  <div className="flex items-center gap-4">
+                    {task.amount && (
+                      <span className="font-semibold text-[#1E40AF]">
+                        KES {task.amount}
+                      </span>
                     )}
                     <Badge
                       variant={task.status === "accepted" ? "default" : "destructive"}

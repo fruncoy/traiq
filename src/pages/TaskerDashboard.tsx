@@ -5,6 +5,7 @@ import BiddingSection from "../components/tasker/BiddingSection";
 import BuyBidsSection from "../components/tasker/BuyBidsSection";
 import TaskerSettings from "../components/tasker/TaskerSettings";
 import { useLocation } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 
 const TaskerDashboard = () => {
   const location = useLocation();
@@ -36,6 +37,12 @@ const TaskerDashboard = () => {
         return (
           <>
             <DashboardMetrics metrics={metrics} />
+            <Card className="mt-6">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-2">Account Balance</h3>
+                <p className="text-2xl font-bold text-[#1E40AF]">KES 0</p>
+              </CardContent>
+            </Card>
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
               <TaskList />
