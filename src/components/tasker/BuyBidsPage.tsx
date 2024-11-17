@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
+import Sidebar from "../Sidebar";
 
 interface BidPackage {
   id: string;
@@ -57,7 +58,8 @@ const BuyBidsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <Sidebar>
+      <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Current Balance</CardTitle>
@@ -121,7 +123,8 @@ const BuyBidsPage = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </Sidebar>
   );
 };
 
