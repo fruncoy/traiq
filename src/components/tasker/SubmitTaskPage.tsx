@@ -1,118 +1,78 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
+import { toast } from "sonner";
 import Sidebar from "../Sidebar";
 
-interface SubmittedTask {
-  id: string;
-  title: string;
-  submittedAt: string;
-  status: "accepted" | "failed";
-  amount?: number;
-}
-
-const submittedTasks: SubmittedTask[] = [
-  {
-    id: "1",
-    title: "Translate Short Stories",
-    submittedAt: "2024-02-20",
-    status: "accepted",
-    amount: 500
-  },
-  {
-    id: "2",
-    title: "Cultural Essays",
-    submittedAt: "2024-02-19",
-    status: "failed"
-  }
-];
-
 const SubmitTaskPage = () => {
-  const [selectedTask, setSelectedTask] = useState("");
-  const [message, setMessage] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleSubmit = () => {
-    if (!selectedTask) {
-      toast.error("Please select a task");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) {
+      toast.error("Please select a file to upload");
       return;
     }
-    toast.success("Task submitted successfully");
+
+    setUploading(true);
+    try {
+      // Simulate file upload
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast.success("Task submitted successfully!");
+      setFile(null);
+      // Reset file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+    } catch (error) {
+      toast.error("Failed to upload file. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <Sidebar>
-      <div className="space-y-6">
+      <div className="p-6">
         <Card>
           <CardHeader>
-            <CardTitle>Submit Task</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <select
-              className="w-full p-2 border rounded-md"
-              value={selectedTask}
-              onChange={(e) => setSelectedTask(e.target.value)}
-            >
-              <option value="">Select Task</option>
-              <option value="1">Translate Short Stories</option>
-              <option value="2">Cultural Essays</option>
-            </select>
-
-            <div className="border-2 border-dashed rounded-lg p-6 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <div className="mt-2">
-                <Button variant="outline">Upload File</Button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                PDF, DOC, DOCX up to 10MB
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Message</label>
-              <Textarea
-                placeholder="Add any notes or comments about your submission"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-            </div>
-
-            <Button onClick={handleSubmit} className="w-full">
-              Submit Task
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Submission History</CardTitle>
+            <CardTitle>Submit Completed Task</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {submittedTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-semibold">{task.title}</h3>
-                    <p className="text-sm text-gray-500">Submitted: {task.submittedAt}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {task.amount && (
-                      <span className="font-semibold text-[#1E40AF]">
-                        KES {task.amount}
-                      </span>
-                    )}
-                    <Badge
-                      variant={task.status === "accepted" ? "default" : "destructive"}
-                    >
-                      {task.status}
-                    </Badge>
-                  </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Upload Task File</label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="file"
+                    onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,.txt"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!file || uploading}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload size={16} />
+                    {uploading ? "Uploading..." : "Submit"}
+                  </Button>
                 </div>
-              ))}
-            </div>
+                {file && (
+                  <p className="text-sm text-gray-600">
+                    Selected file: {file.name}
+                  </p>
+                )}
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>

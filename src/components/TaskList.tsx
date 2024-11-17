@@ -57,23 +57,27 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const { data: tasks = sampleTasks, refetch } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      // This would be replaced with actual API call
       return sampleTasks.filter(task => task.currentBids < task.bidsNeeded);
+    }
+  });
+
+  const { data: userBids = 0 } = useQuery({
+    queryKey: ['user-bids'],
+    queryFn: async () => {
+      // This would be replaced with actual API call
+      return 0; // Setting initial balance to 0
     }
   });
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      // Simulate API call
+      if (userBids <= 0) {
+        throw new Error("insufficient_bids");
+      }
+      
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error("Task not found");
       
-      // Check if user has enough bids
-      const availableBids = 5; // This would come from user context/API
-      if (availableBids <= 0) {
-        throw new Error("No bids available");
-      }
-
       return Promise.resolve({ success: true });
     },
     onSuccess: () => {
@@ -81,8 +85,8 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       refetch();
     },
     onError: (error: Error) => {
-      if (error.message === "No bids available") {
-        toast.error("You don't have enough bids. Please purchase more.");
+      if (error.message === "insufficient_bids") {
+        toast.error("Insufficient bids. Please purchase more bids to continue.");
       } else {
         toast.error("Failed to place bid. Please try again.");
       }
@@ -98,7 +102,12 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   return (
     <div className="space-y-4">
       {showViewMore && (
-        <h2 className="text-xl font-semibold mb-4">Available Tasks</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Available Tasks</h2>
+          <div className="text-sm text-gray-600">
+            Available Bids: <span className="font-semibold">{userBids}</span>
+          </div>
+        </div>
       )}
       <div className="grid gap-4">
         {displayedTasks.map((task) => (
@@ -117,7 +126,12 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
                       <span>{task.workingTime}</span>
                     </div>
                     <p className="text-sm text-gray-600">Posted: {task.datePosted}</p>
-                    <p className="text-sm text-gray-600">Bids: {task.currentBids}/{task.bidsNeeded}</p>
+                    <p className="text-sm text-gray-600">
+                      Bids: {task.currentBids}/{task.bidsNeeded}
+                      <span className="ml-2 text-blue-600">
+                        (Requires {task.bidsNeeded} bids)
+                      </span>
+                    </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
@@ -125,9 +139,9 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
                       <Button 
                         className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                         onClick={() => handleBidNow(task.id)}
-                        disabled={bidMutation.isPending}
+                        disabled={bidMutation.isPending || userBids <= 0}
                       >
-                        {bidMutation.isPending ? "Bidding..." : "Bid Now"}
+                        {bidMutation.isPending ? "Bidding..." : userBids <= 0 ? "No Bids Available" : "Bid Now"}
                       </Button>
                     )}
                   </div>
