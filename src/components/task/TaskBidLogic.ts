@@ -1,7 +1,6 @@
 import { Task, TaskCategory } from "@/types/task";
 import { toast } from "sonner";
 import { 
-  calculateBidsRequired, 
   calculatePayout,
   calculateTaskerPayout,
   generateTaskDescription 
@@ -23,7 +22,7 @@ export const handleTaskBid = async (
   if (!task) throw new Error("Task not found");
 
   const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-  const bidsRequired = calculateBidsRequired(task.category);
+  const bidsRequired = 1; // Each bid costs 1 point
   
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
   if (task.bidders?.includes(userId)) throw new Error("already_bid");
@@ -43,7 +42,8 @@ export const handleTaskBid = async (
   // Check if task should become active (has enough bids)
   if (task.currentBids >= task.bidsNeeded) {
     task.status = "active";
-    task.selectedTaskers = task.bidders.slice(0, 5); // Select first 5 bidders
+    // Select first 5 bidders for payment
+    task.selectedTaskers = task.bidders.slice(0, 5);
     
     // Add notification for selected taskers
     const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
@@ -51,7 +51,7 @@ export const handleTaskBid = async (
       notifications.unshift({
         id: Date.now().toString(),
         title: "Task Assignment",
-        message: `You've been selected for "${task.title}"`,
+        message: `You've been selected for "${task.title}" (ID: ${task.code})`,
         type: "success",
         date: new Date().toISOString()
       });
@@ -69,11 +69,16 @@ export const handleTaskBid = async (
     id: Date.now().toString(),
     type: task.status === "active" ? "approval" : "pending",
     message: task.status === "active" 
-      ? `Task "${task.title}" is now active with all required bids`
-      : `New bid placed on task "${task.title}"`,
+      ? `Task "${task.title}" (ID: ${task.code}) is now active with all required bids`
+      : `New bid placed on task "${task.title}" (ID: ${task.code})`,
     timestamp: new Date().toISOString()
   });
   localStorage.setItem('activities', JSON.stringify(activities));
+
+  // Add to user's active tasks immediately
+  const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
+  userActiveTasks.push(task);
+  localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
 
   return task;
 };
@@ -97,7 +102,7 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     taskerPayout,
     platformFee: payout - taskerPayout,
     workingTime: selectedCategory === "long_essay" ? "2-3 hours" : "1-2 hours",
-    bidsNeeded: 10,
+    bidsNeeded: 10, // All tasks require 10 bids
     currentBids: 0,
     datePosted: new Date().toISOString(),
     status: "pending",

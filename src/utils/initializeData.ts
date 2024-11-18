@@ -20,13 +20,8 @@ export const generateTaskDescription = (category: TaskCategory) => {
   }
 };
 
-export const calculateBidsRequired = (category: TaskCategory): number => {
-  switch (category) {
-    case "long_essay":
-      return 10; // 10 bids for 1000 KES tasks
-    default:
-      return 5; // 5 bids for 500 KES tasks
-  }
+export const calculateBidsRequired = () => {
+  return 10; // All tasks require 10 bids
 };
 
 export const calculatePayout = (category: TaskCategory): number => {
@@ -46,38 +41,29 @@ export const calculatePlatformFee = (payout: number, taskerPayout: number): numb
   return payout - taskerPayout;
 };
 
-const generateTaskCode = () => {
-  const prefix = 'TSK';
-  const timestamp = Date.now().toString().slice(-6);
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `${prefix}${timestamp}${random}`;
-};
-
-const generateTask = (category: TaskCategory): Task => {
-  const payout = calculatePayout(category);
-  const taskerPayout = calculateTaskerPayout(category);
-  
-  return {
-    id: Date.now().toString(),
-    code: generateTaskCode(),
-    title: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
-    description: generateTaskDescription(category),
-    category,
-    payout,
-    taskerPayout,
-    platformFee: calculatePlatformFee(payout, taskerPayout),
-    workingTime: category === "long_essay" ? "2-3 hours" : "1-2 hours",
-    bidsNeeded: calculateBidsRequired(category),
-    currentBids: 0,
-    datePosted: new Date().toISOString(),
-    status: "pending",
-    bidders: [],
-    selectedTaskers: []
-  };
-};
-
 export const initializeDefaultTasks = () => {
-  const defaultTasks = taskCategories.map(category => generateTask(category));
+  const defaultTasks = taskCategories.map(category => {
+    const payout = calculatePayout(category);
+    const taskerPayout = calculateTaskerPayout(category);
+    
+    return {
+      id: Date.now().toString(),
+      code: `TSK${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      title: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
+      description: generateTaskDescription(category),
+      category,
+      payout,
+      taskerPayout,
+      platformFee: calculatePlatformFee(payout, taskerPayout),
+      workingTime: category === "long_essay" ? "2-3 hours" : "1-2 hours",
+      bidsNeeded: 10,
+      currentBids: 0,
+      datePosted: new Date().toISOString(),
+      status: "pending",
+      bidders: [],
+      selectedTaskers: []
+    };
+  });
   
   localStorage.setItem('tasks', JSON.stringify(defaultTasks));
   localStorage.setItem('userBids', '5'); // Start with 5 bids
