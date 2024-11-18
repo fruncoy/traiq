@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, DollarSign, Users, Settings, LogOut, Bell, Upload, CreditCard } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  ClipboardList, 
+  DollarSign, 
+  Users, 
+  Settings, 
+  LogOut, 
+  Bell, 
+  Upload, 
+  CreditCard,
+  Briefcase 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -27,6 +38,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
     { name: "Buy Bids", path: "/tasker/buy-bids", icon: CreditCard },
     { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
+    { name: "Bidded Tasks", path: "/tasker/bidded-tasks", icon: Briefcase },
     { name: "Submit Task", path: "/tasker/submit-task", icon: Upload },
     { name: "Notifications", path: "/tasker/notifications", icon: Bell },
     { name: "Settings", path: "/tasker/settings", icon: Settings },
@@ -80,6 +92,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
              location.pathname === "/tasker" ? "Dashboard" :
              location.pathname === "/tasker/buy-bids" ? "Buy Bids" :
              location.pathname === "/tasker/tasks" ? "Tasks" :
+             location.pathname === "/tasker/bidded-tasks" ? "Bidded Tasks" :
              location.pathname === "/tasker/submit-task" ? "Submit Task" :
              location.pathname === "/tasker/notifications" ? "Notifications" : "Settings"}
           </h1>

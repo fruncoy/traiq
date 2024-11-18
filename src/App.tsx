@@ -16,6 +16,7 @@ import TaskerDashboard from "./pages/TaskerDashboard";
 import NotificationsPage from "./components/tasker/NotificationsPage";
 import BuyBidsPage from "./components/tasker/BuyBidsPage";
 import SubmitTaskPage from "./components/tasker/SubmitTaskPage";
+import BiddedTasksPage from "./components/tasker/BiddedTasksPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +51,7 @@ const App = () => {
             <Route path="/tasker/notifications" element={<NotificationsPage />} />
             <Route path="/tasker/settings" element={<TaskerDashboard />} />
             <Route path="/tasker/submit-task" element={<SubmitTaskPage />} />
+            <Route path="/tasker/bidded-tasks" element={<BiddedTasksPage />} />
           </Routes>
         </BrowserRouter>
         <Sonner />
