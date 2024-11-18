@@ -115,17 +115,23 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       </div>
 
       <div className="grid gap-4">
-        {displayedTasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onBid={(taskId) => bidMutation.mutate(taskId)}
-            isAdmin={isAdmin}
-            userBids={userBids}
-            isPending={bidMutation.isPending}
-            hidePayouts={!isAdmin}
-          />
-        ))}
+        {displayedTasks.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            There are no available tasks at the moment. Please check back later.
+          </div>
+        ) : (
+          displayedTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onBid={(taskId) => bidMutation.mutate(taskId)}
+              isAdmin={isAdmin}
+              userBids={userBids}
+              isPending={bidMutation.isPending}
+              hidePayouts={!isAdmin}
+            />
+          ))
+        )}
       </div>
 
       {showViewMore && !isAdmin && tasks.length > 0 && (

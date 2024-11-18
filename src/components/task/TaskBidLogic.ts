@@ -20,7 +20,7 @@ export const handleTaskBid = async (
   if (!task) throw new Error("Task not found");
 
   const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-  const bidsRequired = 1;
+  const bidsRequired = task.payout === 1000 ? 10 : 5;
   
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
   
@@ -42,7 +42,7 @@ export const handleTaskBid = async (
   userActiveTasks.push(updatedTask);
   localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
 
-  // Update tasks in localStorage without removing other tasks
+  // Update tasks in localStorage
   const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
@@ -52,14 +52,11 @@ export const handleTaskBid = async (
 export const processTaskSubmission = async (task: Task) => {
   console.log("Processing task submission for:", task.id);
   
-  // Wait 10 seconds before processing
   await new Promise(resolve => setTimeout(resolve, 10000));
   
-  // Calculate payout based on task type and generate rating
   const taskerPayout = task.payout === 1000 ? 500 : 250;
   const rating = Math.floor(Math.random() * (70 - 60 + 1)) + 60;
   
-  // Add notification
   const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
   notifications.unshift({
     id: Date.now().toString(),
@@ -70,7 +67,6 @@ export const processTaskSubmission = async (task: Task) => {
   });
   localStorage.setItem('notifications', JSON.stringify(notifications));
 
-  // Update user earnings
   const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
   const userId = 'current-user-id';
   userEarnings[userId] = (userEarnings[userId] || 0) + taskerPayout;
@@ -109,4 +105,19 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     rating: 0,
     totalRatings: 0
   };
+};
+
+export const resetSystem = () => {
+  localStorage.clear();
+  localStorage.setItem('userBids', '5');
+  localStorage.setItem('tasks', '[]');
+  localStorage.setItem('userActiveTasks', '[]');
+  localStorage.setItem('taskSubmissions', '[]');
+  localStorage.setItem('notifications', '[]');
+  localStorage.setItem('activities', '[]');
+  localStorage.setItem('categoryPopularity', '{}');
+  localStorage.setItem('totalSpent', '0');
+  localStorage.setItem('potentialEarnings', '0');
+  localStorage.setItem('userEarnings', '{}');
+  localStorage.setItem('financeRecords', '[]');
 };
