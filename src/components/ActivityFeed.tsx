@@ -2,6 +2,7 @@ import { Activity, ActivityType } from "@/types/activity";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const getActivityIcon = (type: ActivityType) => {
   switch (type) {
@@ -16,11 +17,16 @@ const getActivityIcon = (type: ActivityType) => {
   }
 };
 
-interface ActivityFeedProps {
-  activities: Activity[];
-}
+const ActivityFeed = () => {
+  const { data: activities = [] } = useQuery({
+    queryKey: ['activities'],
+    queryFn: async () => {
+      const storedActivities = localStorage.getItem('activities');
+      return storedActivities ? JSON.parse(storedActivities) : [];
+    },
+    refetchInterval: 5000 // Refresh every 5 seconds
+  });
 
-const ActivityFeed = ({ activities }: ActivityFeedProps) => {
   return (
     <Card className="col-span-1">
       <CardHeader>
@@ -29,7 +35,7 @@ const ActivityFeed = ({ activities }: ActivityFeedProps) => {
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
-            {activities.map((activity) => (
+            {activities.map((activity: Activity) => (
               <div
                 key={activity.id}
                 className="flex items-start space-x-4 rounded-lg p-3 transition-colors hover:bg-gray-100"
@@ -41,6 +47,9 @@ const ActivityFeed = ({ activities }: ActivityFeedProps) => {
                 </div>
               </div>
             ))}
+            {activities.length === 0 && (
+              <p className="text-center text-gray-500">No recent activity</p>
+            )}
           </div>
         </ScrollArea>
       </CardContent>

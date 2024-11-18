@@ -5,28 +5,25 @@ import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { Task } from "@/types/task";
 
-const sampleTasks: Task[] = [
-  {
-    id: "1",
-    title: "Content Writing Task",
-    description: "Write a 1000-word article about renewable energy",
-    payout: 500,
-    workingTime: "2 hours",
-    bidsNeeded: 5,
+const generateNewTask = (highPayingPreferred: boolean): Task => {
+  const baseTask = highPayingPreferred ? {
+    payout: Math.floor(Math.random() * (1000 - 500) + 500),
+    workingTime: "2-3 hours"
+  } : {
+    payout: Math.floor(Math.random() * (400 - 200) + 200),
+    workingTime: "1-2 hours"
+  };
+
+  return {
+    id: Date.now().toString(),
+    title: `Content Writing Task ${Date.now()}`,
+    description: "Write engaging content for our platform",
+    ...baseTask,
+    bidsNeeded: 10,
     currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0]
-  },
-  {
-    id: "2",
-    title: "Data Entry Project",
-    description: "Enter customer information into database",
-    payout: 300,
-    workingTime: "1 hour",
-    bidsNeeded: 3,
-    currentBids: 0,
-    datePosted: new Date().toISOString().split('T')[0]
-  }
-];
+  };
+};
 
 const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
   limit?: number;
@@ -35,11 +32,11 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 }) => {
   const queryClient = useQueryClient();
 
-  const { data: tasks = sampleTasks, refetch } = useQuery({
+  const { data: tasks = [], refetch } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
-      return storedTasks ? JSON.parse(storedTasks) : sampleTasks;
+      return storedTasks ? JSON.parse(storedTasks) : [];
     }
   });
 
@@ -62,63 +59,69 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       // Update user's bids
       localStorage.setItem('userBids', (currentBids - 1).toString());
       
-      // Update task's current bids and store in user's active tasks
+      // Update task's current bids
       task.currentBids += 1;
       const updatedTasks = tasks.map(t => t.id === taskId ? task : t);
-      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
       
-      // Add to user's earnings potential
-      const currentEarnings = parseFloat(localStorage.getItem('potentialEarnings') || '0');
-      localStorage.setItem('potentialEarnings', (currentEarnings + task.payout).toString());
-      
-      // Add to user's bids history
-      const userBids = JSON.parse(localStorage.getItem('userBidHistory') || '[]');
-      userBids.push({
-        id: Date.now().toString(),
-        taskId: task.id,
-        taskTitle: task.title,
-        bidAmount: task.payout,
-        status: task.currentBids >= task.bidsNeeded ? "active" : "pending",
-        submittedAt: new Date().toISOString()
-      });
-      localStorage.setItem('userBidHistory', JSON.stringify(userBids));
-      
-      // If task reaches bid limit, mark as active
+      // If task reaches bid limit, move to active and generate new task
       if (task.currentBids >= task.bidsNeeded) {
         task.status = "active";
         const activeTasks = JSON.parse(localStorage.getItem('activeTasks') || '[]');
         activeTasks.push(task);
         localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
         
-        // Remove task from available tasks
-        const remainingTasks = tasks.filter(t => t.id !== taskId);
+        // Generate new similar task based on payout preference
+        const highPayingPreferred = task.payout >= 500;
+        const newTask = generateNewTask(highPayingPreferred);
+        updatedTasks.push(newTask);
+        
+        // Remove completed task from available tasks
+        const remainingTasks = updatedTasks.filter(t => t.id !== taskId);
         localStorage.setItem('tasks', JSON.stringify(remainingTasks));
+        
+        // Add activity
+        const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+        activities.unshift({
+          id: Date.now().toString(),
+          type: "approval",
+          message: `Task "${task.title}" is now active`,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('activities', JSON.stringify(activities));
+      } else {
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
       }
       
       return task;
     },
     onSuccess: (task) => {
       if (task.currentBids >= task.bidsNeeded) {
-        toast.success("Congratulations! You've been assigned the task.", {
-          description: "You can now submit your work in the Submit Task page."
+        toast.success("Task is now active!", {
+          description: "The task has received all required bids and is ready to start."
         });
       } else {
-        toast.success("Bid placed successfully!");
+        toast.success("Bid placed successfully!", {
+          description: `${task.bidsNeeded - task.currentBids} bids remaining for this task.`
+        });
       }
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
       refetch();
     },
     onError: (error: Error) => {
       if (error.message === "insufficient_bids") {
-        toast.error("Insufficient bids. Please purchase more bids to continue.", {
+        toast.error("Insufficient bids", {
+          description: "Please purchase more bids to continue.",
           action: {
             label: "Buy Bids",
             onClick: () => window.location.href = "/tasker/buy-bids"
           }
         });
       } else {
-        toast.error("Failed to place bid. Please try again.");
+        toast.error("Failed to place bid", {
+          description: "Please try again later."
+        });
       }
     }
   });
