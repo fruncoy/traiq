@@ -1,10 +1,6 @@
 import { Task, TaskCategory } from "@/types/task";
 import { toast } from "sonner";
-import { 
-  calculatePayout,
-  calculateTaskerPayout,
-  generateTaskDescription 
-} from "@/utils/initializeData";
+import { generateTaskDescription } from "@/utils/initializeData";
 
 const generateUniqueTaskCode = () => {
   const prefix = 'TSK';
@@ -27,12 +23,6 @@ export const handleTaskBid = async (
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
   if (task.bidders?.includes(userId)) throw new Error("already_bid");
 
-  // Check if task has expired
-  const deadline = new Date(task.deadline);
-  if (deadline < new Date()) {
-    throw new Error("task_expired");
-  }
-
   // Update category popularity
   const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
   popularityData[task.category] = (popularityData[task.category] || 0) + 1;
@@ -45,58 +35,15 @@ export const handleTaskBid = async (
   task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
 
-  // Check if task has reached required bids (10)
-  if (task.currentBids >= 10) {
-    task.status = "active";
-    console.log("Task reached 10 bids, waiting for submissions...");
+  // Check if task has reached required bids
+  if (task.currentBids >= task.bidsNeeded) {
+    task.status = "completed";
+    console.log(`Task reached ${task.bidsNeeded} bids, marking as completed`);
   }
 
   // Update tasks in localStorage
   const updatedTasks = tasks.map(t => t.id === task.id ? task : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-
-  // Add activity record
-  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-  activities.unshift({
-    id: Date.now().toString(),
-    type: task.status === "active" ? "approval" : "pending",
-    message: task.status === "active" 
-      ? `Task "${task.title}" (ID: ${task.code}) is now active with all required bids`
-      : `New bid placed on task "${task.title}" (ID: ${task.code})`,
-    timestamp: new Date().toISOString()
-  });
-  localStorage.setItem('activities', JSON.stringify(activities));
-
-  // Add to user's active tasks
-  const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
-  if (!userActiveTasks.some((t: Task) => t.id === task.id)) {
-    userActiveTasks.push(task);
-    localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
-  }
-
-  // Check for expired tasks and generate new ones
-  const now = new Date();
-  const expiredTasks = tasks.filter(t => new Date(t.deadline) < now);
-  if (expiredTasks.length > 0) {
-    const newTasks = expiredTasks.map(() => generateNewTask());
-    const remainingTasks = tasks.filter(t => new Date(t.deadline) >= now);
-    localStorage.setItem('tasks', JSON.stringify([...remainingTasks, ...newTasks]));
-
-    // Add notifications for expired tasks
-    const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-    expiredTasks.forEach(expiredTask => {
-      if (expiredTask.bidders?.includes(userId)) {
-        notifications.unshift({
-          id: Date.now().toString(),
-          title: "Task Expired",
-          message: `Task "${expiredTask.title}" (ID: ${expiredTask.code}) has expired`,
-          type: "warning",
-          date: new Date().toISOString()
-        });
-      }
-    });
-    localStorage.setItem('notifications', JSON.stringify(notifications));
-  }
 
   return task;
 };
@@ -105,7 +52,7 @@ export const processTaskSubmission = async (task: Task) => {
   console.log("Processing task submission...");
   
   // Wait 30-40 seconds before processing payment
-  const delay = Math.floor(Math.random() * (40000 - 30000) + 30000); // Random delay between 30-40 seconds
+  const delay = Math.floor(Math.random() * (40000 - 30000) + 30000);
   
   await new Promise(resolve => setTimeout(resolve, delay));
   
@@ -113,13 +60,16 @@ export const processTaskSubmission = async (task: Task) => {
   const shuffledBidders = task.bidders.sort(() => Math.random() - 0.5);
   task.selectedTaskers = shuffledBidders.slice(0, 5);
   
+  // Calculate payout based on task type
+  const taskerPayout = task.bidsNeeded * 40 * 1.25; // bidsNeeded * 40 * 1.25
+  
   // Add notification for selected taskers
   const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
   task.selectedTaskers.forEach(taskerId => {
     notifications.unshift({
       id: Date.now().toString(),
       title: "Payment Processed",
-      message: `Your submission for "${task.title}" (ID: ${task.code}) has been approved and payment processed`,
+      message: `Your submission for "${task.title}" (ID: ${task.code}) has been approved. Payment of KES ${taskerPayout} processed`,
       type: "success",
       date: new Date().toISOString()
     });
@@ -129,7 +79,7 @@ export const processTaskSubmission = async (task: Task) => {
   // Update user earnings for selected taskers
   const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
   task.selectedTaskers.forEach(taskerId => {
-    userEarnings[taskerId] = (userEarnings[taskerId] || 0) + task.taskerPayout;
+    userEarnings[taskerId] = (userEarnings[taskerId] || 0) + taskerPayout;
   });
   localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   
@@ -143,9 +93,10 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     .sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] as TaskCategory || 'short_essay';
 
   const selectedCategory = category || mostPopularCategory;
-  const payout = calculatePayout(selectedCategory);
-  const taskerPayout = calculateTaskerPayout(selectedCategory);
-  const bidsNeeded = payout === 1000 ? 10 : 5;
+  const isLongEssay = selectedCategory === 'long_essay';
+  const payout = isLongEssay ? 1000 : 500;
+  const bidsNeeded = isLongEssay ? 10 : 5;
+  const taskerPayout = bidsNeeded * 40 * 1.25; // bidsNeeded * 40 * 1.25
 
   return {
     id: Date.now().toString(),
@@ -156,15 +107,32 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     payout,
     taskerPayout,
     platformFee: payout - taskerPayout,
-    workingTime: selectedCategory === "long_essay" ? "2-3 hours" : "1-2 hours",
+    workingTime: isLongEssay ? "2-3 hours" : "1-2 hours",
     bidsNeeded,
     currentBids: 0,
     datePosted: new Date().toISOString(),
-    deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+    deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     status: "pending",
     bidders: [],
     selectedTaskers: [],
     rating: 0,
     totalRatings: 0
   };
+};
+
+// Reset system data
+export const resetSystem = () => {
+  localStorage.clear();
+  localStorage.setItem('userBids', '5');
+  localStorage.setItem('tasks', '[]');
+  localStorage.setItem('userActiveTasks', '[]');
+  localStorage.setItem('activeTasks', '[]');
+  localStorage.setItem('taskSubmissions', '[]');
+  localStorage.setItem('notifications', '[]');
+  localStorage.setItem('activities', '[]');
+  localStorage.setItem('categoryPopularity', '{}');
+  localStorage.setItem('totalSpent', '0');
+  localStorage.setItem('potentialEarnings', '0');
+  localStorage.setItem('userEarnings', '{}');
+  localStorage.setItem('financeRecords', '[]');
 };

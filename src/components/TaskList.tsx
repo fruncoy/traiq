@@ -36,8 +36,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       }
 
       return tasks;
-    },
-    refetchInterval: 5000 // Refresh every 5 seconds for real-time updates
+    }
   });
 
   const { data: userBids = 0 } = useQuery({
@@ -114,10 +113,12 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         </div>
       )}
 
-      <TaskFilters 
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-      />
+      <div className="relative z-50 mb-8">
+        <TaskFilters 
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
+      </div>
 
       <div className="grid gap-4">
         {displayedTasks.map((task) => (
