@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { 
   calculateBidsRequired, 
   calculatePayout,
-  calculateTaskerPayout 
+  calculateTaskerPayout,
+  generateTaskDescription 
 } from "@/utils/initializeData";
 
 export const handleTaskBid = async (
@@ -92,6 +93,7 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     workingTime: selectedCategory === "long_essay" ? "2-3 hours" : "1-2 hours",
     bidsNeeded: 10,
     currentBids: 0,
+    datePosted: new Date().toISOString(),
     bidders: [],
     selectedTaskers: []
   };
