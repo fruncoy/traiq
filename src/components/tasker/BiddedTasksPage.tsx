@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
 import { Task } from "@/types/task";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 const BiddedTasksPage = () => {
   const { data: userTasks = [] } = useQuery({
@@ -13,6 +13,19 @@ const BiddedTasksPage = () => {
       return tasks ? JSON.parse(tasks) : [];
     }
   });
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return 'Invalid date';
+      }
+      return format(date, "MMM d, yyyy");
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
 
   return (
     <Sidebar>
@@ -32,7 +45,7 @@ const BiddedTasksPage = () => {
                         <p className="text-sm text-gray-600">ID: {task.code}</p>
                       </div>
                       <Badge variant="outline">
-                        Deadline: {format(new Date(task.deadline), "MMM d, yyyy")}
+                        Deadline: {formatDate(task.deadline)}
                       </Badge>
                     </div>
                   </div>
