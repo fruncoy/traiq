@@ -41,6 +41,13 @@ export const calculatePlatformFee = (payout: number, taskerPayout: number): numb
   return payout - taskerPayout;
 };
 
+export const generateUniqueTaskCode = () => {
+  const prefix = 'TSK';
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}${timestamp}${random}`;
+};
+
 export const initializeDefaultTasks = () => {
   const defaultTasks = taskCategories.map(category => {
     const payout = calculatePayout(category);
@@ -48,7 +55,7 @@ export const initializeDefaultTasks = () => {
     
     return {
       id: Date.now().toString(),
-      code: `TSK${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      code: generateUniqueTaskCode(),
       title: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
       description: generateTaskDescription(category),
       category,
@@ -56,7 +63,7 @@ export const initializeDefaultTasks = () => {
       taskerPayout,
       platformFee: calculatePlatformFee(payout, taskerPayout),
       workingTime: category === "long_essay" ? "2-3 hours" : "1-2 hours",
-      bidsNeeded: 10,
+      bidsNeeded: 10, // All tasks require 10 bids
       currentBids: 0,
       datePosted: new Date().toISOString(),
       status: "pending",

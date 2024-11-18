@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, Users } from "lucide-react";
+import { Clock, Users, Hash } from "lucide-react";
 import { Task } from "@/types/task";
 import { toast } from "sonner";
 
@@ -31,8 +31,14 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
       <CardContent className="p-6">
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold">{task.title}</h3>
-            <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold">{task.title}</h3>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Hash size={16} />
+                <span>{task.code}</span>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">{task.description}</p>
           </div>
           
           <div className="flex items-center justify-between">
@@ -47,12 +53,17 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
               </div>
               {!isAdmin && (
                 <p className="text-sm text-blue-600">
-                  Requires {task.bidsNeeded} bids
+                  Requires 10 bids (5 paid positions)
                 </p>
               )}
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
+              <div className="text-right">
+                <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
+                {!isAdmin && (
+                  <p className="text-sm text-gray-600">Tasker: KES {task.taskerPayout}</p>
+                )}
+              </div>
               {!isAdmin && (
                 <Button 
                   className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
