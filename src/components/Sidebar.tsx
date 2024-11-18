@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Gavel, DollarSign, Users, Settings, LogOut, Bell, Upload, CreditCard } from "lucide-react";
+import { LayoutDashboard, ClipboardList, DollarSign, Users, Settings, LogOut, Bell, Upload, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -18,7 +18,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
     { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
     { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload },
-    { name: "Bidding", path: "/admin/bidding", icon: Gavel },
     { name: "Finances", path: "/admin/finances", icon: DollarSign },
     { name: "Taskers", path: "/admin/taskers", icon: Users },
     { name: "Settings", path: "/admin/settings", icon: Settings },
@@ -29,7 +28,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Buy Bids", path: "/tasker/buy-bids", icon: CreditCard },
     { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
     { name: "Submit Task", path: "/tasker/submit-task", icon: Upload },
-    { name: "Bidding", path: "/tasker/bidding", icon: Gavel },
     { name: "Notifications", path: "/tasker/notifications", icon: Bell },
     { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
@@ -39,24 +37,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const handleLogout = () => {
     toast.success("Successfully logged out");
     navigate("/");
-  };
-
-  const getHeaderTitle = (pathname: string) => {
-    if (isAdmin) {
-      return pathname === "/admin" ? "Dashboard" : 
-             pathname === "/admin/tasks" ? "Tasks" :
-             pathname === "/admin/submitted-tasks" ? "Submitted Tasks" :
-             pathname === "/admin/bidding" ? "Bidding" :
-             pathname === "/admin/finances" ? "Finances" :
-             pathname === "/admin/taskers" ? "Taskers" : "Settings";
-    } else {
-      return pathname === "/tasker" ? "Dashboard" : 
-             pathname === "/tasker/buy-bids" ? "Buy Bids" :
-             pathname === "/tasker/tasks" ? "Tasks" :
-             pathname === "/tasker/submit-task" ? "Submit Task" :
-             pathname === "/tasker/bidding" ? "Bidding" :
-             pathname === "/tasker/notifications" ? "Notifications" : "Settings";
-    }
   };
 
   return (
@@ -91,7 +71,17 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
           <h1 className="text-xl font-semibold text-gray-800">
-            {getHeaderTitle(location.pathname)}
+            {location.pathname === "/admin" ? "Dashboard" : 
+             location.pathname === "/admin/tasks" ? "Tasks" :
+             location.pathname === "/admin/submitted-tasks" ? "Submitted Tasks" :
+             location.pathname === "/admin/finances" ? "Finances" :
+             location.pathname === "/admin/taskers" ? "Taskers" : 
+             location.pathname === "/admin/settings" ? "Settings" :
+             location.pathname === "/tasker" ? "Dashboard" :
+             location.pathname === "/tasker/buy-bids" ? "Buy Bids" :
+             location.pathname === "/tasker/tasks" ? "Tasks" :
+             location.pathname === "/tasker/submit-task" ? "Submit Task" :
+             location.pathname === "/tasker/notifications" ? "Notifications" : "Settings"}
           </h1>
           <button
             onClick={handleLogout}

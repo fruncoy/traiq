@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { initializeDefaultTasks } from "./utils/initializeData";
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminTasks from "./pages/AdminTasks";
@@ -23,29 +25,37 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/tasks" element={<AdminTasks />} />
-          <Route path="/admin/submitted-tasks" element={<AdminSubmittedTasks />} />
-          <Route path="/admin/finances" element={<AdminFinances />} />
-          <Route path="/admin/taskers" element={<AdminTaskers />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-          <Route path="/tasker" element={<TaskerDashboard />} />
-          <Route path="/tasker/tasks" element={<TaskerDashboard />} />
-          <Route path="/tasker/buy-bids" element={<BuyBidsPage />} />
-          <Route path="/tasker/notifications" element={<NotificationsPage />} />
-          <Route path="/tasker/settings" element={<TaskerDashboard />} />
-          <Route path="/tasker/submit-task" element={<SubmitTaskPage />} />
-        </Routes>
-      </BrowserRouter>
-      <Sonner />
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  useEffect(() => {
+    if (!localStorage.getItem('tasks')) {
+      initializeDefaultTasks();
+    }
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/tasks" element={<AdminTasks />} />
+            <Route path="/admin/submitted-tasks" element={<AdminSubmittedTasks />} />
+            <Route path="/admin/finances" element={<AdminFinances />} />
+            <Route path="/admin/taskers" element={<AdminTaskers />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/tasker" element={<TaskerDashboard />} />
+            <Route path="/tasker/tasks" element={<TaskerDashboard />} />
+            <Route path="/tasker/buy-bids" element={<BuyBidsPage />} />
+            <Route path="/tasker/notifications" element={<NotificationsPage />} />
+            <Route path="/tasker/settings" element={<TaskerDashboard />} />
+            <Route path="/tasker/submit-task" element={<SubmitTaskPage />} />
+          </Routes>
+        </BrowserRouter>
+        <Sonner />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

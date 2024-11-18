@@ -36,7 +36,19 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     queryKey: ['tasks'],
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
-      return storedTasks ? JSON.parse(storedTasks) : [];
+      const tasks = storedTasks ? JSON.parse(storedTasks) : [];
+      
+      // Ensure minimum 3 tasks
+      if (tasks.length < 3) {
+        const newTasks = Array(3 - tasks.length).fill(null).map(() => 
+          generateNewTask(false)
+        );
+        const updatedTasks = [...tasks, ...newTasks];
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+        return updatedTasks;
+      }
+      
+      return tasks;
     }
   });
 
