@@ -10,9 +10,10 @@ interface TaskCardProps {
   isAdmin?: boolean;
   userBids: number;
   isPending: boolean;
+  hidePayouts?: boolean;
 }
 
-const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) => {
+const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = false }: TaskCardProps) => {
   const handleBidClick = () => {
     if (userBids <= 0) {
       toast.error("You have insufficient bids. Please purchase more bids to continue.", {
@@ -72,12 +73,14 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
-                {!isAdmin && (
-                  <p className="text-sm text-gray-600">Tasker: KES {task.taskerPayout}</p>
-                )}
-              </div>
+              {(!hidePayouts || isAdmin) && (
+                <div className="text-right">
+                  <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
+                  {!isAdmin && (
+                    <p className="text-sm text-gray-600">Tasker: KES {task.taskerPayout}</p>
+                  )}
+                </div>
+              )}
               {!isAdmin && (
                 <Button 
                   className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"

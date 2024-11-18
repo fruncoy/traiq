@@ -10,7 +10,7 @@ const NotificationsPage = () => {
       const stored = localStorage.getItem('notifications');
       return stored ? JSON.parse(stored) : [];
     },
-    refetchInterval: 5000 // Refresh every 5 seconds
+    refetchInterval: 5000 // Refresh every 5 seconds for real-time updates
   });
 
   return (

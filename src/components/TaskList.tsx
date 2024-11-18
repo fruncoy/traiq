@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock, Users } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid, generateNewTask } from "./task/TaskBidLogic";
 import { useState } from "react";
@@ -36,7 +36,8 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       }
 
       return tasks;
-    }
+    },
+    refetchInterval: 5000 // Refresh every 5 seconds for real-time updates
   });
 
   const { data: userBids = 0 } = useQuery({
@@ -93,7 +94,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
-  // Filter out tasks that user has already bid on
+  // Filter out only tasks that the current user has bid on
   const userBiddedTaskIds = userActiveTasks.map(task => task.id);
   const availableTasks = tasks.filter(task => 
     !userBiddedTaskIds.includes(task.id) && 
@@ -127,6 +128,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
             isAdmin={isAdmin}
             userBids={userBids}
             isPending={bidMutation.isPending}
+            hidePayouts={!isAdmin}
           />
         ))}
       </div>

@@ -18,7 +18,8 @@ const TaskSubmissionForm = () => {
     queryFn: async () => {
       const tasks = localStorage.getItem('userActiveTasks');
       return tasks ? JSON.parse(tasks) : [];
-    }
+    },
+    refetchInterval: 5000 // Real-time updates
   });
 
   const { data: submissions = [] } = useQuery({
@@ -26,7 +27,8 @@ const TaskSubmissionForm = () => {
     queryFn: async () => {
       const subs = localStorage.getItem('taskSubmissions');
       return subs ? JSON.parse(subs) : [];
-    }
+    },
+    refetchInterval: 5000 // Real-time updates
   });
 
   // Filter out tasks that have already been submitted
@@ -34,6 +36,8 @@ const TaskSubmissionForm = () => {
     !submissions.some((sub: any) => sub.taskId === task.id) &&
     task.status === "active"
   );
+
+  const selectedTaskDetails = availableTasks.find((task: Task) => task.id === selectedTask);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -133,12 +137,17 @@ const TaskSubmissionForm = () => {
             ) : (
               availableTasks.map((task: Task) => (
                 <SelectItem key={task.id} value={task.id}>
-                  {task.title}
+                  {task.title} - KES {task.taskerPayout}
                 </SelectItem>
               ))
             )}
           </SelectContent>
         </Select>
+        {selectedTaskDetails && (
+          <p className="text-sm text-gray-600">
+            Payout: KES {selectedTaskDetails.taskerPayout}
+          </p>
+        )}
       </div>
       
       <div className="space-y-2">
