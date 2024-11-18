@@ -1,7 +1,7 @@
 import { Task, TaskCategory } from "@/types/task";
 
-const MULTIPLIER = 40;
-const PROFIT_MARGIN = 1.25;
+const MULTIPLIER = 50; // Changed to match the required payout calculations
+const PROFIT_MARGIN = 1; // Adjusted to match exact payout requirements
 
 const taskCategories: TaskCategory[] = [
   "short_essay",
@@ -26,11 +26,11 @@ export const generateTaskDescription = (category: TaskCategory) => {
 export const calculateBidsRequired = (category: TaskCategory): number => {
   switch (category) {
     case "long_essay":
-      return 10;
+      return 10; // 10 bids for 1000 KES tasks
     case "short_essay":
     case "item_listing":
     case "voice_recording":
-      return 5;
+      return 5; // 5 bids for 500 KES tasks
     default:
       return 5;
   }
@@ -39,18 +39,18 @@ export const calculateBidsRequired = (category: TaskCategory): number => {
 export const calculatePayout = (category: TaskCategory): number => {
   switch (category) {
     case "long_essay":
-      return 1000;
+      return 1000; // 1000 KES tasks
     case "short_essay":
     case "item_listing":
     case "voice_recording":
-      return 500;
+      return 500; // 500 KES tasks
     default:
       return 500;
   }
 };
 
 export const calculateTaskerPayout = (bidsRequired: number): number => {
-  return bidsRequired * MULTIPLIER * PROFIT_MARGIN;
+  return bidsRequired === 10 ? 500 : 250; // 500 KES for 10-bid tasks, 250 KES for 5-bid tasks
 };
 
 const generateTaskCode = () => {
