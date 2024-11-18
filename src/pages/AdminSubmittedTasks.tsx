@@ -2,20 +2,22 @@ import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-interface SubmittedTask {
-  id: string;
-  taskId: string;
-  taskTitle: string;
-  fileName: string;
-  submittedAt: string;
-  status: string;
-}
+const rejectionReasons = [
+  "Poor quality",
+  "Incomplete work",
+  "Plagiarized content",
+  "Wrong format",
+  "Other"
+];
 
 const AdminSubmittedTasks = () => {
-  const { data: submittedTasks = [] } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data: submittedTasks = [], refetch } = useQuery({
     queryKey: ['submitted-tasks'],
     queryFn: async () => {
       const tasks = localStorage.getItem('taskSubmissions');
@@ -23,8 +25,26 @@ const AdminSubmittedTasks = () => {
     }
   });
 
-  const handleSubmitResult = (taskId: string) => {
-    toast.success("Result submitted successfully");
+  const handleApprove = (taskId: string) => {
+    const tasks = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+    const updatedTasks = tasks.map((task: any) => 
+      task.id === taskId ? { ...task, status: 'approved' } : task
+    );
+    localStorage.setItem('taskSubmissions', JSON.stringify(updatedTasks));
+    queryClient.invalidateQueries({ queryKey: ['submitted-tasks'] });
+    toast.success("Task approved successfully");
+    refetch();
+  };
+
+  const handleReject = (taskId: string, reason: string) => {
+    const tasks = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+    const updatedTasks = tasks.map((task: any) => 
+      task.id === taskId ? { ...task, status: 'rejected', rejectionReason: reason } : task
+    );
+    localStorage.setItem('taskSubmissions', JSON.stringify(updatedTasks));
+    queryClient.invalidateQueries({ queryKey: ['submitted-tasks'] });
+    toast.error("Task rejected");
+    refetch();
   };
 
   return (
@@ -58,19 +78,35 @@ const AdminSubmittedTasks = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    submittedTasks.map((task: SubmittedTask) => (
+                    submittedTasks.map((task: any) => (
                       <TableRow key={task.id}>
                         <TableCell>{task.taskTitle}</TableCell>
                         <TableCell>{task.fileName}</TableCell>
                         <TableCell>{new Date(task.submittedAt).toLocaleDateString()}</TableCell>
                         <TableCell>{task.status}</TableCell>
                         <TableCell>
-                          <Button 
-                            onClick={() => handleSubmitResult(task.id)}
-                            className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
-                          >
-                            Submit Result
-                          </Button>
+                          {task.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <Button 
+                                onClick={() => handleApprove(task.id)}
+                                className="bg-[#1E40AF] hover:bg-[#1E40AF]/90"
+                              >
+                                Approve
+                              </Button>
+                              <Select onValueChange={(value) => handleReject(task.id, value)}>
+                                <SelectTrigger className="w-[180px] bg-white border-[#1E40AF] text-[#1E40AF]">
+                                  <SelectValue placeholder="Reject" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {rejectionReasons.map((reason) => (
+                                    <SelectItem key={reason} value={reason}>
+                                      {reason}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminTasks from "./pages/AdminTasks";
 import AdminSubmittedTasks from "./pages/AdminSubmittedTasks";
-import AdminBidding from "./pages/AdminBidding";
 import AdminFinances from "./pages/AdminFinances";
 import AdminTaskers from "./pages/AdminTaskers";
 import AdminSettings from "./pages/AdminSettings";
@@ -33,19 +32,18 @@ const App = () => (
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/tasks" element={<AdminTasks />} />
           <Route path="/admin/submitted-tasks" element={<AdminSubmittedTasks />} />
-          <Route path="/admin/bidding" element={<AdminBidding />} />
           <Route path="/admin/finances" element={<AdminFinances />} />
           <Route path="/admin/taskers" element={<AdminTaskers />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/tasker" element={<TaskerDashboard />} />
           <Route path="/tasker/tasks" element={<TaskerDashboard />} />
-          <Route path="/tasker/bidding" element={<TaskerDashboard />} />
           <Route path="/tasker/buy-bids" element={<BuyBidsPage />} />
           <Route path="/tasker/notifications" element={<NotificationsPage />} />
           <Route path="/tasker/settings" element={<TaskerDashboard />} />
           <Route path="/tasker/submit-task" element={<SubmitTaskPage />} />
         </Routes>
       </BrowserRouter>
+      <Sonner />
     </TooltipProvider>
   </QueryClientProvider>
 );

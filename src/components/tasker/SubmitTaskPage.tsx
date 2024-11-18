@@ -21,6 +21,15 @@ const SubmitTaskPage = () => {
     }
   });
 
+  const { data: submissions = [] } = useQuery({
+    queryKey: ['my-submissions'],
+    queryFn: async () => {
+      const subs = localStorage.getItem('taskSubmissions');
+      return subs ? JSON.parse(subs) : [];
+    },
+    refetchInterval: 5000
+  });
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
@@ -40,7 +49,6 @@ const SubmitTaskPage = () => {
 
     setUploading(true);
     try {
-      // Store submission in localStorage
       const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
       submissions.push({
         id: Date.now().toString(),
@@ -57,7 +65,6 @@ const SubmitTaskPage = () => {
       });
       setFile(null);
       setSelectedTask("");
-      // Reset file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     } catch (error) {
@@ -69,7 +76,7 @@ const SubmitTaskPage = () => {
 
   return (
     <Sidebar>
-      <div className="p-6">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Submit Completed Task</CardTitle>
@@ -79,11 +86,11 @@ const SubmitTaskPage = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Task</label>
                 <Select value={selectedTask} onValueChange={setSelectedTask}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white border-[#1E40AF] text-[#1E40AF]">
                     <SelectValue placeholder="Select a task to submit" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {activeTasks.map((task) => (
+                  <SelectContent className="bg-white">
+                    {activeTasks.map((task: any) => (
                       <SelectItem key={task.id} value={task.id}>
                         {task.title}
                       </SelectItem>
@@ -104,7 +111,7 @@ const SubmitTaskPage = () => {
                   <Button
                     type="submit"
                     disabled={!selectedTask || !file || uploading}
-                    className="flex items-center gap-2"
+                    className="bg-[#1E40AF] hover:bg-[#1E40AF]/90 flex items-center gap-2"
                   >
                     <Upload size={16} />
                     {uploading ? "Uploading..." : "Submit"}
@@ -117,6 +124,45 @@ const SubmitTaskPage = () => {
                 )}
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>My Submissions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {submissions.length === 0 ? (
+                <p className="text-center text-gray-500">No submissions yet</p>
+              ) : (
+                submissions.map((submission: any) => (
+                  <div key={submission.id} className="p-4 border rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-[#1E40AF]">{submission.taskTitle}</h3>
+                        <p className="text-sm text-gray-600">File: {submission.fileName}</p>
+                        <p className="text-sm text-gray-500">
+                          Submitted: {new Date(submission.submittedAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={submission.status === 'approved' ? 'default' : 
+                                submission.status === 'rejected' ? 'destructive' : 'secondary'}
+                        className={submission.status === 'approved' ? 'bg-[#1E40AF]' : ''}
+                      >
+                        {submission.status}
+                      </Badge>
+                    </div>
+                    {submission.rejectionReason && (
+                      <p className="mt-2 text-sm text-red-500">
+                        Reason: {submission.rejectionReason}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -1,36 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  date: string;
-  type: "info" | "success" | "warning";
-  read: boolean;
-}
-
-const notifications: Notification[] = [
-  {
-    id: "1",
-    title: "Bid Accepted",
-    message: "Your bid for 'Translate Short Stories' has been accepted",
-    date: "2024-02-20",
-    type: "success",
-    read: false
-  },
-  {
-    id: "2",
-    title: "Task Due Soon",
-    message: "Task 'Cultural Essays' is due in 24 hours",
-    date: "2024-02-19",
-    type: "warning",
-    read: false
-  }
-];
+import { useQuery } from "@tanstack/react-query";
 
 const NotificationsPage = () => {
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const stored = localStorage.getItem('notifications');
+      return stored ? JSON.parse(stored) : [];
+    },
+    refetchInterval: 5000 // Refresh every 5 seconds
+  });
+
   return (
     <Sidebar>
       <div className="space-y-4">
@@ -40,30 +22,30 @@ const NotificationsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 border rounded-lg ${
-                    !notification.read ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-semibold">{notification.title}</h3>
-                      <p className="text-sm text-gray-600">{notification.message}</p>
+              {notifications.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">No notifications yet</p>
+              ) : (
+                notifications.map((notification: any) => (
+                  <div
+                    key={notification.id}
+                    className="p-4 border rounded-lg bg-white"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-semibold text-[#1E40AF]">{notification.title}</h3>
+                        <p className="text-sm text-gray-600">{notification.message}</p>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="bg-[#1E40AF] text-white"
+                      >
+                        {notification.type}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        notification.type === "success" ? "default" :
-                        notification.type === "warning" ? "destructive" : "secondary"
-                      }
-                    >
-                      {notification.type}
-                    </Badge>
+                    <p className="text-xs text-gray-500">{new Date(notification.date).toLocaleString()}</p>
                   </div>
-                  <p className="text-xs text-gray-500">{notification.date}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

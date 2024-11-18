@@ -3,7 +3,6 @@ import Sidebar from "../components/Sidebar";
 import DashboardMetrics from "../components/DashboardMetrics";
 import ActivityFeed from "../components/ActivityFeed";
 import QuickActions from "../components/QuickActions";
-import { Activity } from "@/types/activity";
 import { useQuery } from "@tanstack/react-query";
 
 const AdminDashboard = () => {
@@ -32,6 +31,14 @@ const AdminDashboard = () => {
     }
   });
 
+  const { data: submissions = [] } = useQuery({
+    queryKey: ['task-submissions'],
+    queryFn: async () => {
+      const subs = localStorage.getItem('taskSubmissions');
+      return subs ? JSON.parse(subs) : [];
+    }
+  });
+
   const metrics = [
     { 
       label: "Total Tasks", 
@@ -44,7 +51,12 @@ const AdminDashboard = () => {
       description: "Tasks being worked on" 
     },
     { 
-      label: "Total Earnings", 
+      label: "Pending Submissions", 
+      value: submissions.length.toString(), 
+      description: "Tasks awaiting review" 
+    },
+    { 
+      label: "Total Revenue", 
       value: `KES ${totalRevenue}`, 
       description: "Platform revenue" 
     }
@@ -54,9 +66,6 @@ const AdminDashboard = () => {
     switch (action) {
       case "tasks":
         navigate("/admin/submitted-tasks");
-        break;
-      case "bids":
-        navigate("/admin/bidding");
         break;
       case "payments":
         navigate("/admin/finances");
