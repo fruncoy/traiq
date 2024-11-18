@@ -18,6 +18,14 @@ const AdminFinances = () => {
     }
   });
 
+  const { data: recentPayouts = [] } = useQuery({
+    queryKey: ['recent-payouts'],
+    queryFn: async () => {
+      const records = JSON.parse(localStorage.getItem('financeRecords') || '[]');
+      return records.slice(0, 10); // Show last 10 payouts
+    }
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
@@ -57,6 +65,34 @@ const AdminFinances = () => {
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Payouts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Task Code</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentPayouts.map((payout: any) => (
+                    <TableRow key={payout.id}>
+                      <TableCell>{payout.taskCode}</TableCell>
+                      <TableCell>KES {payout.amount}</TableCell>
+                      <TableCell>{payout.type}</TableCell>
+                      <TableCell>{new Date(payout.date).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </Sidebar>
     </div>

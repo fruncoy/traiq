@@ -10,12 +10,36 @@ import { useQuery } from "@tanstack/react-query";
 
 const TaskerDashboard = () => {
   const location = useLocation();
+  const userId = 'current-user-id'; // In a real app, this would come from auth
+
   const { data: userBids = 0 } = useQuery({
     queryKey: ['user-bids'],
     queryFn: async () => {
-      return 0; // Setting initial balance to 0
+      return parseInt(localStorage.getItem('userBids') || '0');
     }
   });
+
+  const { data: userEarnings = { totalEarned: 0, pendingTasks: 0, completedTasks: 0, balance: 0 } } = useQuery({
+    queryKey: ['user-earnings'],
+    queryFn: async () => {
+      const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+      return earnings[userId] || { totalEarned: 0, pendingTasks: 0, completedTasks: 0, balance: 0 };
+    }
+  });
+
+  const { data: submissions = [] } = useQuery({
+    queryKey: ['task-submissions'],
+    queryFn: async () => {
+      const subs = localStorage.getItem('taskSubmissions');
+      return subs ? JSON.parse(subs) : [];
+    }
+  });
+
+  const calculateSuccessRate = () => {
+    if (submissions.length === 0) return "0%";
+    const approved = submissions.filter((sub: any) => sub.status === 'approved').length;
+    return `${Math.round((approved / submissions.length) * 100)}%`;
+  };
 
   const metrics = [
     { 
@@ -24,18 +48,19 @@ const TaskerDashboard = () => {
       description: "Use them wisely to secure tasks" 
     },
     { 
-      label: "Active Tasks", 
-      value: "0",
-      description: "Tasks in progress" 
+      label: "Account Balance", 
+      value: `KES ${userEarnings.balance}`,
+      description: "Available for withdrawal" 
     },
     { 
       label: "Total Earned", 
-      value: "KES 0",
+      value: `KES ${userEarnings.totalEarned}`,
+      description: "All time earnings"
     },
     { 
       label: "Success Rate", 
-      value: "0%",
-      description: "Based on last 50 tasks" 
+      value: calculateSuccessRate(),
+      description: "Based on approved submissions" 
     }
   ];
 
@@ -48,7 +73,7 @@ const TaskerDashboard = () => {
             <Card className="mt-6">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-2">Account Balance</h3>
-                <p className="text-2xl font-bold text-[#1E40AF]">KES 0</p>
+                <p className="text-2xl font-bold text-[#1E40AF]">KES {userEarnings.balance}</p>
               </CardContent>
             </Card>
             <div className="mt-8">

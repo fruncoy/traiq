@@ -7,6 +7,13 @@ import {
   generateTaskDescription 
 } from "@/utils/initializeData";
 
+const generateUniqueTaskCode = () => {
+  const prefix = 'TSK';
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}${timestamp}${random}`;
+};
+
 export const handleTaskBid = async (
   task: Task, 
   userBids: number,
@@ -30,8 +37,21 @@ export const handleTaskBid = async (
   localStorage.setItem('userBids', (currentBids - bidsRequired).toString());
 
   // Update task's current bids and bidders
-  task.currentBids += 1;
+  task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
+
+  // Update user's earnings tracking
+  const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+  if (!userEarnings[userId]) {
+    userEarnings[userId] = {
+      totalEarned: 0,
+      pendingTasks: 0,
+      completedTasks: 0,
+      balance: 0
+    };
+  }
+  userEarnings[userId].pendingTasks += 1;
+  localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
 
   // Immediately assign task to bidder
   const userTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
@@ -54,33 +74,18 @@ export const handleTaskBid = async (
   const updatedTasks = tasks.filter(t => t.id !== task.id);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
-  // Check if threshold reached (10 bidders)
-  if (task.currentBids >= task.bidsNeeded) {
-    task.status = "active";
-    // Randomly select 5 taskers from all bidders
-    task.selectedTaskers = task.bidders
-      ?.sort(() => Math.random() - 0.5)
-      .slice(0, 5);
-
-    const activeTasks = JSON.parse(localStorage.getItem('activeTasks') || '[]');
-    activeTasks.push(task);
-    localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
-
-    // Generate a new task to replace the activated one
-    const newTask = generateNewTask();
-    updatedTasks.push(newTask);
-    localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-
-    // Log activity
-    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-    activities.unshift({
-      id: Date.now().toString(),
-      type: "approval",
-      message: `Task "${task.title}" is now active`,
-      timestamp: new Date().toISOString()
-    });
-    localStorage.setItem('activities', JSON.stringify(activities));
-  }
+  // Track payout in finance records
+  const financeRecords = JSON.parse(localStorage.getItem('financeRecords') || '[]');
+  financeRecords.unshift({
+    id: Date.now().toString(),
+    taskId: task.id,
+    taskCode: task.code,
+    amount: task.payout,
+    type: 'pending',
+    date: new Date().toISOString(),
+    userId: userId
+  });
+  localStorage.setItem('financeRecords', JSON.stringify(financeRecords));
 
   return task;
 };
@@ -88,7 +93,7 @@ export const handleTaskBid = async (
 export const generateNewTask = (category?: TaskCategory): Task => {
   const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
   const mostPopularCategory = Object.entries(popularityData)
-    .sort(([, a], [, b]) => (b as number) - (a as number))[0][0] as TaskCategory;
+    .sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] as TaskCategory || 'short_essay';
 
   const selectedCategory = category || mostPopularCategory;
   const payout = calculatePayout(selectedCategory);
@@ -96,6 +101,7 @@ export const generateNewTask = (category?: TaskCategory): Task => {
 
   return {
     id: Date.now().toString(),
+    code: generateUniqueTaskCode(),
     title: `${selectedCategory.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
     description: generateTaskDescription(selectedCategory),
     category: selectedCategory,
