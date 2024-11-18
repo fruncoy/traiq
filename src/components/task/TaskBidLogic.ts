@@ -24,7 +24,7 @@ export const handleTaskBid = async (
   
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
   
-  // Check if user has already bid on this task
+  // Check if user has already bid on this specific task
   const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
   if (userActiveTasks.some((t: Task) => t.id === task.id)) {
     throw new Error("already_bid");
@@ -42,7 +42,7 @@ export const handleTaskBid = async (
   userActiveTasks.push(updatedTask);
   localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
 
-  // Update tasks in localStorage
+  // Update only this specific task in localStorage
   const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 

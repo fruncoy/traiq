@@ -4,23 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const TaskerSettings = () => {
+  const queryClient = useQueryClient();
+  const userId = 'current-user-id';
   const [formData, setFormData] = useState({
     username: "johndoe",
     email: "john@example.com",
     phone: "+254 700 000000",
-    mpesaNumber: "+254 700 000000"
+    mpesaNumber: "+254 700 000000",
+    withdrawAmount: ""
   });
 
   const { data: userEarnings = 0 } = useQuery({
     queryKey: ['user-earnings'],
     queryFn: async () => {
       const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-      return earnings['current-user-id'] || 0;
-    },
-    refetchInterval: 5000
+      return earnings[userId] || 0;
+    }
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +37,38 @@ const TaskerSettings = () => {
   };
 
   const handleWithdraw = () => {
-    toast.success("Withdrawal request submitted");
+    const amount = Number(formData.withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    if (amount > userEarnings) {
+      toast.error("Insufficient balance");
+      return;
+    }
+
+    // Update balances
+    const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+    const history = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
+    
+    // Update current balance
+    earnings[userId] = userEarnings - amount;
+    localStorage.setItem('userEarnings', JSON.stringify(earnings));
+    
+    // Update total earnings history (keeps track of all earnings even after withdrawals)
+    history[userId] = (history[userId] || 0) + amount;
+    localStorage.setItem('earningsHistory', JSON.stringify(history));
+
+    // Reset withdrawal amount
+    setFormData(prev => ({ ...prev, withdrawAmount: "" }));
+
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['user-earnings'] });
+    queryClient.invalidateQueries({ queryKey: ['total-earned'] });
+
+    toast.success("Withdrawal successful", {
+      description: `KES ${amount} has been sent to your M-Pesa number`
+    });
   };
 
   return (
@@ -110,9 +143,18 @@ const TaskerSettings = () => {
                   <span>Available Balance</span>
                   <span className="font-semibold">KES {userEarnings}</span>
                 </div>
-                <Input type="number" placeholder="Enter amount to withdraw" />
+                <Input 
+                  type="number"
+                  name="withdrawAmount"
+                  value={formData.withdrawAmount}
+                  onChange={handleChange}
+                  placeholder="Enter amount to withdraw"
+                  min="1"
+                  max={userEarnings}
+                />
                 <Button 
-                  onClick={handleWithdraw} 
+                  onClick={handleWithdraw}
+                  disabled={!formData.withdrawAmount || Number(formData.withdrawAmount) > userEarnings}
                   className="w-full bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                 >
                   Withdraw to M-Pesa

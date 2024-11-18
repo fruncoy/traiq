@@ -5,7 +5,6 @@ import BiddingSection from "../components/tasker/BiddingSection";
 import BuyBidsSection from "../components/tasker/BuyBidsSection";
 import TaskerSettings from "../components/tasker/TaskerSettings";
 import { useLocation } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 
 const TaskerDashboard = () => {
@@ -27,6 +26,22 @@ const TaskerDashboard = () => {
     }
   });
 
+  const { data: userEarnings = 0 } = useQuery({
+    queryKey: ['user-earnings'],
+    queryFn: async () => {
+      const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+      return earnings[userId] || 0;
+    }
+  });
+
+  const { data: totalEarned = 0 } = useQuery({
+    queryKey: ['total-earned'],
+    queryFn: async () => {
+      const history = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
+      return history[userId] || 0;
+    }
+  });
+
   const availableTasks = tasks.filter(t => !t.status || t.status === 'pending').length;
 
   const metrics = [
@@ -39,6 +54,16 @@ const TaskerDashboard = () => {
       label: "Available Tasks", 
       value: availableTasks,
       description: "Tasks waiting for bids" 
+    },
+    {
+      label: "Available Balance",
+      value: `KES ${userEarnings}`,
+      description: "Current withdrawable balance"
+    },
+    {
+      label: "Total Earned",
+      value: `KES ${totalEarned}`,
+      description: "Total earnings to date"
     }
   ];
 
