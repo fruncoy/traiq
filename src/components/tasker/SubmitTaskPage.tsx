@@ -52,7 +52,9 @@ const SubmitTaskPage = () => {
       });
       localStorage.setItem('taskSubmissions', JSON.stringify(submissions));
       
-      toast.success("Task submitted successfully!");
+      toast.success("Task submitted successfully!", {
+        description: "Your submission will be reviewed by our team."
+      });
       setFile(null);
       setSelectedTask("");
       // Reset file input

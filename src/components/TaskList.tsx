@@ -1,21 +1,9 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Clock, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  payout: number;
-  workingTime: string;
-  bidsNeeded: number;
-  currentBids: number;
-  datePosted: string;
-  status?: "pending" | "active" | "completed";
-}
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import TaskCard from "./task/TaskCard";
+import { Task } from "@/types/task";
 
 const sampleTasks: Task[] = [
   {
@@ -101,32 +89,39 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         const activeTasks = JSON.parse(localStorage.getItem('activeTasks') || '[]');
         activeTasks.push(task);
         localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+        
+        // Remove task from available tasks
+        const remainingTasks = tasks.filter(t => t.id !== taskId);
+        localStorage.setItem('tasks', JSON.stringify(remainingTasks));
       }
       
       return task;
     },
-    onSuccess: () => {
-      toast.success("Bid placed successfully!");
+    onSuccess: (task) => {
+      if (task.currentBids >= task.bidsNeeded) {
+        toast.success("Congratulations! You've been assigned the task.", {
+          description: "You can now submit your work in the Submit Task page."
+        });
+      } else {
+        toast.success("Bid placed successfully!");
+      }
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       refetch();
     },
     onError: (error: Error) => {
       if (error.message === "insufficient_bids") {
-        toast.error("Insufficient bids. Please purchase more bids to continue.");
+        toast.error("Insufficient bids. Please purchase more bids to continue.", {
+          action: {
+            label: "Buy Bids",
+            onClick: () => window.location.href = "/tasker/buy-bids"
+          }
+        });
       } else {
         toast.error("Failed to place bid. Please try again.");
       }
     }
   });
-
-  const handleBidNow = (taskId: string) => {
-    if (userBids <= 0) {
-      toast.error("You have insufficient bids. Please purchase more bids to continue.");
-      return;
-    }
-    bidMutation.mutate(taskId);
-  };
 
   // Filter out tasks that have reached their bid limit
   const availableTasks = tasks.filter(task => !task.status || task.status === "pending");
@@ -144,48 +139,14 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       )}
       <div className="grid gap-4">
         {displayedTasks.map((task) => (
-          <Card key={task.id}>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{task.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock size={16} />
-                      <span>{task.workingTime}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">Posted: {task.datePosted}</p>
-                    {!isAdmin && (
-                      <p className="text-sm text-blue-600">
-                        Requires {task.bidsNeeded} bids
-                      </p>
-                    )}
-                    {isAdmin && (
-                      <p className="text-sm text-gray-600">
-                        Bids: {task.currentBids}/{task.bidsNeeded}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-semibold text-[#1E40AF]">KES {task.payout}</span>
-                    {!isAdmin && (
-                      <Button 
-                        className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
-                        onClick={() => handleBidNow(task.id)}
-                        disabled={bidMutation.isPending}
-                      >
-                        {bidMutation.isPending ? "Bidding..." : "Bid Now"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TaskCard
+            key={task.id}
+            task={task}
+            onBid={(taskId) => bidMutation.mutate(taskId)}
+            isAdmin={isAdmin}
+            userBids={userBids}
+            isPending={bidMutation.isPending}
+          />
         ))}
       </div>
 

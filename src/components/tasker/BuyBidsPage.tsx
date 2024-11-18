@@ -67,7 +67,9 @@ const BuyBidsPage = () => {
       return { success: true, bids, amount };
     },
     onSuccess: (_, variables) => {
-      toast.success(`Successfully purchased ${variables.bids} bids`);
+      toast.success(`Successfully purchased ${variables.bids} bids`, {
+        description: `Added ${variables.bids} bids to your account.`
+      });
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
       refetch();
     },
