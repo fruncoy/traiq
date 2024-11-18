@@ -22,10 +22,16 @@ export const handleTaskBid = async (
   if (!task) throw new Error("Task not found");
 
   const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-  const bidsRequired = 1; // Each bid costs 1 point
+  const bidsRequired = 1;
   
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
   if (task.bidders?.includes(userId)) throw new Error("already_bid");
+
+  // Check if task has expired
+  const deadline = new Date(task.deadline);
+  if (deadline < new Date()) {
+    throw new Error("task_expired");
+  }
 
   // Update category popularity
   const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
@@ -39,13 +45,12 @@ export const handleTaskBid = async (
   task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
 
-  // Check if task should become active (has enough bids)
-  const requiredBids = task.payout === 1000 ? 10 : 5;
-  if (task.currentBids >= requiredBids) {
+  // Check if task has reached required bids (10)
+  if (task.currentBids >= 10) {
     task.status = "active";
-    // Select first 5 bidders for payment for 1000 KES tasks, or first 3 for 500 KES tasks
-    const paidPositions = task.payout === 1000 ? 5 : 3;
-    task.selectedTaskers = task.bidders.slice(0, paidPositions);
+    // Randomly select 5 bidders for payment
+    const shuffledBidders = task.bidders.sort(() => Math.random() - 0.5);
+    task.selectedTaskers = shuffledBidders.slice(0, 5);
     
     // Add notification for selected taskers
     const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
@@ -89,6 +94,30 @@ export const handleTaskBid = async (
   if (!userActiveTasks.some((t: Task) => t.id === task.id)) {
     userActiveTasks.push(task);
     localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
+  }
+
+  // Check for expired tasks and generate new ones
+  const now = new Date();
+  const expiredTasks = tasks.filter(t => new Date(t.deadline) < now);
+  if (expiredTasks.length > 0) {
+    const newTasks = expiredTasks.map(() => generateNewTask());
+    const remainingTasks = tasks.filter(t => new Date(t.deadline) >= now);
+    localStorage.setItem('tasks', JSON.stringify([...remainingTasks, ...newTasks]));
+
+    // Add notifications for expired tasks
+    const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+    expiredTasks.forEach(expiredTask => {
+      if (expiredTask.bidders?.includes(userId)) {
+        notifications.unshift({
+          id: Date.now().toString(),
+          title: "Task Expired",
+          message: `Task "${expiredTask.title}" (ID: ${expiredTask.code}) has expired`,
+          type: "warning",
+          date: new Date().toISOString()
+        });
+      }
+    });
+    localStorage.setItem('notifications', JSON.stringify(notifications));
   }
 
   return task;
