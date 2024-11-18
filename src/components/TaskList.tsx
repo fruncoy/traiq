@@ -4,24 +4,31 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { Task } from "@/types/task";
+import { generateTaskDescription, calculateBidsRequired, calculatePayout } from "@/utils/initializeData"; // Assume this import exists for the new helper functions
+import { TaskCategory } from "@/types/task"; // Updated import for TaskCategory
 
-const generateNewTask = (highPayingPreferred: boolean): Task => {
-  const baseTask = highPayingPreferred ? {
-    payout: Math.floor(Math.random() * (1000 - 500) + 500),
-    workingTime: "2-3 hours"
-  } : {
-    payout: Math.floor(Math.random() * (400 - 200) + 200),
-    workingTime: "1-2 hours"
-  };
+const MULTIPLIER = 40; // Fixed multiplier
+
+const generateNewTask = (category?: TaskCategory): Task => {
+  const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
+  const mostPopularCategory = Object.entries(popularityData)
+    .sort(([, a], [, b]) => (b as number) - (a as number))[0][0] as TaskCategory;
+
+  const payout = Math.floor(Math.random() * (1000 - 300) + 300);
+  const bidsRequired = calculateBidsRequired(payout);
 
   return {
     id: Date.now().toString(),
-    title: `Content Writing Task ${Date.now()}`,
-    description: "Write engaging content for our platform",
-    ...baseTask,
-    bidsNeeded: 10,
+    title: `${mostPopularCategory.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
+    description: generateTaskDescription(mostPopularCategory),
+    category: mostPopularCategory,
+    payout,
+    workingTime: payout > 500 ? "2-3 hours" : "1-2 hours",
+    bidsNeeded: 10, // System-wide bid requirement
     currentBids: 0,
-    datePosted: new Date().toISOString().split('T')[0]
+    datePosted: new Date().toISOString().split('T')[0],
+    bidders: [],
+    selectedTaskers: []
   };
 };
 
@@ -37,17 +44,17 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
       const tasks = storedTasks ? JSON.parse(storedTasks) : [];
-      
+
       // Ensure minimum 3 tasks
       if (tasks.length < 3) {
         const newTasks = Array(3 - tasks.length).fill(null).map(() => 
-          generateNewTask(false)
+          generateNewTask()
         );
         const updatedTasks = [...tasks, ...newTasks];
         localStorage.setItem('tasks', JSON.stringify(updatedTasks));
         return updatedTasks;
       }
-      
+
       return tasks;
     }
   });
@@ -64,33 +71,52 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     mutationFn: async (taskId: string) => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error("Task not found");
-      
+
       const currentBids = parseInt(localStorage.getItem('userBids') || '0');
       if (currentBids <= 0) throw new Error("insufficient_bids");
-      
+
+      // Check if user has already bid on this task
+      if (task.bidders?.includes('current-user-id')) {
+        throw new Error("already_bid");
+      }
+
+      // Update category popularity
+      const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
+      popularityData[task.category] = (popularityData[task.category] || 0) + 1;
+      localStorage.setItem('categoryPopularity', JSON.stringify(popularityData));
+
       // Update user's bids
-      localStorage.setItem('userBids', (currentBids - 1).toString());
-      
-      // Update task's current bids
+      const bidsRequired = calculateBidsRequired(task.payout);
+      if (currentBids < bidsRequired) throw new Error("insufficient_bids");
+
+      localStorage.setItem('userBids', (currentBids - bidsRequired).toString());
+
+      // Update task's current bids and bidders
       task.currentBids += 1;
+      task.bidders = [...(task.bidders || []), 'current-user-id'];
+
       const updatedTasks = tasks.map(t => t.id === taskId ? task : t);
-      
+
       // If task reaches bid limit, move to active and generate new task
       if (task.currentBids >= task.bidsNeeded) {
         task.status = "active";
+        // Select random 5 taskers for payout
+        task.selectedTaskers = task.bidders
+          ?.sort(() => Math.random() - 0.5)
+          .slice(0, 5);
+
         const activeTasks = JSON.parse(localStorage.getItem('activeTasks') || '[]');
         activeTasks.push(task);
         localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
-        
-        // Generate new similar task based on payout preference
-        const highPayingPreferred = task.payout >= 500;
-        const newTask = generateNewTask(highPayingPreferred);
+
+        // Generate new task based on popularity
+        const newTask = generateNewTask();
         updatedTasks.push(newTask);
-        
+
         // Remove completed task from available tasks
         const remainingTasks = updatedTasks.filter(t => t.id !== taskId);
         localStorage.setItem('tasks', JSON.stringify(remainingTasks));
-        
+
         // Add activity
         const activities = JSON.parse(localStorage.getItem('activities') || '[]');
         activities.unshift({
@@ -103,7 +129,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       } else {
         localStorage.setItem('tasks', JSON.stringify(updatedTasks));
       }
-      
+
       return task;
     },
     onSuccess: (task) => {

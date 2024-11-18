@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
+import { Task } from "@/types/task";
 
 const SubmitTaskPage = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -37,6 +38,11 @@ const SubmitTaskPage = () => {
     }
   };
 
+  const calculatePayout = (bidsRequired: number) => {
+    const MULTIPLIER = 40;
+    return (bidsRequired * MULTIPLIER * 1.25);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask) {
@@ -50,20 +56,43 @@ const SubmitTaskPage = () => {
 
     setUploading(true);
     try {
+      const task = activeTasks.find(t => t.id === selectedTask);
+      if (!task) throw new Error("Task not found");
+
+      // Check if user is selected for payout
+      const isSelectedForPayout = task.selectedTaskers?.includes('current-user-id');
+      
       const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-      submissions.push({
+      const submission = {
         id: Date.now().toString(),
         taskId: selectedTask,
-        taskTitle: activeTasks.find(t => t.id === selectedTask)?.title,
+        taskTitle: task.title,
         fileName: file.name,
         submittedAt: new Date().toISOString(),
-        status: 'pending'
-      });
-      localStorage.setItem('taskSubmissions', JSON.stringify(submissions));
+        status: 'approved', // Auto-approve submissions
+        payout: isSelectedForPayout ? calculatePayout(task.bidsNeeded) : 0
+      };
       
-      toast.success("Task submitted successfully!", {
-        description: "Your submission will be reviewed by our team."
-      });
+      submissions.push(submission);
+      localStorage.setItem('taskSubmissions', JSON.stringify(submissions));
+
+      // Update user balance if selected for payout
+      if (isSelectedForPayout) {
+        const currentBalance = parseFloat(localStorage.getItem('userBalance') || '0');
+        localStorage.setItem('userBalance', (currentBalance + submission.payout).toString());
+      }
+      
+      toast.success(
+        isSelectedForPayout 
+          ? `Task submitted successfully! You earned KES ${submission.payout}`
+          : "Task submitted successfully!",
+        {
+          description: isSelectedForPayout 
+            ? "Your submission was approved and payment has been credited to your account."
+            : "Your submission was recorded but was not selected for payment."
+        }
+      );
+      
       setFile(null);
       setSelectedTask("");
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
