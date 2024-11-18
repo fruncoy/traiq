@@ -3,6 +3,7 @@ export type TaskCategory = "short_essay" | "long_essay" | "item_listing" | "voic
 
 export interface Task {
   id: string;
+  code: string;
   title: string;
   description: string;
   category: TaskCategory;
