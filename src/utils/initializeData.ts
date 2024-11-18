@@ -9,7 +9,7 @@ const taskCategories: TaskCategory[] = [
   "voice_recording"
 ];
 
-const generateTaskDescription = (category: TaskCategory) => {
+export const generateTaskDescription = (category: TaskCategory) => {
   switch (category) {
     case "short_essay":
       return "Write a concise essay on a given topic (500 words)";
@@ -22,7 +22,7 @@ const generateTaskDescription = (category: TaskCategory) => {
   }
 };
 
-const calculateBidsRequired = (payout: number) => {
+export const calculateBidsRequired = (payout: number) => {
   return Math.ceil(payout / 100);
 };
 
