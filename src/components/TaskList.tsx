@@ -3,38 +3,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
-import { Task } from "@/types/task";
-import { 
-  generateTaskDescription, 
-  calculateBidsRequired, 
-  calculatePayout,
-  calculateTaskerPayout 
-} from "@/utils/initializeData";
-import { TaskCategory } from "@/types/task";
-
-const generateNewTask = (category?: TaskCategory): Task => {
-  const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
-  const mostPopularCategory = Object.entries(popularityData)
-    .sort(([, a], [, b]) => (b as number) - (a as number))[0][0] as TaskCategory;
-
-  const selectedCategory = category || mostPopularCategory;
-  const payout = calculatePayout(selectedCategory);
-  const bidsRequired = calculateBidsRequired(selectedCategory);
-
-  return {
-    id: Date.now().toString(),
-    title: `${selectedCategory.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
-    description: generateTaskDescription(selectedCategory),
-    category: selectedCategory,
-    payout,
-    workingTime: selectedCategory === "long_essay" ? "2-3 hours" : "1-2 hours",
-    bidsNeeded: 10,
-    currentBids: 0,
-    datePosted: new Date().toISOString().split('T')[0],
-    bidders: [],
-    selectedTaskers: []
-  };
-};
+import { handleTaskBid, generateNewTask } from "./task/TaskBidLogic";
 
 const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
   limit?: number;
@@ -73,60 +42,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
       const task = tasks.find(t => t.id === taskId);
-      if (!task) throw new Error("Task not found");
-
-      const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-      const bidsRequired = calculateBidsRequired(task.category);
-      
-      if (currentBids < bidsRequired) throw new Error("insufficient_bids");
-      if (task.bidders?.includes('current-user-id')) throw new Error("already_bid");
-
-      // Update category popularity
-      const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
-      popularityData[task.category] = (popularityData[task.category] || 0) + 1;
-      localStorage.setItem('categoryPopularity', JSON.stringify(popularityData));
-
-      // Update user's bids
-      localStorage.setItem('userBids', (currentBids - bidsRequired).toString());
-
-      // Update task's current bids and bidders
-      task.currentBids += 1;
-      task.bidders = [...(task.bidders || []), 'current-user-id'];
-
-      const updatedTasks = tasks.map(t => t.id === taskId ? task : t);
-
-      if (task.currentBids >= task.bidsNeeded) {
-        task.status = "active";
-        // Randomly select 5 taskers from all bidders
-        task.selectedTaskers = task.bidders
-          ?.sort(() => Math.random() - 0.5)
-          .slice(0, 5);
-
-        const activeTasks = JSON.parse(localStorage.getItem('activeTasks') || '[]');
-        activeTasks.push(task);
-        localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
-
-        // Generate a new task to replace the activated one
-        const newTask = generateNewTask();
-        updatedTasks.push(newTask);
-
-        const remainingTasks = updatedTasks.filter(t => t.id !== taskId);
-        localStorage.setItem('tasks', JSON.stringify(remainingTasks));
-
-        // Log the activity
-        const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-        activities.unshift({
-          id: Date.now().toString(),
-          type: "approval",
-          message: `Task "${task.title}" is now active`,
-          timestamp: new Date().toISOString()
-        });
-        localStorage.setItem('activities', JSON.stringify(activities));
-      } else {
-        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-      }
-
-      return task;
+      return handleTaskBid(task, userBids, tasks);
     },
     onSuccess: (task) => {
       if (task.currentBids >= task.bidsNeeded) {
@@ -135,12 +51,13 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         });
       } else {
         toast.success("Bid placed successfully!", {
-          description: `${task.bidsNeeded - task.currentBids} bids remaining for this task.`
+          description: "You can now start working on this task."
         });
       }
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       refetch();
     },
     onError: (error: Error) => {
@@ -192,8 +109,8 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
       {showViewMore && !isAdmin && tasks.length > 0 && (
         <div className="flex justify-between items-center mt-6">
-          <Link to="/tasker/tasks" className="text-[#1E40AF] hover:underline flex items-center gap-2">
-            View all tasks <ArrowRight size={16} />
+          <Link to="/tasker/bidded-tasks" className="text-[#1E40AF] hover:underline flex items-center gap-2">
+            View my bidded tasks <ArrowRight size={16} />
           </Link>
           <Link to="/tasker/buy-bids" className="text-[#1E40AF] hover:underline flex items-center gap-2">
             Buy more bids <ArrowRight size={16} />

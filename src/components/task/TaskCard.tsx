@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import { Task } from "@/types/task";
 import { toast } from "sonner";
 
@@ -41,15 +41,13 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
                 <Clock size={16} />
                 <span>{task.workingTime}</span>
               </div>
-              <p className="text-sm text-gray-600">Posted: {task.datePosted}</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users size={16} />
+                <span>Bidders: {task.currentBids}/10</span>
+              </div>
               {!isAdmin && (
                 <p className="text-sm text-blue-600">
                   Requires {task.bidsNeeded} bids
-                </p>
-              )}
-              {isAdmin && (
-                <p className="text-sm text-gray-600">
-                  Bids: {task.currentBids}/{task.bidsNeeded}
                 </p>
               )}
             </div>
