@@ -4,6 +4,9 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid, generateNewTask } from "./task/TaskBidLogic";
+import { useState } from "react";
+import TaskFilters from "./task/TaskFilters";
+import { Task } from "@/types/task";
 
 const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
   limit?: number;
@@ -11,16 +14,21 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   isAdmin?: boolean;
 }) => {
   const queryClient = useQueryClient();
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'short_essay' | 'long_essay' | 'item_listing' | 'voice_recording'>('all');
 
   const { data: tasks = [], refetch } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks', selectedCategory],
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
-      const tasks = storedTasks ? JSON.parse(storedTasks) : [];
+      let tasks = storedTasks ? JSON.parse(storedTasks) : [];
+
+      if (selectedCategory !== 'all') {
+        tasks = tasks.filter((task: Task) => task.category === selectedCategory);
+      }
 
       if (tasks.length < 3) {
         const newTasks = Array(3 - tasks.length).fill(null).map(() => 
-          generateNewTask()
+          generateNewTask(selectedCategory === 'all' ? undefined : selectedCategory)
         );
         const updatedTasks = [...tasks, ...newTasks];
         localStorage.setItem('tasks', JSON.stringify(updatedTasks));
@@ -104,6 +112,12 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
           </div>
         </div>
       )}
+
+      <TaskFilters 
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+      />
+
       <div className="grid gap-4">
         {displayedTasks.map((task) => (
           <TaskCard

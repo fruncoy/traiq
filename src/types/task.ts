@@ -12,6 +12,7 @@ export interface Task {
   platformFee: number;
   workingTime: string;
   datePosted: string;
+  deadline: string;
   bidsNeeded: number;
   currentBids: number;
   status: TaskStatus;
@@ -19,4 +20,6 @@ export interface Task {
   selectedTaskers: string[];
   submissionDate?: string;
   rejectionReason?: string;
+  rating: number;
+  totalRatings: number;
 }

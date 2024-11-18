@@ -39,11 +39,13 @@ export const handleTaskBid = async (
   task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
 
-  // Check if task should become active (has enough bids)
-  if (task.currentBids >= task.bidsNeeded) {
+  // Check if task should become active (has enough bids based on payout)
+  const requiredBids = task.payout === 1000 ? 10 : 5;
+  if (task.currentBids >= requiredBids) {
     task.status = "active";
-    // Select first 5 bidders for payment
-    task.selectedTaskers = task.bidders.slice(0, 5);
+    // Select first 5 bidders for payment for 1000 KES tasks, or first 3 for 500 KES tasks
+    const paidPositions = task.payout === 1000 ? 5 : 3;
+    task.selectedTaskers = task.bidders.slice(0, paidPositions);
     
     // Add notification for selected taskers
     const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
@@ -91,6 +93,7 @@ export const generateNewTask = (category?: TaskCategory): Task => {
   const selectedCategory = category || mostPopularCategory;
   const payout = calculatePayout(selectedCategory);
   const taskerPayout = calculateTaskerPayout(selectedCategory);
+  const bidsNeeded = payout === 1000 ? 10 : 5;
 
   return {
     id: Date.now().toString(),
@@ -102,11 +105,14 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     taskerPayout,
     platformFee: payout - taskerPayout,
     workingTime: selectedCategory === "long_essay" ? "2-3 hours" : "1-2 hours",
-    bidsNeeded: 10, // All tasks require 10 bids
+    bidsNeeded,
     currentBids: 0,
     datePosted: new Date().toISOString(),
+    deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
     status: "pending",
     bidders: [],
-    selectedTaskers: []
+    selectedTaskers: [],
+    rating: 0,
+    totalRatings: 0
   };
 };

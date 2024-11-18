@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, Hash } from "lucide-react";
+import { Clock, Users, Hash, Star } from "lucide-react";
 import { Task } from "@/types/task";
 import { toast } from "sonner";
 
@@ -25,6 +25,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
     }
     onBid(task.id);
   };
+
+  const deadline = new Date(task.deadline);
+  const now = new Date();
+  const timeLeft = deadline.getTime() - now.getTime();
+  const hoursLeft = Math.max(0, Math.floor(timeLeft / (1000 * 60 * 60)));
 
   return (
     <Card>
@@ -51,11 +56,20 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
                 <Users size={16} />
                 <span>Total Bidders: {task.currentBids}</span>
               </div>
+              {task.rating > 0 && (
+                <div className="flex items-center gap-1 text-sm text-yellow-500">
+                  <Star size={16} />
+                  <span>{task.rating.toFixed(1)} ({task.totalRatings} ratings)</span>
+                </div>
+              )}
               {!isAdmin && (
                 <p className="text-sm text-blue-600">
-                  Requires 10 bids (5 paid positions)
+                  Requires {task.bidsNeeded} bids ({Math.ceil(task.bidsNeeded/2)} paid positions)
                 </p>
               )}
+              <p className="text-sm text-orange-600">
+                Time left: {hoursLeft} hours
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
