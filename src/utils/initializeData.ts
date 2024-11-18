@@ -53,12 +53,20 @@ export const calculateTaskerPayout = (bidsRequired: number): number => {
   return bidsRequired * MULTIPLIER * PROFIT_MARGIN;
 };
 
+const generateTaskCode = () => {
+  const prefix = 'TSK';
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}${timestamp}${random}`;
+};
+
 const generateTask = (category: TaskCategory): Task => {
   const payout = calculatePayout(category);
   const bidsRequired = calculateBidsRequired(category);
   
   return {
     id: Date.now().toString(),
+    code: generateTaskCode(),
     title: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
     description: generateTaskDescription(category),
     category,
