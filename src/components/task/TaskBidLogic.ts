@@ -42,15 +42,9 @@ export const handleTaskBid = async (
   userActiveTasks.push(updatedTask);
   localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
 
-  // Update tasks in localStorage
+  // Update tasks in localStorage without removing other tasks
   const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-
-  console.log("Task bid successful:", {
-    taskId: task.id,
-    currentBids: task.currentBids,
-    userActiveTasks: userActiveTasks.length
-  });
 
   return updatedTask;
 };
@@ -58,19 +52,19 @@ export const handleTaskBid = async (
 export const processTaskSubmission = async (task: Task) => {
   console.log("Processing task submission for:", task.id);
   
-  // Wait 2-3 seconds before processing payment
-  const delay = Math.floor(Math.random() * (3000 - 2000) + 2000);
-  await new Promise(resolve => setTimeout(resolve, delay));
+  // Wait 10 seconds before processing
+  await new Promise(resolve => setTimeout(resolve, 10000));
   
-  // Calculate payout based on task type
-  const taskerPayout = task.payout === 1000 ? 500 : 250; // 1000 KES -> 500, 500 KES -> 250
+  // Calculate payout based on task type and generate rating
+  const taskerPayout = task.payout === 1000 ? 500 : 250;
+  const rating = Math.floor(Math.random() * (70 - 60 + 1)) + 60;
   
   // Add notification
   const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
   notifications.unshift({
     id: Date.now().toString(),
-    title: "Payment Processed",
-    message: `Your submission for task ${task.code} has been approved. Payment of KES ${taskerPayout} processed.`,
+    title: "Task Processed",
+    message: `Your submission for task ${task.code} has been processed. Rating: ${rating}%`,
     type: "success",
     date: new Date().toISOString()
   });
@@ -82,12 +76,7 @@ export const processTaskSubmission = async (task: Task) => {
   userEarnings[userId] = (userEarnings[userId] || 0) + taskerPayout;
   localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   
-  console.log("Task payment processed:", {
-    taskId: task.id,
-    payout: taskerPayout
-  });
-  
-  return task;
+  return { ...task, rating, payout: taskerPayout };
 };
 
 export const generateNewTask = (category?: TaskCategory): Task => {
@@ -120,22 +109,4 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     rating: 0,
     totalRatings: 0
   };
-};
-
-// Reset system data
-export const resetSystem = () => {
-  console.log("Resetting system data");
-  localStorage.clear();
-  localStorage.setItem('userBids', '5');
-  localStorage.setItem('tasks', '[]');
-  localStorage.setItem('userActiveTasks', '[]');
-  localStorage.setItem('activeTasks', '[]');
-  localStorage.setItem('taskSubmissions', '[]');
-  localStorage.setItem('notifications', '[]');
-  localStorage.setItem('activities', '[]');
-  localStorage.setItem('categoryPopularity', '{}');
-  localStorage.setItem('totalSpent', '0');
-  localStorage.setItem('potentialEarnings', '0');
-  localStorage.setItem('userEarnings', '{}');
-  localStorage.setItem('financeRecords', '[]');
 };

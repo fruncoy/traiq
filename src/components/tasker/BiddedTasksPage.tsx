@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
 import { Task } from "@/types/task";
+import { format } from "date-fns";
 
 const BiddedTasksPage = () => {
   const { data: userTasks = [] } = useQuery({
@@ -23,16 +24,15 @@ const BiddedTasksPage = () => {
           ) : (
             userTasks.map((task: Task) => (
               <Card key={task.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{task.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-600">{task.description}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Payout: KES {task.payout}</span>
-                      <Badge variant={task.status === 'active' ? 'default' : 'secondary'}>
-                        {task.status || 'pending'}
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold">{task.title}</h3>
+                        <p className="text-sm text-gray-600">ID: {task.code}</p>
+                      </div>
+                      <Badge variant="outline">
+                        Deadline: {format(new Date(task.deadline), "MMM d, yyyy")}
                       </Badge>
                     </div>
                   </div>

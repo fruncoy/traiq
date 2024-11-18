@@ -48,14 +48,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
-  const { data: userActiveTasks = [] } = useQuery({
-    queryKey: ['user-active-tasks'],
-    queryFn: async () => {
-      const tasks = localStorage.getItem('userActiveTasks');
-      return tasks ? JSON.parse(tasks) : [];
-    }
-  });
-
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
       console.log("Bidding on task:", taskId);
@@ -96,10 +88,9 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
-  // Filter out tasks that the current user has bid on
-  const userBiddedTaskIds = userActiveTasks.map(task => task.id);
+  // Filter out tasks that have reached their bid limit
   const availableTasks = tasks.filter(task => 
-    !userBiddedTaskIds.includes(task.id) && 
+    task.currentBids < task.bidsNeeded && 
     (!task.status || task.status === "pending")
   );
   
