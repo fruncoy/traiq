@@ -1,10 +1,13 @@
-export type TaskStatus = "active" | "assigned" | "completed";
+export type TaskStatus = "pending" | "active" | "assigned" | "completed";
 
 export interface Task {
   id: string;
   title: string;
   description: string;
   payout: number;
-  deadline: string;
-  status: TaskStatus;
+  workingTime: string;
+  datePosted: string;
+  bidsNeeded: number;
+  currentBids: number;
+  status?: TaskStatus;
 }

@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { Task } from "@/components/TaskList";
+import { Task } from "@/types/task";
 
 const AdminTasks = () => {
   const { data: availableTasks = [] } = useQuery({
