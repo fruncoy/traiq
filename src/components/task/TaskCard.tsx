@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, Users } from "lucide-react";
 import { Task } from "@/types/task";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 interface TaskCardProps {
   task: Task;
@@ -28,8 +28,21 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
     onBid(task.id);
   };
 
-  const deadline = new Date(task.deadline);
-  const formattedDeadline = format(deadline, "EEE, MMM do, h:mm a");
+  const formatDeadline = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        console.error('Invalid date:', dateString);
+        return 'Invalid date';
+      }
+      return format(date, "EEE, MMM do, h:mm a");
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
+
+  const formattedDeadline = formatDeadline(task.deadline);
 
   return (
     <Card>
