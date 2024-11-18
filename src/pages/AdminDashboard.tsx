@@ -50,8 +50,6 @@ const AdminDashboard = () => {
     }
   ];
 
-  const activities: Activity[] = [];
-
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "tasks":
@@ -75,7 +73,7 @@ const AdminDashboard = () => {
         <main className="py-6 px-4 sm:px-6 lg:px-8">
           <DashboardMetrics metrics={metrics} />
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mt-6">
-            <ActivityFeed activities={activities} />
+            <ActivityFeed />
             <QuickActions onAction={handleQuickAction} />
           </div>
         </main>
