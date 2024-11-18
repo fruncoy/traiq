@@ -48,29 +48,7 @@ export const handleTaskBid = async (
   // Check if task has reached required bids (10)
   if (task.currentBids >= 10) {
     task.status = "active";
-    // Randomly select 5 bidders for payment
-    const shuffledBidders = task.bidders.sort(() => Math.random() - 0.5);
-    task.selectedTaskers = shuffledBidders.slice(0, 5);
-    
-    // Add notification for selected taskers
-    const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-    task.selectedTaskers.forEach(taskerId => {
-      notifications.unshift({
-        id: Date.now().toString(),
-        title: "Task Assignment",
-        message: `You've been selected for "${task.title}" (ID: ${task.code})`,
-        type: "success",
-        date: new Date().toISOString()
-      });
-    });
-    localStorage.setItem('notifications', JSON.stringify(notifications));
-
-    // Update user earnings for selected taskers
-    const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-    task.selectedTaskers.forEach(taskerId => {
-      userEarnings[taskerId] = (userEarnings[taskerId] || 0) + task.taskerPayout;
-    });
-    localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
+    console.log("Task reached 10 bids, waiting for submissions...");
   }
 
   // Update tasks in localStorage
@@ -120,6 +98,42 @@ export const handleTaskBid = async (
     localStorage.setItem('notifications', JSON.stringify(notifications));
   }
 
+  return task;
+};
+
+export const processTaskSubmission = async (task: Task) => {
+  console.log("Processing task submission...");
+  
+  // Wait 30-40 seconds before processing payment
+  const delay = Math.floor(Math.random() * (40000 - 30000) + 30000); // Random delay between 30-40 seconds
+  
+  await new Promise(resolve => setTimeout(resolve, delay));
+  
+  // Randomly select 5 bidders for payment
+  const shuffledBidders = task.bidders.sort(() => Math.random() - 0.5);
+  task.selectedTaskers = shuffledBidders.slice(0, 5);
+  
+  // Add notification for selected taskers
+  const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+  task.selectedTaskers.forEach(taskerId => {
+    notifications.unshift({
+      id: Date.now().toString(),
+      title: "Payment Processed",
+      message: `Your submission for "${task.title}" (ID: ${task.code}) has been approved and payment processed`,
+      type: "success",
+      date: new Date().toISOString()
+    });
+  });
+  localStorage.setItem('notifications', JSON.stringify(notifications));
+
+  // Update user earnings for selected taskers
+  const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+  task.selectedTaskers.forEach(taskerId => {
+    userEarnings[taskerId] = (userEarnings[taskerId] || 0) + task.taskerPayout;
+  });
+  localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
+  
+  console.log("Task payment processed after delay");
   return task;
 };
 

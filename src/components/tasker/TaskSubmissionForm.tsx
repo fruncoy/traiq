@@ -6,6 +6,7 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Task } from "@/types/task";
+import { processTaskSubmission } from "../task/TaskBidLogic";
 
 const TaskSubmissionForm = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -75,30 +76,26 @@ const TaskSubmissionForm = () => {
       submissions.push(submission);
       localStorage.setItem('taskSubmissions', JSON.stringify(submissions));
 
-      // Update task status
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      const updatedTasks = tasks.map((t: Task) => 
-        t.id === selectedTask ? { ...t, status: "completed", submissionDate: new Date().toISOString() } : t
-      );
-      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+      // Process the submission with delay
+      toast.loading("Processing submission...", { duration: 40000 });
+      await processTaskSubmission(task);
 
-      // Add notification
+      // Update notifications and activities
       const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
       notifications.unshift({
         id: Date.now().toString(),
         title: "Task Submitted",
-        message: `Your submission for "${task.title}" is under review`,
+        message: `Your submission for "${task.title}" is being processed`,
         type: "info",
         date: new Date().toISOString()
       });
       localStorage.setItem('notifications', JSON.stringify(notifications));
 
-      // Add activity
       const activities = JSON.parse(localStorage.getItem('activities') || '[]');
       activities.unshift({
         id: Date.now().toString(),
         type: "submission",
-        message: `Task "${task.title}" has been submitted for review`,
+        message: `Task "${task.title}" has been submitted and is being processed`,
         timestamp: new Date().toISOString()
       });
       localStorage.setItem('activities', JSON.stringify(activities));
@@ -109,7 +106,7 @@ const TaskSubmissionForm = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
       toast.success("Task submitted successfully!", {
-        description: "Your submission is now under review."
+        description: "Your submission is being processed. Payment will be processed shortly."
       });
       
       setFile(null);
