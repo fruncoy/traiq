@@ -43,7 +43,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Users size={16} />
-                <span>Bidders: {task.currentBids}/10</span>
+                <span>Total Bidders: {task.currentBids}</span>
               </div>
               {!isAdmin && (
                 <p className="text-sm text-blue-600">

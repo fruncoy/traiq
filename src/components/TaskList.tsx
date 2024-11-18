@@ -39,25 +39,29 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
+  const { data: userActiveTasks = [] } = useQuery({
+    queryKey: ['user-active-tasks'],
+    queryFn: async () => {
+      const tasks = localStorage.getItem('userActiveTasks');
+      return tasks ? JSON.parse(tasks) : [];
+    }
+  });
+
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
       const task = tasks.find(t => t.id === taskId);
       return handleTaskBid(task, userBids, tasks);
     },
     onSuccess: (task) => {
-      if (task.currentBids >= task.bidsNeeded) {
-        toast.success("Task is now active!", {
-          description: "The task has received all required bids and is ready to start."
-        });
-      } else {
-        toast.success("Bid placed successfully!", {
-          description: "You can now start working on this task."
-        });
-      }
+      toast.success("Task assigned successfully!", {
+        description: "You can now start working on this task."
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       refetch();
     },
     onError: (error: Error) => {
@@ -81,7 +85,13 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
-  const availableTasks = tasks.filter(task => !task.status || task.status === "pending");
+  // Filter out tasks that user has already bid on
+  const userBiddedTaskIds = userActiveTasks.map(task => task.id);
+  const availableTasks = tasks.filter(task => 
+    !userBiddedTaskIds.includes(task.id) && 
+    (!task.status || task.status === "pending")
+  );
+  
   const displayedTasks = limit ? availableTasks.slice(0, limit) : availableTasks;
 
   return (

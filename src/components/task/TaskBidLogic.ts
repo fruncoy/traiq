@@ -35,10 +35,24 @@ export const handleTaskBid = async (
 
   // Immediately assign task to bidder
   const userTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
-  userTasks.push(task);
+  const assignedTask = { ...task, status: "assigned" };
+  userTasks.push(assignedTask);
   localStorage.setItem('userActiveTasks', JSON.stringify(userTasks));
 
-  const updatedTasks = tasks.map(t => t.id === task.id ? task : t);
+  // Add notification
+  const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+  notifications.unshift({
+    id: Date.now().toString(),
+    title: "Task Assigned",
+    message: `You have been assigned to "${task.title}"`,
+    type: "success",
+    date: new Date().toISOString()
+  });
+  localStorage.setItem('notifications', JSON.stringify(notifications));
+
+  // Remove task from available tasks list
+  const updatedTasks = tasks.filter(t => t.id !== task.id);
+  localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
   // Check if threshold reached (10 bidders)
   if (task.currentBids >= task.bidsNeeded) {
@@ -55,9 +69,7 @@ export const handleTaskBid = async (
     // Generate a new task to replace the activated one
     const newTask = generateNewTask();
     updatedTasks.push(newTask);
-
-    const remainingTasks = updatedTasks.filter(t => t.id !== task.id);
-    localStorage.setItem('tasks', JSON.stringify(remainingTasks));
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
     // Log activity
     const activities = JSON.parse(localStorage.getItem('activities') || '[]');
@@ -68,8 +80,6 @@ export const handleTaskBid = async (
       timestamp: new Date().toISOString()
     });
     localStorage.setItem('activities', JSON.stringify(activities));
-  } else {
-    localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   }
 
   return task;
