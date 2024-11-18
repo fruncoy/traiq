@@ -15,18 +15,20 @@ export const handleTaskBid = async (
   tasks: Task[],
   userId: string = 'current-user-id'
 ) => {
+  console.log("Handling bid for task:", task.id);
+  
   if (!task) throw new Error("Task not found");
 
   const currentBids = parseInt(localStorage.getItem('userBids') || '0');
   const bidsRequired = 1;
   
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
-  if (task.bidders?.includes(userId)) throw new Error("already_bid");
-
-  // Update category popularity
-  const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
-  popularityData[task.category] = (popularityData[task.category] || 0) + 1;
-  localStorage.setItem('categoryPopularity', JSON.stringify(popularityData));
+  
+  // Check if user has already bid on this task
+  const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
+  if (userActiveTasks.some((t: Task) => t.id === task.id)) {
+    throw new Error("already_bid");
+  }
 
   // Update user's bids
   localStorage.setItem('userBids', (currentBids - bidsRequired).toString());
@@ -34,56 +36,57 @@ export const handleTaskBid = async (
   // Update task's current bids and bidders
   task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
-
-  // Check if task has reached required bids
-  if (task.currentBids >= task.bidsNeeded) {
-    task.status = "completed";
-    console.log(`Task reached ${task.bidsNeeded} bids, marking as completed`);
-  }
+  
+  // Add task to user's active tasks
+  const updatedTask = { ...task, status: "active" };
+  userActiveTasks.push(updatedTask);
+  localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
 
   // Update tasks in localStorage
-  const updatedTasks = tasks.map(t => t.id === task.id ? task : t);
+  const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
-  return task;
+  console.log("Task bid successful:", {
+    taskId: task.id,
+    currentBids: task.currentBids,
+    userActiveTasks: userActiveTasks.length
+  });
+
+  return updatedTask;
 };
 
 export const processTaskSubmission = async (task: Task) => {
-  console.log("Processing task submission...");
+  console.log("Processing task submission for:", task.id);
   
-  // Wait 30-40 seconds before processing payment
-  const delay = Math.floor(Math.random() * (40000 - 30000) + 30000);
-  
+  // Wait 2-3 seconds before processing payment
+  const delay = Math.floor(Math.random() * (3000 - 2000) + 2000);
   await new Promise(resolve => setTimeout(resolve, delay));
   
-  // Randomly select 5 bidders for payment
-  const shuffledBidders = task.bidders.sort(() => Math.random() - 0.5);
-  task.selectedTaskers = shuffledBidders.slice(0, 5);
-  
   // Calculate payout based on task type
-  const taskerPayout = task.bidsNeeded * 40 * 1.25; // bidsNeeded * 40 * 1.25
+  const taskerPayout = task.payout === 1000 ? 500 : 250; // 1000 KES -> 500, 500 KES -> 250
   
-  // Add notification for selected taskers
+  // Add notification
   const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-  task.selectedTaskers.forEach(taskerId => {
-    notifications.unshift({
-      id: Date.now().toString(),
-      title: "Payment Processed",
-      message: `Your submission for "${task.title}" (ID: ${task.code}) has been approved. Payment of KES ${taskerPayout} processed`,
-      type: "success",
-      date: new Date().toISOString()
-    });
+  notifications.unshift({
+    id: Date.now().toString(),
+    title: "Payment Processed",
+    message: `Your submission for task ${task.code} has been approved. Payment of KES ${taskerPayout} processed.`,
+    type: "success",
+    date: new Date().toISOString()
   });
   localStorage.setItem('notifications', JSON.stringify(notifications));
 
-  // Update user earnings for selected taskers
+  // Update user earnings
   const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-  task.selectedTaskers.forEach(taskerId => {
-    userEarnings[taskerId] = (userEarnings[taskerId] || 0) + taskerPayout;
-  });
+  const userId = 'current-user-id';
+  userEarnings[userId] = (userEarnings[userId] || 0) + taskerPayout;
   localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   
-  console.log("Task payment processed after delay");
+  console.log("Task payment processed:", {
+    taskId: task.id,
+    payout: taskerPayout
+  });
+  
   return task;
 };
 
@@ -96,7 +99,6 @@ export const generateNewTask = (category?: TaskCategory): Task => {
   const isLongEssay = selectedCategory === 'long_essay';
   const payout = isLongEssay ? 1000 : 500;
   const bidsNeeded = isLongEssay ? 10 : 5;
-  const taskerPayout = bidsNeeded * 40 * 1.25; // bidsNeeded * 40 * 1.25
 
   return {
     id: Date.now().toString(),
@@ -105,8 +107,8 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     description: generateTaskDescription(selectedCategory),
     category: selectedCategory,
     payout,
-    taskerPayout,
-    platformFee: payout - taskerPayout,
+    taskerPayout: payout === 1000 ? 500 : 250,
+    platformFee: payout / 2,
     workingTime: isLongEssay ? "2-3 hours" : "1-2 hours",
     bidsNeeded,
     currentBids: 0,
@@ -122,6 +124,7 @@ export const generateNewTask = (category?: TaskCategory): Task => {
 
 // Reset system data
 export const resetSystem = () => {
+  console.log("Resetting system data");
   localStorage.clear();
   localStorage.setItem('userBids', '5');
   localStorage.setItem('tasks', '[]');

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid, generateNewTask } from "./task/TaskBidLogic";
 import { useState } from "react";
@@ -19,6 +19,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const { data: tasks = [], refetch } = useQuery({
     queryKey: ['tasks', selectedCategory],
     queryFn: async () => {
+      console.log("Fetching tasks for category:", selectedCategory);
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
@@ -57,7 +58,9 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
+      console.log("Bidding on task:", taskId);
       const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error("Task not found");
       return handleTaskBid(task, userBids, tasks);
     },
     onSuccess: (task) => {
@@ -93,7 +96,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
-  // Filter out only tasks that the current user has bid on
+  // Filter out tasks that the current user has bid on
   const userBiddedTaskIds = userActiveTasks.map(task => task.id);
   const availableTasks = tasks.filter(task => 
     !userBiddedTaskIds.includes(task.id) && 
@@ -113,7 +116,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         </div>
       )}
 
-      <div className="relative z-50 mb-8">
+      <div className="relative z-10 mb-8">
         <TaskFilters 
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}

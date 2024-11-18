@@ -70,7 +70,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
                 Required bids: {task.bidsNeeded}
               </p>
               <p className="text-sm text-green-600">
-                Possible Payout: KES {task.taskerPayout}
+                Possible Payout: KES {task.payout}
               </p>
             </div>
             <div className="flex items-center gap-4">
