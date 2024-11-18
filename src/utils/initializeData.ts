@@ -12,23 +12,47 @@ const taskCategories: TaskCategory[] = [
 export const generateTaskDescription = (category: TaskCategory) => {
   switch (category) {
     case "short_essay":
-      return "Write a concise essay on a given topic (500 words)";
+      return "Write a concise essay on a given topic (250-500 words)";
     case "long_essay":
-      return "Create a detailed essay exploring the subject (1000+ words)";
+      return "Create a detailed essay exploring the subject (600+ words)";
     case "item_listing":
-      return "Create product listings with descriptions and specifications";
+      return "Create detailed product listings with descriptions and specifications";
     case "voice_recording":
-      return "Record clear voice content following the provided script";
+      return "Record clear voice content following the provided script (1-3 minutes)";
   }
 };
 
-export const calculateBidsRequired = (payout: number) => {
-  return Math.ceil(payout / 100);
+export const calculateBidsRequired = (category: TaskCategory): number => {
+  switch (category) {
+    case "short_essay":
+      return 5;
+    case "long_essay":
+      return 10;
+    case "item_listing":
+    case "voice_recording":
+      return 5;
+    default:
+      return 5;
+  }
+};
+
+export const calculatePayout = (category: TaskCategory): number => {
+  switch (category) {
+    case "short_essay":
+      return 500;
+    case "long_essay":
+      return 1000;
+    case "item_listing":
+    case "voice_recording":
+      return 500;
+    default:
+      return 500;
+  }
 };
 
 const generateTask = (category: TaskCategory): Task => {
-  const payout = Math.floor(Math.random() * (1000 - 300) + 300);
-  const bidsRequired = calculateBidsRequired(payout);
+  const payout = calculatePayout(category);
+  const bidsRequired = calculateBidsRequired(category);
   
   return {
     id: Date.now().toString(),
@@ -36,7 +60,7 @@ const generateTask = (category: TaskCategory): Task => {
     description: generateTaskDescription(category),
     category,
     payout,
-    workingTime: payout > 500 ? "2-3 hours" : "1-2 hours",
+    workingTime: category === "long_essay" ? "2-3 hours" : "1-2 hours",
     bidsNeeded: 10, // System-wide bid requirement
     currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0],
@@ -58,8 +82,4 @@ export const initializeDefaultTasks = () => {
   localStorage.setItem('categoryPopularity', JSON.stringify(
     Object.fromEntries(taskCategories.map(cat => [cat, 0]))
   ));
-};
-
-export const calculatePayout = (bidsRequired: number) => {
-  return (bidsRequired * MULTIPLIER * 1.25);
 };

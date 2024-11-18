@@ -4,27 +4,26 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { Task } from "@/types/task";
-import { generateTaskDescription, calculateBidsRequired, calculatePayout } from "@/utils/initializeData"; // Assume this import exists for the new helper functions
-import { TaskCategory } from "@/types/task"; // Updated import for TaskCategory
-
-const MULTIPLIER = 40; // Fixed multiplier
+import { generateTaskDescription, calculateBidsRequired, calculatePayout } from "@/utils/initializeData";
+import { TaskCategory } from "@/types/task";
 
 const generateNewTask = (category?: TaskCategory): Task => {
   const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
   const mostPopularCategory = Object.entries(popularityData)
     .sort(([, a], [, b]) => (b as number) - (a as number))[0][0] as TaskCategory;
 
-  const payout = Math.floor(Math.random() * (1000 - 300) + 300);
-  const bidsRequired = calculateBidsRequired(payout);
+  const selectedCategory = category || mostPopularCategory;
+  const payout = calculatePayout(selectedCategory);
+  const bidsRequired = calculateBidsRequired(selectedCategory);
 
   return {
     id: Date.now().toString(),
-    title: `${mostPopularCategory.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
-    description: generateTaskDescription(mostPopularCategory),
-    category: mostPopularCategory,
+    title: `${selectedCategory.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
+    description: generateTaskDescription(selectedCategory),
+    category: selectedCategory,
     payout,
-    workingTime: payout > 500 ? "2-3 hours" : "1-2 hours",
-    bidsNeeded: 10, // System-wide bid requirement
+    workingTime: selectedCategory === "long_essay" ? "2-3 hours" : "1-2 hours",
+    bidsNeeded: 10,
     currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0],
     bidders: [],
@@ -73,12 +72,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       if (!task) throw new Error("Task not found");
 
       const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-      if (currentBids <= 0) throw new Error("insufficient_bids");
-
-      // Check if user has already bid on this task
-      if (task.bidders?.includes('current-user-id')) {
-        throw new Error("already_bid");
-      }
+      const bidsRequired = calculateBidsRequired(task.category);
+      
+      if (currentBids < bidsRequired) throw new Error("insufficient_bids");
+      if (task.bidders?.includes('current-user-id')) throw new Error("already_bid");
 
       // Update category popularity
       const popularityData = JSON.parse(localStorage.getItem('categoryPopularity') || '{}');
@@ -86,9 +83,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       localStorage.setItem('categoryPopularity', JSON.stringify(popularityData));
 
       // Update user's bids
-      const bidsRequired = calculateBidsRequired(task.payout);
-      if (currentBids < bidsRequired) throw new Error("insufficient_bids");
-
       localStorage.setItem('userBids', (currentBids - bidsRequired).toString());
 
       // Update task's current bids and bidders
@@ -97,10 +91,8 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
       const updatedTasks = tasks.map(t => t.id === taskId ? task : t);
 
-      // If task reaches bid limit, move to active and generate new task
       if (task.currentBids >= task.bidsNeeded) {
         task.status = "active";
-        // Select random 5 taskers for payout
         task.selectedTaskers = task.bidders
           ?.sort(() => Math.random() - 0.5)
           .slice(0, 5);
@@ -109,15 +101,12 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         activeTasks.push(task);
         localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
 
-        // Generate new task based on popularity
         const newTask = generateNewTask();
         updatedTasks.push(newTask);
 
-        // Remove completed task from available tasks
         const remainingTasks = updatedTasks.filter(t => t.id !== taskId);
         localStorage.setItem('tasks', JSON.stringify(remainingTasks));
 
-        // Add activity
         const activities = JSON.parse(localStorage.getItem('activities') || '[]');
         activities.unshift({
           id: Date.now().toString(),
@@ -164,7 +153,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
-  // Filter out tasks that have reached their bid limit
   const availableTasks = tasks.filter(task => !task.status || task.status === "pending");
   const displayedTasks = limit ? availableTasks.slice(0, limit) : availableTasks;
 
