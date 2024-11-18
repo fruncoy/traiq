@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
 import { Task } from "@/types/task";
+import { calculateTaskerPayout, calculateBidsRequired } from "@/utils/initializeData";
 
 const SubmitTaskPage = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -38,11 +39,6 @@ const SubmitTaskPage = () => {
     }
   };
 
-  const calculatePayout = (bidsRequired: number) => {
-    const MULTIPLIER = 40;
-    return (bidsRequired * MULTIPLIER * 1.25);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask) {
@@ -56,11 +52,13 @@ const SubmitTaskPage = () => {
 
     setUploading(true);
     try {
-      const task = activeTasks.find(t => t.id === selectedTask);
+      const task = activeTasks.find((t: Task) => t.id === selectedTask);
       if (!task) throw new Error("Task not found");
 
-      // Check if user is selected for payout
+      // Check if user is selected for payout (among the 5 randomly selected taskers)
       const isSelectedForPayout = task.selectedTaskers?.includes('current-user-id');
+      const bidsRequired = calculateBidsRequired(task.category);
+      const taskerPayout = isSelectedForPayout ? calculateTaskerPayout(bidsRequired) : 0;
       
       const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
       const submission = {
@@ -70,7 +68,7 @@ const SubmitTaskPage = () => {
         fileName: file.name,
         submittedAt: new Date().toISOString(),
         status: 'approved', // Auto-approve submissions
-        payout: isSelectedForPayout ? calculatePayout(task.bidsNeeded) : 0
+        payout: taskerPayout
       };
       
       submissions.push(submission);
@@ -79,12 +77,12 @@ const SubmitTaskPage = () => {
       // Update user balance if selected for payout
       if (isSelectedForPayout) {
         const currentBalance = parseFloat(localStorage.getItem('userBalance') || '0');
-        localStorage.setItem('userBalance', (currentBalance + submission.payout).toString());
+        localStorage.setItem('userBalance', (currentBalance + taskerPayout).toString());
       }
       
       toast.success(
         isSelectedForPayout 
-          ? `Task submitted successfully! You earned KES ${submission.payout}`
+          ? `Task submitted successfully! You earned KES ${taskerPayout}`
           : "Task submitted successfully!",
         {
           description: isSelectedForPayout 
@@ -120,7 +118,7 @@ const SubmitTaskPage = () => {
                     <SelectValue placeholder="Select a task to submit" />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
-                    {activeTasks.map((task: any) => (
+                    {activeTasks.map((task: Task) => (
                       <SelectItem key={task.id} value={task.id}>
                         {task.title}
                       </SelectItem>
@@ -175,6 +173,11 @@ const SubmitTaskPage = () => {
                         <p className="text-sm text-gray-500">
                           Submitted: {new Date(submission.submittedAt).toLocaleString()}
                         </p>
+                        {submission.payout > 0 && (
+                          <p className="text-sm text-green-600 mt-1">
+                            Payout: KES {submission.payout}
+                          </p>
+                        )}
                       </div>
                       <Badge
                         variant={submission.status === 'approved' ? 'default' : 
@@ -184,11 +187,6 @@ const SubmitTaskPage = () => {
                         {submission.status}
                       </Badge>
                     </div>
-                    {submission.rejectionReason && (
-                      <p className="mt-2 text-sm text-red-500">
-                        Reason: {submission.rejectionReason}
-                      </p>
-                    )}
                   </div>
                 ))
               )}

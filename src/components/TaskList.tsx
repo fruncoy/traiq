@@ -4,7 +4,12 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { Task } from "@/types/task";
-import { generateTaskDescription, calculateBidsRequired, calculatePayout } from "@/utils/initializeData";
+import { 
+  generateTaskDescription, 
+  calculateBidsRequired, 
+  calculatePayout,
+  calculateTaskerPayout 
+} from "@/utils/initializeData";
 import { TaskCategory } from "@/types/task";
 
 const generateNewTask = (category?: TaskCategory): Task => {
@@ -44,7 +49,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       const storedTasks = localStorage.getItem('tasks');
       const tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
-      // Ensure minimum 3 tasks
       if (tasks.length < 3) {
         const newTasks = Array(3 - tasks.length).fill(null).map(() => 
           generateNewTask()
@@ -93,6 +97,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
       if (task.currentBids >= task.bidsNeeded) {
         task.status = "active";
+        // Randomly select 5 taskers from all bidders
         task.selectedTaskers = task.bidders
           ?.sort(() => Math.random() - 0.5)
           .slice(0, 5);
@@ -101,12 +106,14 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         activeTasks.push(task);
         localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
 
+        // Generate a new task to replace the activated one
         const newTask = generateNewTask();
         updatedTasks.push(newTask);
 
         const remainingTasks = updatedTasks.filter(t => t.id !== taskId);
         localStorage.setItem('tasks', JSON.stringify(remainingTasks));
 
+        // Log the activity
         const activities = JSON.parse(localStorage.getItem('activities') || '[]');
         activities.unshift({
           id: Date.now().toString(),
@@ -144,6 +151,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
             label: "Buy Bids",
             onClick: () => window.location.href = "/tasker/buy-bids"
           }
+        });
+      } else if (error.message === "already_bid") {
+        toast.error("Already bid", {
+          description: "You have already placed a bid on this task."
         });
       } else {
         toast.error("Failed to place bid", {
