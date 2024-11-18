@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Task } from "@/types/task";
 
 const TaskSubmissionForm = () => {
   const [file, setFile] = useState<File | null>(null);
   const [selectedTask, setSelectedTask] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: activeTasks = [] } = useQuery({
     queryKey: ['user-active-tasks'],
@@ -30,7 +31,8 @@ const TaskSubmissionForm = () => {
 
   // Filter out tasks that have already been submitted
   const availableTasks = activeTasks.filter((task: Task) => 
-    !submissions.some((sub: any) => sub.taskId === task.id)
+    !submissions.some((sub: any) => sub.taskId === task.id) &&
+    task.status === "active"
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,13 +64,49 @@ const TaskSubmissionForm = () => {
         taskTitle: task.title,
         fileName: file.name,
         submittedAt: new Date().toISOString(),
-        status: 'pending'
+        status: 'pending',
+        payout: task.taskerPayout
       };
       
       submissions.push(submission);
       localStorage.setItem('taskSubmissions', JSON.stringify(submissions));
 
-      toast.success("Task submitted successfully!");
+      // Update task status
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const updatedTasks = tasks.map((t: Task) => 
+        t.id === selectedTask ? { ...t, status: "completed", submissionDate: new Date().toISOString() } : t
+      );
+      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+
+      // Add notification
+      const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+      notifications.unshift({
+        id: Date.now().toString(),
+        title: "Task Submitted",
+        message: `Your submission for "${task.title}" is under review`,
+        type: "info",
+        date: new Date().toISOString()
+      });
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+
+      // Add activity
+      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+      activities.unshift({
+        id: Date.now().toString(),
+        type: "submission",
+        message: `Task "${task.title}" has been submitted for review`,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('activities', JSON.stringify(activities));
+
+      queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      toast.success("Task submitted successfully!", {
+        description: "Your submission is now under review."
+      });
       
       setFile(null);
       setSelectedTask("");

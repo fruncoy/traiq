@@ -14,7 +14,7 @@ export const resetSystem = () => {
   localStorage.removeItem('financeRecords');
   
   // Reinitialize with default values
-  localStorage.setItem('userBids', '10');
+  localStorage.setItem('userBids', '5'); // Start with 5 bids
   localStorage.setItem('tasks', '[]');
   localStorage.setItem('userActiveTasks', '[]');
   localStorage.setItem('activeTasks', '[]');

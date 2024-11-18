@@ -40,52 +40,40 @@ export const handleTaskBid = async (
   task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
 
-  // Update user's earnings tracking
-  const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-  if (!userEarnings[userId]) {
-    userEarnings[userId] = {
-      totalEarned: 0,
-      pendingTasks: 0,
-      completedTasks: 0,
-      balance: 0
-    };
+  // Check if task should become active (has enough bids)
+  if (task.currentBids >= task.bidsNeeded) {
+    task.status = "active";
+    task.selectedTaskers = task.bidders.slice(0, 5); // Select first 5 bidders
+    
+    // Add notification for selected taskers
+    const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+    task.selectedTaskers.forEach(taskerId => {
+      notifications.unshift({
+        id: Date.now().toString(),
+        title: "Task Assignment",
+        message: `You've been selected for "${task.title}"`,
+        type: "success",
+        date: new Date().toISOString()
+      });
+    });
+    localStorage.setItem('notifications', JSON.stringify(notifications));
   }
-  userEarnings[userId].pendingTasks += 1;
-  localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
 
-  // Immediately assign task to bidder
-  const userTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
-  const assignedTask = { ...task, status: "assigned" };
-  userTasks.push(assignedTask);
-  localStorage.setItem('userActiveTasks', JSON.stringify(userTasks));
-
-  // Add notification
-  const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-  notifications.unshift({
-    id: Date.now().toString(),
-    title: "Task Assigned",
-    message: `You have been assigned to "${task.title}"`,
-    type: "success",
-    date: new Date().toISOString()
-  });
-  localStorage.setItem('notifications', JSON.stringify(notifications));
-
-  // Remove task from available tasks list
-  const updatedTasks = tasks.filter(t => t.id !== task.id);
+  // Update tasks in localStorage
+  const updatedTasks = tasks.map(t => t.id === task.id ? task : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
-  // Track payout in finance records
-  const financeRecords = JSON.parse(localStorage.getItem('financeRecords') || '[]');
-  financeRecords.unshift({
+  // Add activity record
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  activities.unshift({
     id: Date.now().toString(),
-    taskId: task.id,
-    taskCode: task.code,
-    amount: task.payout,
-    type: 'pending',
-    date: new Date().toISOString(),
-    userId: userId
+    type: task.status === "active" ? "approval" : "pending",
+    message: task.status === "active" 
+      ? `Task "${task.title}" is now active with all required bids`
+      : `New bid placed on task "${task.title}"`,
+    timestamp: new Date().toISOString()
   });
-  localStorage.setItem('financeRecords', JSON.stringify(financeRecords));
+  localStorage.setItem('activities', JSON.stringify(activities));
 
   return task;
 };
@@ -97,7 +85,7 @@ export const generateNewTask = (category?: TaskCategory): Task => {
 
   const selectedCategory = category || mostPopularCategory;
   const payout = calculatePayout(selectedCategory);
-  const bidsRequired = calculateBidsRequired(selectedCategory);
+  const taskerPayout = calculateTaskerPayout(selectedCategory);
 
   return {
     id: Date.now().toString(),
@@ -106,10 +94,13 @@ export const generateNewTask = (category?: TaskCategory): Task => {
     description: generateTaskDescription(selectedCategory),
     category: selectedCategory,
     payout,
+    taskerPayout,
+    platformFee: payout - taskerPayout,
     workingTime: selectedCategory === "long_essay" ? "2-3 hours" : "1-2 hours",
     bidsNeeded: 10,
     currentBids: 0,
     datePosted: new Date().toISOString(),
+    status: "pending",
     bidders: [],
     selectedTaskers: []
   };

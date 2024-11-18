@@ -1,8 +1,5 @@
 import { Task, TaskCategory } from "@/types/task";
 
-const MULTIPLIER = 50; // Changed to match the required payout calculations
-const PROFIT_MARGIN = 1; // Adjusted to match exact payout requirements
-
 const taskCategories: TaskCategory[] = [
   "short_essay",
   "long_essay",
@@ -27,12 +24,8 @@ export const calculateBidsRequired = (category: TaskCategory): number => {
   switch (category) {
     case "long_essay":
       return 10; // 10 bids for 1000 KES tasks
-    case "short_essay":
-    case "item_listing":
-    case "voice_recording":
-      return 5; // 5 bids for 500 KES tasks
     default:
-      return 5;
+      return 5; // 5 bids for 500 KES tasks
   }
 };
 
@@ -40,17 +33,17 @@ export const calculatePayout = (category: TaskCategory): number => {
   switch (category) {
     case "long_essay":
       return 1000; // 1000 KES tasks
-    case "short_essay":
-    case "item_listing":
-    case "voice_recording":
-      return 500; // 500 KES tasks
     default:
-      return 500;
+      return 500; // 500 KES tasks
   }
 };
 
-export const calculateTaskerPayout = (bidsRequired: number): number => {
-  return bidsRequired === 10 ? 500 : 250; // 500 KES for 10-bid tasks, 250 KES for 5-bid tasks
+export const calculateTaskerPayout = (category: TaskCategory): number => {
+  return category === "long_essay" ? 500 : 250;
+};
+
+export const calculatePlatformFee = (payout: number, taskerPayout: number): number => {
+  return payout - taskerPayout;
 };
 
 const generateTaskCode = () => {
@@ -62,7 +55,7 @@ const generateTaskCode = () => {
 
 const generateTask = (category: TaskCategory): Task => {
   const payout = calculatePayout(category);
-  const bidsRequired = calculateBidsRequired(category);
+  const taskerPayout = calculateTaskerPayout(category);
   
   return {
     id: Date.now().toString(),
@@ -71,26 +64,32 @@ const generateTask = (category: TaskCategory): Task => {
     description: generateTaskDescription(category),
     category,
     payout,
+    taskerPayout,
+    platformFee: calculatePlatformFee(payout, taskerPayout),
     workingTime: category === "long_essay" ? "2-3 hours" : "1-2 hours",
-    bidsNeeded: 10, // System-wide requirement of 10 taskers
+    bidsNeeded: calculateBidsRequired(category),
     currentBids: 0,
-    datePosted: new Date().toISOString().split('T')[0],
+    datePosted: new Date().toISOString(),
+    status: "pending",
     bidders: [],
     selectedTaskers: []
   };
 };
 
 export const initializeDefaultTasks = () => {
-  const defaultTasks = taskCategories.slice(0, 3).map(category => generateTask(category));
+  const defaultTasks = taskCategories.map(category => generateTask(category));
   
   localStorage.setItem('tasks', JSON.stringify(defaultTasks));
-  localStorage.setItem('userBids', '0');
+  localStorage.setItem('userBids', '5'); // Start with 5 bids
   localStorage.setItem('activeTasks', '[]');
   localStorage.setItem('taskSubmissions', '[]');
   localStorage.setItem('activities', '[]');
   localStorage.setItem('totalSpent', '0');
   localStorage.setItem('userBalance', '0');
+  localStorage.setItem('notifications', '[]');
   localStorage.setItem('categoryPopularity', JSON.stringify(
     Object.fromEntries(taskCategories.map(cat => [cat, 0]))
   ));
+  localStorage.setItem('userEarnings', '{}');
+  localStorage.setItem('financeRecords', '[]');
 };
