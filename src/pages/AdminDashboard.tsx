@@ -4,34 +4,53 @@ import DashboardMetrics from "../components/DashboardMetrics";
 import ActivityFeed from "../components/ActivityFeed";
 import QuickActions from "../components/QuickActions";
 import { Activity } from "@/types/activity";
+import { useQuery } from "@tanstack/react-query";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
-  const activities: Activity[] = [];
+  const { data: totalRevenue = 0 } = useQuery({
+    queryKey: ['total-revenue'],
+    queryFn: async () => {
+      return parseFloat(localStorage.getItem('totalSpent') || '0');
+    }
+  });
+
+  const { data: activeTasks = [] } = useQuery({
+    queryKey: ['active-tasks'],
+    queryFn: async () => {
+      const tasks = localStorage.getItem('activeTasks');
+      return tasks ? JSON.parse(tasks) : [];
+    }
+  });
+
+  const { data: allTasks = [] } = useQuery({
+    queryKey: ['all-tasks'],
+    queryFn: async () => {
+      const tasks = localStorage.getItem('tasks');
+      return tasks ? JSON.parse(tasks) : [];
+    }
+  });
 
   const metrics = [
     { 
       label: "Total Tasks", 
-      value: "3", 
+      value: allTasks.length.toString(), 
       description: "Active tasks in the system" 
     },
     { 
-      label: "Submissions", 
-      value: "0", 
-      description: "Pending review" 
-    },
-    { 
-      label: "Tasks Submitted", 
-      value: "0", 
-      description: "Total tasks submitted" 
+      label: "Active Tasks", 
+      value: activeTasks.length.toString(), 
+      description: "Tasks being worked on" 
     },
     { 
       label: "Total Earnings", 
-      value: "Ksh 0", 
+      value: `KES ${totalRevenue}`, 
       description: "Platform revenue" 
     }
   ];
+
+  const activities: Activity[] = [];
 
   const handleQuickAction = (action: string) => {
     switch (action) {

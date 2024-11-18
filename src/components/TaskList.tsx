@@ -14,7 +14,7 @@ export interface Task {
   bidsNeeded: number;
   currentBids: number;
   datePosted: string;
-  status?: "pending" | "completed";
+  status?: "pending" | "active" | "completed";
 }
 
 const sampleTasks: Task[] = [
@@ -49,7 +49,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
   const { data: tasks = sampleTasks, refetch } = useQuery({
     queryKey: ['tasks'],
-    queryFn: async () => sampleTasks
+    queryFn: async () => {
+      const storedTasks = localStorage.getItem('tasks');
+      return storedTasks ? JSON.parse(storedTasks) : sampleTasks;
+    }
   });
 
   const { data: userBids = 0 } = useQuery({
@@ -71,12 +74,34 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       // Update user's bids
       localStorage.setItem('userBids', (currentBids - 1).toString());
       
-      // Update task's current bids
+      // Update task's current bids and store in user's active tasks
       task.currentBids += 1;
+      const updatedTasks = tasks.map(t => t.id === taskId ? task : t);
+      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
       
       // Add to user's earnings potential
       const currentEarnings = parseFloat(localStorage.getItem('potentialEarnings') || '0');
       localStorage.setItem('potentialEarnings', (currentEarnings + task.payout).toString());
+      
+      // Add to user's bids history
+      const userBids = JSON.parse(localStorage.getItem('userBidHistory') || '[]');
+      userBids.push({
+        id: Date.now().toString(),
+        taskId: task.id,
+        taskTitle: task.title,
+        bidAmount: task.payout,
+        status: task.currentBids >= task.bidsNeeded ? "active" : "pending",
+        submittedAt: new Date().toISOString()
+      });
+      localStorage.setItem('userBidHistory', JSON.stringify(userBids));
+      
+      // If task reaches bid limit, mark as active
+      if (task.currentBids >= task.bidsNeeded) {
+        task.status = "active";
+        const activeTasks = JSON.parse(localStorage.getItem('activeTasks') || '[]');
+        activeTasks.push(task);
+        localStorage.setItem('activeTasks', JSON.stringify(activeTasks));
+      }
       
       return task;
     },
@@ -96,10 +121,16 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   });
 
   const handleBidNow = (taskId: string) => {
+    if (userBids <= 0) {
+      toast.error("You have insufficient bids. Please purchase more bids to continue.");
+      return;
+    }
     bidMutation.mutate(taskId);
   };
 
-  const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
+  // Filter out tasks that have reached their bid limit
+  const availableTasks = tasks.filter(task => !task.status || task.status === "pending");
+  const displayedTasks = limit ? availableTasks.slice(0, limit) : availableTasks;
 
   return (
     <div className="space-y-4">
@@ -145,9 +176,9 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
                       <Button 
                         className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                         onClick={() => handleBidNow(task.id)}
-                        disabled={bidMutation.isPending || userBids <= 0}
+                        disabled={bidMutation.isPending}
                       >
-                        {bidMutation.isPending ? "Bidding..." : userBids <= 0 ? "No Bids Available" : "Bid Now"}
+                        {bidMutation.isPending ? "Bidding..." : "Bid Now"}
                       </Button>
                     )}
                   </div>
