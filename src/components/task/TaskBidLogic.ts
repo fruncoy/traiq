@@ -39,7 +39,7 @@ export const handleTaskBid = async (
   task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
 
-  // Check if task should become active (has enough bids based on payout)
+  // Check if task should become active (has enough bids)
   const requiredBids = task.payout === 1000 ? 10 : 5;
   if (task.currentBids >= requiredBids) {
     task.status = "active";
@@ -59,6 +59,13 @@ export const handleTaskBid = async (
       });
     });
     localStorage.setItem('notifications', JSON.stringify(notifications));
+
+    // Update user earnings for selected taskers
+    const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+    task.selectedTaskers.forEach(taskerId => {
+      userEarnings[taskerId] = (userEarnings[taskerId] || 0) + task.taskerPayout;
+    });
+    localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   }
 
   // Update tasks in localStorage
@@ -77,10 +84,12 @@ export const handleTaskBid = async (
   });
   localStorage.setItem('activities', JSON.stringify(activities));
 
-  // Add to user's active tasks immediately
+  // Add to user's active tasks
   const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
-  userActiveTasks.push(task);
-  localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
+  if (!userActiveTasks.some((t: Task) => t.id === task.id)) {
+    userActiveTasks.push(task);
+    localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
+  }
 
   return task;
 };

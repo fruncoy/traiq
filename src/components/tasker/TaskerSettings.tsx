@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 const TaskerSettings = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,15 @@ const TaskerSettings = () => {
     email: "john@example.com",
     phone: "+254 700 000000",
     mpesaNumber: "+254 700 000000"
+  });
+
+  const { data: userEarnings = 0 } = useQuery({
+    queryKey: ['user-earnings'],
+    queryFn: async () => {
+      const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+      return earnings['current-user-id'] || 0;
+    },
+    refetchInterval: 5000
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,7 +108,7 @@ const TaskerSettings = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Available Balance</span>
-                  <span className="font-semibold">KES 12,000</span>
+                  <span className="font-semibold">KES {userEarnings}</span>
                 </div>
                 <Input type="number" placeholder="Enter amount to withdraw" />
                 <Button 
