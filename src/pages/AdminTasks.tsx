@@ -1,6 +1,4 @@
 import Sidebar from "../components/Sidebar";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
@@ -22,11 +20,6 @@ const AdminTasks = () => {
       return tasks ? JSON.parse(tasks) : [];
     }
   });
-
-  const handleAddTask = () => {
-    // Handle add task logic here
-    console.log("Add task clicked");
-  };
 
   const renderTaskTable = (tasks: Task[], title: string) => (
     <Card className="mt-6">
@@ -74,13 +67,7 @@ const AdminTasks = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
         <div className="p-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Task Management</h2>
-            <Button onClick={handleAddTask} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Add Task
-            </Button>
-          </div>
-
+          <h2 className="text-2xl font-bold">Task Management</h2>
           {renderTaskTable(availableTasks.filter(t => !t.status || t.status === 'pending'), 'Available Tasks')}
           {renderTaskTable(activeTasks, 'Active Tasks')}
         </div>

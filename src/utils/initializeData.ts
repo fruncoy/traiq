@@ -1,6 +1,7 @@
 import { Task, TaskCategory } from "@/types/task";
 
 const MULTIPLIER = 40;
+const PROFIT_MARGIN = 1.25;
 
 const taskCategories: TaskCategory[] = [
   "short_essay",
@@ -24,10 +25,9 @@ export const generateTaskDescription = (category: TaskCategory) => {
 
 export const calculateBidsRequired = (category: TaskCategory): number => {
   switch (category) {
-    case "short_essay":
-      return 5;
     case "long_essay":
       return 10;
+    case "short_essay":
     case "item_listing":
     case "voice_recording":
       return 5;
@@ -38,16 +38,19 @@ export const calculateBidsRequired = (category: TaskCategory): number => {
 
 export const calculatePayout = (category: TaskCategory): number => {
   switch (category) {
-    case "short_essay":
-      return 500;
     case "long_essay":
       return 1000;
+    case "short_essay":
     case "item_listing":
     case "voice_recording":
       return 500;
     default:
       return 500;
   }
+};
+
+export const calculateTaskerPayout = (bidsRequired: number): number => {
+  return bidsRequired * MULTIPLIER * PROFIT_MARGIN;
 };
 
 const generateTask = (category: TaskCategory): Task => {
@@ -61,7 +64,7 @@ const generateTask = (category: TaskCategory): Task => {
     category,
     payout,
     workingTime: category === "long_essay" ? "2-3 hours" : "1-2 hours",
-    bidsNeeded: 10, // System-wide bid requirement
+    bidsNeeded: 10, // System-wide requirement of 10 taskers
     currentBids: 0,
     datePosted: new Date().toISOString().split('T')[0],
     bidders: [],
