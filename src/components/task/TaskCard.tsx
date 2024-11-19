@@ -43,6 +43,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   };
 
   const formattedDeadline = formatDeadline(task.deadline);
+  const requiredBids = task.category === 'genai' ? 10 : 5;
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -53,11 +54,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               <h3 className="text-xl font-semibold text-gray-900">{task.title}</h3>
               <p className="text-sm text-gray-500 mt-1">Code: {task.code}</p>
             </div>
-            {!isAdmin && task.currentBids < 10 && (
+            {!isAdmin && task.currentBids < requiredBids && (
               <Button 
-                className="bg-primary hover:bg-primary-dark text-white"
+                className="bg-[#1E40AF] hover:bg-blue-700 text-white"
                 onClick={handleBidClick}
-                disabled={isPending || task.currentBids >= 10}
+                disabled={isPending || task.currentBids >= requiredBids}
               >
                 {isPending ? "Bidding..." : "Bid Now"}
               </Button>
@@ -68,12 +69,17 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
 
           <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-2">
-              <Clock size={16} className="text-primary" />
+              <Clock size={16} className="text-[#1E40AF]" />
               <span>Deadline: {formattedDeadline}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users size={16} className="text-primary" />
-              <span>Bidders: {task.currentBids}/10 {task.category === 'genai' ? '(Required: 10)' : '(Required: 5)'}</span>
+              <Users size={16} className="text-[#1E40AF]" />
+              <div className="flex flex-col">
+                <span>Total Bidders: {task.currentBids}/10</span>
+                <span className="text-xs text-[#1E40AF]">
+                  Required Bids: {requiredBids}
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-medium">Category:</span> 

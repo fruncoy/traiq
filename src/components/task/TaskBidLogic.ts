@@ -116,6 +116,17 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   const potentialPayouts = parseFloat(localStorage.getItem('potentialPayouts') || '0');
   localStorage.setItem('potentialPayouts', (potentialPayouts - task.payout).toString());
   
+  // Update task submissions in localStorage
+  const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+  const updatedTaskSubmissions = taskSubmissions.map((submission: any) => {
+    if (submission.taskId === taskId) {
+      return { ...submission, status: 'approved' };
+    }
+    return submission;
+  });
+  localStorage.setItem('taskSubmissions', JSON.stringify(updatedTaskSubmissions));
+  
+  // Save updated tasks
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
   return task;
