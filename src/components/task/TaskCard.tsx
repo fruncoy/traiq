@@ -43,50 +43,50 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   };
 
   const formattedDeadline = formatDeadline(task.deadline);
-  const showPayout = isAdmin || (task.submissions?.some(s => s.status === 'approved'));
 
   return (
-    <Card>
+    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-6">
         <div className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold">{task.title}</h3>
-              <span className="text-sm text-gray-600">Code: {task.code}</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">{task.title}</h3>
+              <p className="text-sm text-gray-500 mt-1">Code: {task.code}</p>
             </div>
-            <p className="text-sm text-gray-600">{task.description}</p>
+            {!isAdmin && task.currentBids < 10 && (
+              <Button 
+                className="bg-primary hover:bg-primary-dark text-white"
+                onClick={handleBidClick}
+                disabled={isPending || task.currentBids >= 10}
+              >
+                {isPending ? "Bidding..." : "Bid Now"}
+              </Button>
+            )}
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock size={16} />
-                <span>Deadline: {formattedDeadline}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users size={16} />
-                <span>Bidders: {task.currentBids}/10 (Required: {task.bidsNeeded})</span>
-              </div>
-              <p className="text-sm text-gray-600">
-                Category: {task.category}
-              </p>
-              {!hidePayouts && (
-                <p className="text-sm text-green-600">
-                  {task.submissions?.some(s => s.status === 'approved') ? 'Payout' : 'Possible Payout'}: KES {task.payout}
-                </p>
-              )}
+          <p className="text-gray-600 text-sm">{task.description}</p>
+
+          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-primary" />
+              <span>Deadline: {formattedDeadline}</span>
             </div>
-            <div className="flex items-center gap-4">
-              {!isAdmin && (
-                <Button 
-                  className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
-                  onClick={handleBidClick}
-                  disabled={isPending || task.currentBids >= task.maxBidders}
-                >
-                  {isPending ? "Bidding..." : "Bid Now"}
-                </Button>
-              )}
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-primary" />
+              <span>Bidders: {task.currentBids}/10 {task.category === 'genai' ? '(Required: 10)' : '(Required: 5)'}</span>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Category:</span> 
+              <span className="capitalize">{task.category}</span>
+            </div>
+            {!hidePayouts && (
+              <div className="flex items-center gap-2 text-green-600">
+                <span className="font-medium">
+                  {task.submissions?.some(s => s.status === 'approved') ? 'Payout:' : 'Possible Payout:'}
+                </span>
+                <span>KES {task.payout}</span>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

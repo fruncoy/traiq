@@ -114,7 +114,7 @@ const AdminTasks = () => {
                     <TableHead>Description</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Unique Code</TableHead>
-                    <TableHead>Bids</TableHead>
+                    <TableHead>Total Bidders</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -132,8 +132,10 @@ const AdminTasks = () => {
                         <TableCell>{task.description}</TableCell>
                         <TableCell>{task.category}</TableCell>
                         <TableCell>{task.code}</TableCell>
-                        <TableCell>{task.currentBids}/{task.bidsNeeded}</TableCell>
-                        <TableCell>{task.status}</TableCell>
+                        <TableCell>{task.currentBids}/10</TableCell>
+                        <TableCell>
+                          {task.currentBids >= 10 ? 'Active' : 'Available'}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
