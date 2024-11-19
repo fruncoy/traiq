@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
-import { handleTaskBid, generateNewTask } from "./task/TaskBidLogic";
+import { handleTaskBid } from "./task/TaskBidLogic";
 import { useState } from "react";
 import TaskFilters from "./task/TaskFilters";
 import { Task } from "@/types/task";
@@ -19,21 +19,20 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const { data: tasks = [], refetch } = useQuery({
     queryKey: ['tasks', selectedCategory],
     queryFn: async () => {
-      console.log("Fetching tasks for category:", selectedCategory);
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
-      if (selectedCategory !== 'all') {
-        tasks = tasks.filter((task: Task) => task.category === selectedCategory);
+      // Check if it's past 4 PM
+      const now = new Date();
+      const fourPM = new Date(now);
+      fourPM.setHours(16, 0, 0, 0);
+
+      if (now > fourPM) {
+        return tasks.filter((task: Task) => task.currentBids > 0);
       }
 
-      if (tasks.length < 3) {
-        const newTasks = Array(3 - tasks.length).fill(null).map(() => 
-          generateNewTask(selectedCategory === 'all' ? undefined : selectedCategory)
-        );
-        const updatedTasks = [...tasks, ...newTasks];
-        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-        return updatedTasks;
+      if (selectedCategory !== 'all') {
+        tasks = tasks.filter((task: Task) => task.category === selectedCategory);
       }
 
       return tasks;
@@ -50,7 +49,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
-      console.log("Bidding on task:", taskId);
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error("Task not found");
       return handleTaskBid(task, userBids, tasks);
@@ -76,10 +74,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
             onClick: () => window.location.href = "/tasker/buy-bids"
           }
         });
-      } else if (error.message === "already_bid") {
-        toast.error("Already bid", {
-          description: "You have already placed a bid on this task."
-        });
       } else {
         toast.error("Failed to place bid", {
           description: "Please try again later."
@@ -88,12 +82,8 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
-  // Filter out tasks that have reached their bid limit
-  const availableTasks = tasks.filter(task => 
-    task.currentBids < task.bidsNeeded && 
-    (!task.status || task.status === "pending")
-  );
-  
+  // Filter out tasks that have been bid on
+  const availableTasks = tasks.filter(task => !task.currentBids);
   const displayedTasks = limit ? availableTasks.slice(0, limit) : availableTasks;
 
   return (
@@ -117,7 +107,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       <div className="grid gap-4">
         {displayedTasks.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            There are no available tasks at the moment. Please check back later.
+            There are no available tasks at the moment. Please check back tomorrow.
           </div>
         ) : (
           displayedTasks.map((task) => (

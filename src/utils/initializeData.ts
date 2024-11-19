@@ -20,28 +20,7 @@ export const generateTaskDescription = (category: TaskCategory) => {
   }
 };
 
-export const calculateBidsRequired = () => {
-  return 10; // All tasks require 10 bids
-};
-
-export const calculatePayout = (category: TaskCategory): number => {
-  switch (category) {
-    case "long_essay":
-      return 1000; // 1000 KES tasks
-    default:
-      return 500; // 500 KES tasks
-  }
-};
-
-export const calculateTaskerPayout = (category: TaskCategory): number => {
-  return category === "long_essay" ? 500 : 250;
-};
-
-export const calculatePlatformFee = (payout: number, taskerPayout: number): number => {
-  return payout - taskerPayout;
-};
-
-export const generateUniqueTaskCode = () => {
+const generateUniqueTaskCode = () => {
   const prefix = 'TSK';
   const timestamp = Date.now().toString().slice(-6);
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
@@ -49,40 +28,49 @@ export const generateUniqueTaskCode = () => {
 };
 
 export const initializeDefaultTasks = () => {
-  const defaultTasks = taskCategories.map(category => {
-    const payout = calculatePayout(category);
-    const taskerPayout = calculateTaskerPayout(category);
+  // Generate exactly 10 tasks
+  const defaultTasks = Array(10).fill(null).map((_, index) => {
+    const category = taskCategories[index % taskCategories.length];
+    const payout = category === 'long_essay' ? 1000 : 500;
+    const taskerPayout = category === 'long_essay' ? 500 : 250;
     
+    const deadline = new Date();
+    deadline.setHours(16, 0, 0, 0); // Set deadline to 4 PM today
+
     return {
-      id: Date.now().toString(),
+      id: Date.now().toString() + index,
       code: generateUniqueTaskCode(),
       title: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
       description: generateTaskDescription(category),
       category,
       payout,
       taskerPayout,
-      platformFee: calculatePlatformFee(payout, taskerPayout),
-      workingTime: category === "long_essay" ? "2-3 hours" : "1-2 hours",
-      bidsNeeded: 10, // All tasks require 10 bids
+      platformFee: payout / 2,
+      workingTime: category === 'long_essay' ? "2-3 hours" : "1-2 hours",
+      bidsNeeded: 1, // Changed to 1 since tasks are independent
       currentBids: 0,
       datePosted: new Date().toISOString(),
+      deadline: deadline.toISOString(),
       status: "pending",
       bidders: [],
-      selectedTaskers: []
+      selectedTaskers: [],
+      submissions: [], // Array to store submissions from taskers
+      rating: 0,
+      totalRatings: 0
     };
   });
   
   localStorage.setItem('tasks', JSON.stringify(defaultTasks));
-  localStorage.setItem('userBids', '5'); // Start with 5 bids
-  localStorage.setItem('activeTasks', '[]');
+  localStorage.setItem('userBids', '5');
+  localStorage.setItem('userActiveTasks', '[]');
   localStorage.setItem('taskSubmissions', '[]');
-  localStorage.setItem('activities', '[]');
-  localStorage.setItem('totalSpent', '0');
-  localStorage.setItem('userBalance', '0');
   localStorage.setItem('notifications', '[]');
+  localStorage.setItem('activities', '[]');
   localStorage.setItem('categoryPopularity', JSON.stringify(
     Object.fromEntries(taskCategories.map(cat => [cat, 0]))
   ));
+  localStorage.setItem('totalSpent', '0');
+  localStorage.setItem('userBalance', '0');
   localStorage.setItem('userEarnings', '{}');
   localStorage.setItem('financeRecords', '[]');
 };
