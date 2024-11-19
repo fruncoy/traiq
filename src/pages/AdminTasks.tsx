@@ -39,14 +39,13 @@ const AdminTasks = () => {
               return {
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                 code: row.UniqueCode || `TSK${Date.now()}`,
-                title: `${row.TaskCategory} Task`,
-                description: row.TaskDescription,
+                title: row.TaskTitle || `${row.TaskCategory} Task`,
+                description: row.TaskDescription || '',
                 category: isGenAi ? 'genai' : 'creai',
                 payout: isGenAi ? 500 : 250,
                 taskerPayout: isGenAi ? 400 : 200,
                 platformFee: isGenAi ? 100 : 50,
-                workingTime: "24 hours",
-                bidsNeeded: 10, // All tasks require 10 bids
+                bidsNeeded: isGenAi ? 10 : 5,
                 currentBids: 0,
                 datePosted: new Date().toISOString(),
                 deadline: deadline.toISOString(),

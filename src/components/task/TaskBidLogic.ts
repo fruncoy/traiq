@@ -8,8 +8,9 @@ export const handleTaskBid = async (
 ) => {
   if (!task) throw new Error("Task not found");
 
-  // Check if task has reached bid threshold
-  if (task.currentBids >= 10) {
+  // Check if task has reached bid threshold based on category
+  const maxBids = task.category === 'genai' ? 10 : 5;
+  if (task.currentBids >= maxBids) {
     throw new Error("Task has reached maximum bids");
   }
 

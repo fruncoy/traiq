@@ -65,7 +65,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Users size={16} />
-                <span>Bidders: {task.currentBids}/10</span>
+                <span>Bidders: {task.currentBids}/{task.category === 'genai' ? 10 : 5}</span>
               </div>
               <p className="text-sm text-gray-600">
                 Category: {task.category}

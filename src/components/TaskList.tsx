@@ -19,14 +19,12 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
-      // For admin, show all tasks. For taskers, only show tasks with less than 10 bids
-      // and tasks they haven't bid on yet
       if (!isAdmin) {
         const userId = 'current-user-id';
-        return tasks.filter((task: Task) => 
-          task.currentBids < 10 && 
-          !task.bidders?.includes(userId)
-        );
+        return tasks.filter((task: Task) => {
+          const maxBids = task.category === 'genai' ? 10 : 5;
+          return task.currentBids < maxBids && !task.bidders?.includes(userId);
+        });
       }
 
       return tasks;
