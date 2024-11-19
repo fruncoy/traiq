@@ -52,7 +52,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold">{task.title}</h3>
-              <span className="text-sm text-gray-600">ID: {task.code}</span>
+              <span className="text-sm text-gray-600">Code: {task.code}</span>
             </div>
             <p className="text-sm text-gray-600">{task.description}</p>
           </div>

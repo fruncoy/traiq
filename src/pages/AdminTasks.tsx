@@ -19,14 +19,6 @@ const AdminTasks = () => {
     }
   });
 
-  const { data: activeTasks = [] } = useQuery({
-    queryKey: ['active-tasks'],
-    queryFn: async () => {
-      const tasks = localStorage.getItem('activeTasks');
-      return tasks ? JSON.parse(tasks) : [];
-    }
-  });
-
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const reader = new FileReader();
@@ -49,12 +41,12 @@ const AdminTasks = () => {
                 code: row.UniqueCode || `TSK${Date.now()}`,
                 title: `${row.TaskCategory} Task`,
                 description: row.TaskDescription,
-                category: isGenAi ? 'short_essay' : 'long_essay',
+                category: isGenAi ? 'genai' : 'creai',
                 payout: isGenAi ? 500 : 250,
                 taskerPayout: isGenAi ? 400 : 200,
                 platformFee: isGenAi ? 100 : 50,
                 workingTime: "24 hours",
-                bidsNeeded: isGenAi ? 10 : 5,
+                bidsNeeded: 10, // All tasks require 10 bids
                 currentBids: 0,
                 datePosted: new Date().toISOString(),
                 deadline: deadline.toISOString(),
@@ -67,10 +59,8 @@ const AdminTasks = () => {
               };
             });
 
-            const existingTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-            const updatedTasks = [...existingTasks, ...processedTasks];
-            localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-            resolve(updatedTasks);
+            localStorage.setItem('tasks', JSON.stringify(processedTasks));
+            resolve(processedTasks);
           } catch (error) {
             reject(error);
           }
@@ -94,67 +84,62 @@ const AdminTasks = () => {
     }
   };
 
-  const renderTaskTable = (tasks: Task[], title: string) => (
-    <Card className="mt-6">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{title}</CardTitle>
-        {title === 'Available Tasks' && (
-          <div className="relative">
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <Button className="flex items-center gap-2">
-              <Upload size={16} />
-              Upload Tasks
-            </Button>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Bids</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tasks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  No {title.toLowerCase()} found
-                </TableCell>
-              </TableRow>
-            ) : (
-              tasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell>{task.title}</TableCell>
-                  <TableCell>{task.description}</TableCell>
-                  <TableCell>{task.category}</TableCell>
-                  <TableCell>{task.currentBids}/{task.bidsNeeded}</TableCell>
-                  <TableCell>{task.status || 'pending'}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
         <div className="p-6">
           <h2 className="text-2xl font-bold">Task Management</h2>
-          {renderTaskTable(availableTasks.filter(t => !t.status || t.status === 'pending'), 'Available Tasks')}
-          {renderTaskTable(activeTasks, 'Active Tasks')}
+          <Card className="mt-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Available Tasks</CardTitle>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <Button className="flex items-center gap-2">
+                  <Upload size={16} />
+                  Upload Tasks
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Unique Code</TableHead>
+                    <TableHead>Bids</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {availableTasks.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        No tasks available. Upload tasks to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    availableTasks.map((task: Task) => (
+                      <TableRow key={task.id}>
+                        <TableCell>{task.title}</TableCell>
+                        <TableCell>{task.description}</TableCell>
+                        <TableCell>{task.category}</TableCell>
+                        <TableCell>{task.code}</TableCell>
+                        <TableCell>{task.currentBids}/{task.bidsNeeded}</TableCell>
+                        <TableCell>{task.status}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </Sidebar>
     </div>

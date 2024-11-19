@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid } from "./task/TaskBidLogic";
-import TaskFilters from "./task/TaskFilters";
 import { Task } from "@/types/task";
 
 const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
@@ -21,8 +20,13 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
       // For admin, show all tasks. For taskers, only show tasks with less than 10 bids
+      // and tasks they haven't bid on yet
       if (!isAdmin) {
-        return tasks.filter((task: Task) => task.currentBids < task.bidsNeeded);
+        const userId = 'current-user-id';
+        return tasks.filter((task: Task) => 
+          task.currentBids < task.bidsNeeded && 
+          !task.bidders?.includes(userId)
+        );
       }
 
       return tasks;
@@ -76,15 +80,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
           <div className="text-sm text-gray-600">
             Available Bids: <span className="font-semibold">{userBids}</span>
           </div>
-        </div>
-      )}
-
-      {isAdmin && (
-        <div className="relative z-10 mb-8">
-          <TaskFilters 
-            selectedCategory="all"
-            onCategoryChange={() => {}}
-          />
         </div>
       )}
 
