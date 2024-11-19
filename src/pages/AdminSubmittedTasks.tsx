@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
 import { useState } from "react";
+import { approveSubmission } from "../components/task/TaskBidLogic";
 
 const rejectionReasons = [
   "Plagiarism",
@@ -37,28 +38,46 @@ const AdminSubmittedTasks = () => {
       reason?: string;
       rating?: number;
     }) => {
+      if (action === 'approved') {
+        return approveSubmission(taskId, bidderId);
+      }
+
+      // Handle rejection logic
       const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
       const updatedTasks = tasks.map((task: Task) => {
         if (task.id === taskId) {
           const submission = task.submissions?.find(s => s.bidderId === bidderId);
           if (submission) {
-            submission.status = action;
-            if (reason) {
-              submission.rejectionReason = reason;
-            }
-            if (rating && action === 'approved') {
-              submission.rating = rating;
-            }
+            submission.status = 'rejected';
+            submission.rejectionReason = reason;
           }
         }
         return task;
       });
+      
+      // Update task submissions
+      const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+      const updatedTaskSubmissions = taskSubmissions.map((submission: any) => {
+        if (submission.taskId === taskId) {
+          return { ...submission, status: 'rejected', rejectionReason: reason };
+        }
+        return submission;
+      });
+      localStorage.setItem('taskSubmissions', JSON.stringify(updatedTaskSubmissions));
       localStorage.setItem('tasks', JSON.stringify(updatedTasks));
       return updatedTasks;
     },
     onSuccess: () => {
+      // Invalidate all relevant queries to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-earnings'] });
+      queryClient.invalidateQueries({ queryKey: ['total-earned'] });
+      queryClient.invalidateQueries({ queryKey: ['potential-payouts'] });
       toast.success("Submission status updated successfully");
+    },
+    onError: () => {
+      toast.error("Failed to update submission status");
     }
   });
 
