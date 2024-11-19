@@ -2,7 +2,7 @@ export const resetSystem = () => {
   // Clear all localStorage data
   localStorage.clear();
   
-  // Reinitialize with default values
+  // Reinitialize with default values and tasks
   localStorage.setItem('userBids', '5'); // Start with 5 bids
   localStorage.setItem('tasks', '[]');
   localStorage.setItem('userActiveTasks', '[]');

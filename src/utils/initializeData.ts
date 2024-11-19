@@ -67,6 +67,7 @@ export const initializeDefaultTasks = () => {
   localStorage.setItem('tasks', JSON.stringify(defaultTasks));
   localStorage.setItem('userBids', '5');
   localStorage.setItem('userActiveTasks', '[]');
+  localStorage.setItem('activeTasks', '[]');
   localStorage.setItem('taskSubmissions', '[]');
   localStorage.setItem('notifications', '[]');
   localStorage.setItem('activities', '[]');
@@ -74,7 +75,7 @@ export const initializeDefaultTasks = () => {
     Object.fromEntries(taskCategories.map(cat => [cat, 0]))
   ));
   localStorage.setItem('totalSpent', '0');
-  localStorage.setItem('userBalance', '0');
+  localStorage.setItem('potentialEarnings', '0');
   localStorage.setItem('userEarnings', '{}');
   localStorage.setItem('financeRecords', '[]');
 };
