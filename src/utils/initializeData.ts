@@ -7,7 +7,7 @@ const taskCategories: TaskCategory[] = [
   "voice_recording"
 ];
 
-export const generateTaskDescription = (category: TaskCategory) => {
+const generateTaskDescription = (category: TaskCategory) => {
   switch (category) {
     case "short_essay":
       return "Write a concise essay on a given topic (250-500 words)";
@@ -28,33 +28,33 @@ const generateUniqueTaskCode = () => {
 };
 
 export const initializeDefaultTasks = () => {
-  // Generate exactly 10 tasks
+  const deadline = new Date();
+  deadline.setHours(16, 0, 0, 0); // Set deadline to 4 PM today
+
+  // Generate exactly 10 unique tasks
   const defaultTasks = Array(10).fill(null).map((_, index) => {
     const category = taskCategories[index % taskCategories.length];
-    const payout = category === 'long_essay' ? 1000 : 500;
-    const taskerPayout = category === 'long_essay' ? 500 : 250;
+    const payout = Math.floor(Math.random() * (1000 - 500 + 1)) + 500; // Random payout between 500-1000
+    const taskerPayout = Math.floor(payout * 0.5); // 50% of payout goes to tasker
     
-    const deadline = new Date();
-    deadline.setHours(16, 0, 0, 0); // Set deadline to 4 PM today
-
     return {
       id: Date.now().toString() + index,
       code: generateUniqueTaskCode(),
-      title: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task`,
+      title: `${category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Task ${index + 1}`,
       description: generateTaskDescription(category),
       category,
       payout,
       taskerPayout,
-      platformFee: payout / 2,
-      workingTime: category === 'long_essay' ? "2-3 hours" : "1-2 hours",
-      bidsNeeded: 1, // Changed to 1 since tasks are independent
+      platformFee: payout - taskerPayout,
+      workingTime: "24 hours",
+      bidsNeeded: 1,
       currentBids: 0,
       datePosted: new Date().toISOString(),
       deadline: deadline.toISOString(),
       status: "pending",
       bidders: [],
       selectedTaskers: [],
-      submissions: [], // Array to store submissions from taskers
+      submissions: [],
       rating: 0,
       totalRatings: 0
     };

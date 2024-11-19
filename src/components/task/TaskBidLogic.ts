@@ -9,7 +9,7 @@ export const handleTaskBid = async (
   if (!task) throw new Error("Task not found");
 
   const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-  const bidsRequired = task.payout === 1000 ? 10 : 5;
+  const bidsRequired = 1; // Each task requires 1 bid
   
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
   
@@ -17,7 +17,7 @@ export const handleTaskBid = async (
   localStorage.setItem('userBids', (currentBids - bidsRequired).toString());
 
   // Update task's current bids and bidders
-  task.currentBids = 1;
+  task.currentBids = (task.currentBids || 0) + 1;
   task.bidders = [...(task.bidders || []), userId];
   
   // Add task to user's active tasks
