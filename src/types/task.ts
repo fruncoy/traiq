@@ -1,6 +1,14 @@
 export type TaskStatus = "pending" | "active" | "assigned" | "completed" | "rejected";
 export type TaskCategory = "short_essay" | "long_essay" | "item_listing" | "voice_recording";
 
+export interface TaskSubmission {
+  bidderId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  submittedAt?: string;
+  fileName?: string;
+}
+
 export interface Task {
   id: string;
   code: string;
@@ -22,4 +30,5 @@ export interface Task {
   rejectionReason?: string;
   rating: number;
   totalRatings: number;
+  submissions?: TaskSubmission[];
 }

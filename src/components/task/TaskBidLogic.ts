@@ -1,4 +1,4 @@
-import { Task } from "@/types/task";
+import { Task, TaskSubmission } from "@/types/task";
 
 export const handleTaskBid = async (
   task: Task, 
@@ -33,16 +33,13 @@ export const handleTaskBid = async (
   return updatedTask;
 };
 
-export const processTaskSubmission = async (task: Task, submission: any) => {
+export const processTaskSubmission = async (task: Task, submission: TaskSubmission) => {
   const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
   const updatedTasks = tasks.map((t: Task) => {
     if (t.id === task.id) {
       return {
         ...t,
-        submissions: [...(t.submissions || []), {
-          ...submission,
-          status: 'pending'
-        }]
+        submissions: [...(t.submissions || []), submission]
       };
     }
     return t;

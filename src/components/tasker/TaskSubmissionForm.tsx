@@ -22,7 +22,13 @@ const TaskSubmissionForm = () => {
 
   const { mutate: submitTask, isPending } = useMutation({
     mutationFn: async (task: Task) => {
-      const result = await processTaskSubmission(task);
+      const submission = {
+        bidderId: 'current-user-id',
+        status: 'pending',
+        submittedAt: new Date().toISOString(),
+        fileName: file?.name
+      };
+      const result = await processTaskSubmission(task, submission);
       const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
       const updatedTasks = userActiveTasks.filter((t: Task) => t.id !== task.id);
       localStorage.setItem('userActiveTasks', JSON.stringify(updatedTasks));
@@ -30,7 +36,7 @@ const TaskSubmissionForm = () => {
     },
     onSuccess: (result) => {
       toast.success("Task submitted successfully!", {
-        description: `Your submission has been processed. Rating: ${result.rating}%`
+        description: "Your submission has been processed."
       });
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
