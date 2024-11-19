@@ -11,6 +11,7 @@ import AdminSubmittedTasks from "./pages/AdminSubmittedTasks";
 import AdminFinances from "./pages/AdminFinances";
 import AdminTaskers from "./pages/AdminTaskers";
 import AdminSettings from "./pages/AdminSettings";
+import AdminTickets from "./pages/AdminTickets";
 import TaskerDashboard from "./pages/TaskerDashboard";
 import NotificationsPage from "./components/tasker/NotificationsPage";
 import BuyBidsPage from "./components/tasker/BuyBidsPage";
@@ -38,6 +39,7 @@ const App = () => {
             <Route path="/admin/finances" element={<AdminFinances />} />
             <Route path="/admin/taskers" element={<AdminTaskers />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/tickets" element={<AdminTickets />} />
             <Route path="/tasker" element={<TaskerDashboard />} />
             <Route path="/tasker/tasks" element={<TaskerDashboard />} />
             <Route path="/tasker/buy-bids" element={<BuyBidsPage />} />

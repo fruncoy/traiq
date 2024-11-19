@@ -10,7 +10,8 @@ import {
   Bell, 
   Upload, 
   CreditCard,
-  Briefcase 
+  Briefcase,
+  TicketIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload },
     { name: "Finances", path: "/admin/finances", icon: DollarSign },
     { name: "Taskers", path: "/admin/taskers", icon: Users },
+    { name: "Tickets", path: "/admin/tickets", icon: TicketIcon },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ];
 
@@ -88,6 +90,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
              location.pathname === "/admin/submitted-tasks" ? "Submitted Tasks" :
              location.pathname === "/admin/finances" ? "Finances" :
              location.pathname === "/admin/taskers" ? "Taskers" : 
+             location.pathname === "/admin/tickets" ? "Tickets" :
              location.pathname === "/admin/settings" ? "Settings" :
              location.pathname === "/tasker" ? "Dashboard" :
              location.pathname === "/tasker/buy-bids" ? "Buy Bids" :
