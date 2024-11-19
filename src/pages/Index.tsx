@@ -1,7 +1,21 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { resetSystem } from "@/utils/resetSystem";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Index = () => {
+  const queryClient = useQueryClient();
+
+  const handleReset = () => {
+    resetSystem();
+    queryClient.invalidateQueries();
+    toast.success("System reset successfully", {
+      description: "All data has been reset to default state."
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
       <Card className="w-[90%] max-w-[500px] shadow-lg">
@@ -24,6 +38,15 @@ const Index = () => {
               >
                 Tasker Dashboard
               </Link>
+            </div>
+            <div className="pt-4">
+              <Button 
+                variant="destructive"
+                onClick={handleReset}
+                className="w-full sm:w-auto"
+              >
+                Reset System Data
+              </Button>
             </div>
           </div>
         </CardContent>
