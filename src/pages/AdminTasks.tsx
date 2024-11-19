@@ -34,7 +34,8 @@ const AdminTasks = () => {
             const processedTasks = jsonData.map((row: any) => {
               const isGenAi = row.Category?.toLowerCase() === 'genai';
               const deadline = new Date();
-              deadline.setHours(16, 0, 0, 0);
+              deadline.setDate(deadline.getDate() + 1); // 24 hours from now
+              deadline.setHours(16, 0, 0, 0); // But submission time is 4 PM
 
               return {
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 9),

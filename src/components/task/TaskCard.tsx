@@ -65,7 +65,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Users size={16} />
-                <span>Bidders: {task.currentBids}/{task.maxBidders} (Required: {task.bidsNeeded})</span>
+                <span>Bidders: {task.currentBids}/10 (Required: {task.bidsNeeded})</span>
               </div>
               <p className="text-sm text-gray-600">
                 Category: {task.category}
@@ -81,7 +81,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
                 <Button 
                   className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                   onClick={handleBidClick}
-                  disabled={isPending}
+                  disabled={isPending || task.currentBids >= task.maxBidders}
                 >
                   {isPending ? "Bidding..." : "Bid Now"}
                 </Button>
