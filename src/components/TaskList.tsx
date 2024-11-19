@@ -22,17 +22,19 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
-      // Check if it's past 4 PM
-      const now = new Date();
-      const fourPM = new Date(now);
-      fourPM.setHours(16, 0, 0, 0);
-
-      if (now > fourPM) {
-        return tasks.filter((task: Task) => task.currentBids > 0);
-      }
-
       if (selectedCategory !== 'all') {
         tasks = tasks.filter((task: Task) => task.category === selectedCategory);
+      }
+
+      // For admin, show all tasks. For taskers, only show tasks without bids after 4 PM
+      if (!isAdmin) {
+        const now = new Date();
+        const fourPM = new Date(now);
+        fourPM.setHours(16, 0, 0, 0);
+
+        if (now > fourPM) {
+          return tasks.filter((task: Task) => task.currentBids > 0);
+        }
       }
 
       return tasks;
@@ -54,10 +56,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       return handleTaskBid(task, userBids, tasks);
     },
     onSuccess: (task) => {
-      toast.success("Task assigned successfully!", {
-        description: "You can now start working on this task."
-      });
-      
+      toast.success("Task assigned successfully!");
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
@@ -68,23 +67,18 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     onError: (error: Error) => {
       if (error.message === "insufficient_bids") {
         toast.error("Insufficient bids", {
-          description: "Please purchase more bids to continue.",
           action: {
             label: "Buy Bids",
             onClick: () => window.location.href = "/tasker/buy-bids"
           }
         });
       } else {
-        toast.error("Failed to place bid", {
-          description: "Please try again later."
-        });
+        toast.error("Failed to place bid");
       }
     }
   });
 
-  // Filter out tasks that have been bid on
-  const availableTasks = tasks.filter(task => !task.currentBids);
-  const displayedTasks = limit ? availableTasks.slice(0, limit) : availableTasks;
+  const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
 
   return (
     <div className="space-y-4">
@@ -107,7 +101,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       <div className="grid gap-4">
         {displayedTasks.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            There are no available tasks at the moment. Please check back tomorrow.
+            No tasks available at the moment.
           </div>
         ) : (
           displayedTasks.map((task) => (

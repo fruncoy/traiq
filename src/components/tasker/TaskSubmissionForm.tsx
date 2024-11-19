@@ -35,18 +35,14 @@ const TaskSubmissionForm = () => {
       return result;
     },
     onSuccess: (result) => {
-      toast.success("Task submitted successfully!", {
-        description: "Your submission has been processed."
-      });
+      toast.success("Task submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
       setSelectedTask("");
       setFile(null);
     },
     onError: () => {
-      toast.error("Failed to submit task", {
-        description: "Please try again later."
-      });
+      toast.error("Failed to submit task");
     }
   });
 
@@ -72,10 +68,10 @@ const TaskSubmissionForm = () => {
       <div className="space-y-2">
         <label className="text-sm font-medium">Select Task</label>
         <Select value={selectedTask} onValueChange={setSelectedTask}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a task to submit" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper" className="w-full max-h-[300px] overflow-y-auto">
             {activeTasks.length === 0 ? (
               <SelectItem value="none" disabled>No active tasks</SelectItem>
             ) : (
