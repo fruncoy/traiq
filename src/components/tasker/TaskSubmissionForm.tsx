@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { processTaskSubmission } from "../task/TaskBidLogic";
-import { Task } from "@/types/task";
+import { Task, TaskSubmission } from "@/types/task";
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
@@ -22,7 +22,7 @@ const TaskSubmissionForm = () => {
 
   const { mutate: submitTask, isPending } = useMutation({
     mutationFn: async (task: Task) => {
-      const submission = {
+      const submission: TaskSubmission = {
         bidderId: 'current-user-id',
         status: 'pending',
         submittedAt: new Date().toISOString(),
