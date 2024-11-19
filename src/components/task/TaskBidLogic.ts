@@ -8,14 +8,13 @@ export const handleTaskBid = async (
 ) => {
   if (!task) throw new Error("Task not found");
 
-  // Check if task has reached bid threshold based on category
-  const maxBids = task.category === 'genai' ? 10 : 5;
-  if (task.currentBids >= maxBids) {
-    throw new Error("Task has reached maximum bids");
+  // Check if task has reached maximum bidders threshold
+  if (task.currentBids >= task.maxBidders) {
+    throw new Error("Task has reached maximum bidders");
   }
 
   const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-  const bidsRequired = 1; // Each task requires 1 bid
+  const bidsRequired = task.category === 'genai' ? 10 : 5;
   
   if (currentBids < bidsRequired) throw new Error("insufficient_bids");
   

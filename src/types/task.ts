@@ -1,5 +1,5 @@
 export type TaskStatus = "pending" | "active" | "assigned" | "completed" | "rejected";
-export type TaskCategory = "short_essay" | "long_essay" | "item_listing" | "voice_recording";
+export type TaskCategory = "genai" | "creai";
 
 export interface TaskSubmission {
   bidderId: string;
@@ -19,11 +19,11 @@ export interface Task {
   payout: number;
   taskerPayout: number;
   platformFee: number;
-  workingTime: string;
   datePosted: string;
   deadline: string;
   bidsNeeded: number;
   currentBids: number;
+  maxBidders: number;
   status: TaskStatus;
   bidders: string[];
   selectedTaskers: string[];

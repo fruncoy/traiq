@@ -32,20 +32,21 @@ const AdminTasks = () => {
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
             const processedTasks = jsonData.map((row: any) => {
-              const isGenAi = row.TaskCategory?.toLowerCase() === 'genai';
+              const isGenAi = row.Category?.toLowerCase() === 'genai';
               const deadline = new Date();
               deadline.setHours(16, 0, 0, 0);
 
               return {
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                code: row.UniqueCode || `TSK${Date.now()}`,
-                title: row.TaskTitle || `${row.TaskCategory} Task`,
-                description: row.TaskDescription || '',
+                code: row.UniqueCode,
+                title: row.Title,
+                description: row.Description,
                 category: isGenAi ? 'genai' : 'creai',
                 payout: isGenAi ? 500 : 250,
                 taskerPayout: isGenAi ? 400 : 200,
                 platformFee: isGenAi ? 100 : 50,
                 bidsNeeded: isGenAi ? 10 : 5,
+                maxBidders: 10,
                 currentBids: 0,
                 datePosted: new Date().toISOString(),
                 deadline: deadline.toISOString(),
