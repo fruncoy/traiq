@@ -2,27 +2,64 @@ import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
+import { startOfDay, endOfDay } from "date-fns";
 
 const AdminFinances = () => {
-  const { data: totalBalance = 0 } = useQuery({
-    queryKey: ['total-spent'],
+  // Total Revenue from bid purchases
+  const { data: totalRevenue = 0 } = useQuery({
+    queryKey: ['total-revenue'],
     queryFn: async () => {
-      return parseFloat(localStorage.getItem('totalSpent') || '0');
+      const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
+      return totalSpent;
     }
   });
 
+  // Calculate potential payouts for approved tasks for the current day
   const { data: potentialPayouts = 0 } = useQuery({
     queryKey: ['potential-payouts'],
     queryFn: async () => {
-      return parseFloat(localStorage.getItem('potentialEarnings') || '0');
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const today = new Date();
+      const startOfToday = startOfDay(today);
+      const endOfToday = endOfDay(today);
+
+      return tasks.reduce((total: number, task: any) => {
+        const approvedSubmissions = task.submissions?.filter((submission: any) => {
+          const submissionDate = new Date(submission.submittedAt);
+          return submission.status === 'approved' && 
+                 submissionDate >= startOfToday && 
+                 submissionDate <= endOfToday;
+        }) || [];
+
+        const payoutForTask = approvedSubmissions.length * task.taskerPayout;
+        return total + payoutForTask;
+      }, 0);
     }
   });
+
+  // Net balance is revenue minus potential payouts
+  const netBalance = totalRevenue - potentialPayouts;
 
   const { data: recentPayouts = [] } = useQuery({
     queryKey: ['recent-payouts'],
     queryFn: async () => {
-      const records = JSON.parse(localStorage.getItem('financeRecords') || '[]');
-      return records.slice(0, 10); // Show last 10 payouts
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const payouts = tasks
+        .flatMap((task: any) => 
+          (task.submissions || [])
+            .filter((s: any) => s.status === 'approved')
+            .map((s: any) => ({
+              id: `${task.id}-${s.bidderId}`,
+              taskCode: task.code,
+              amount: task.taskerPayout,
+              status: 'Approved',
+              date: s.submittedAt
+            }))
+        )
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 10);
+      
+      return payouts;
     }
   });
 
@@ -40,18 +77,18 @@ const AdminFinances = () => {
                 <CardTitle>Total Revenue</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">KES {totalBalance}</div>
+                <div className="text-3xl font-bold">KES {totalRevenue}</div>
                 <p className="text-sm text-gray-500">From bid purchases</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Potential Payouts</CardTitle>
+                <CardTitle>Today's Potential Payouts</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">KES {potentialPayouts}</div>
-                <p className="text-sm text-gray-500">From active tasks</p>
+                <p className="text-sm text-gray-500">Pending payouts for today's approved tasks</p>
               </CardContent>
             </Card>
 
@@ -60,8 +97,8 @@ const AdminFinances = () => {
                 <CardTitle>Net Balance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">KES {totalBalance - potentialPayouts}</div>
-                <p className="text-sm text-gray-500">Revenue - Potential Payouts</p>
+                <div className="text-3xl font-bold">KES {netBalance}</div>
+                <p className="text-sm text-gray-500">Revenue - Today's Potential Payouts</p>
               </CardContent>
             </Card>
           </div>
@@ -85,7 +122,7 @@ const AdminFinances = () => {
                     <TableRow key={payout.id}>
                       <TableCell>{payout.taskCode}</TableCell>
                       <TableCell>KES {payout.amount}</TableCell>
-                      <TableCell>{payout.type}</TableCell>
+                      <TableCell>{payout.status}</TableCell>
                       <TableCell>{new Date(payout.date).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
