@@ -24,7 +24,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       if (!isAdmin) {
         const userId = 'current-user-id';
         return tasks.filter((task: Task) => 
-          task.currentBids < task.bidsNeeded && 
+          task.currentBids < 10 && 
           !task.bidders?.includes(userId)
         );
       }

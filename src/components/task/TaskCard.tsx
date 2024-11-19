@@ -65,14 +65,14 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Users size={16} />
-                <span>Bidders: {task.currentBids}/{task.bidsNeeded}</span>
+                <span>Bidders: {task.currentBids}/10</span>
               </div>
-              <p className="text-sm text-blue-600">
-                Required bids: {task.bidsNeeded}
+              <p className="text-sm text-gray-600">
+                Category: {task.category}
               </p>
-              {showPayout && !hidePayouts && (
+              {!hidePayouts && (
                 <p className="text-sm text-green-600">
-                  Possible Payout: KES {task.payout}
+                  {showPayout ? 'Payout' : 'Possible Payout'}: KES {task.payout}
                 </p>
               )}
             </div>

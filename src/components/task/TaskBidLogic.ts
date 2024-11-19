@@ -9,7 +9,7 @@ export const handleTaskBid = async (
   if (!task) throw new Error("Task not found");
 
   // Check if task has reached bid threshold
-  if (task.currentBids >= task.bidsNeeded) {
+  if (task.currentBids >= 10) {
     throw new Error("Task has reached maximum bids");
   }
 
