@@ -43,6 +43,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   };
 
   const formattedDeadline = formatDeadline(task.deadline);
+  const showPayout = isAdmin || (task.submissions?.some(s => s.status === 'approved'));
 
   return (
     <Card>
@@ -69,9 +70,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               <p className="text-sm text-blue-600">
                 Required bids: {task.bidsNeeded}
               </p>
-              <p className="text-sm text-green-600">
-                Possible Payout: KES {task.payout}
-              </p>
+              {showPayout && !hidePayouts && (
+                <p className="text-sm text-green-600">
+                  Possible Payout: KES {task.payout}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-4">
               {!isAdmin && (
