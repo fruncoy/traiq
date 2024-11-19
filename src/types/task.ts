@@ -7,6 +7,7 @@ export interface TaskSubmission {
   rejectionReason?: string;
   submittedAt?: string;
   fileName?: string;
+  rating?: number;
 }
 
 export interface Task {

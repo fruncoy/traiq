@@ -60,6 +60,10 @@ export const initializeDefaultTasks = () => {
     };
   });
   
+  // Reset the system first
+  localStorage.clear();
+  
+  // Initialize with new data
   localStorage.setItem('tasks', JSON.stringify(defaultTasks));
   localStorage.setItem('userBids', '5');
   localStorage.setItem('userActiveTasks', '[]');

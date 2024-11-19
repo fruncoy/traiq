@@ -1,17 +1,6 @@
 export const resetSystem = () => {
   // Clear all localStorage data
-  localStorage.removeItem('tasks');
-  localStorage.removeItem('userBids');
-  localStorage.removeItem('userActiveTasks');
-  localStorage.removeItem('activeTasks');
-  localStorage.removeItem('taskSubmissions');
-  localStorage.removeItem('notifications');
-  localStorage.removeItem('activities');
-  localStorage.removeItem('categoryPopularity');
-  localStorage.removeItem('totalSpent');
-  localStorage.removeItem('potentialEarnings');
-  localStorage.removeItem('userEarnings');
-  localStorage.removeItem('financeRecords');
+  localStorage.clear();
   
   // Reinitialize with default values
   localStorage.setItem('userBids', '5'); // Start with 5 bids

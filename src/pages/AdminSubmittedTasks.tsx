@@ -2,9 +2,11 @@ import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
+import { useState } from "react";
 
 const rejectionReasons = [
   "Plagiarism",
@@ -17,6 +19,7 @@ const rejectionReasons = [
 
 const AdminSubmittedTasks = () => {
   const queryClient = useQueryClient();
+  const [rating, setRating] = useState<number>(70);
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
@@ -27,7 +30,13 @@ const AdminSubmittedTasks = () => {
   });
 
   const { mutate: handleSubmissionAction } = useMutation({
-    mutationFn: async ({ taskId, bidderId, action, reason }: { taskId: string; bidderId: string; action: 'approved' | 'rejected'; reason?: string }) => {
+    mutationFn: async ({ taskId, bidderId, action, reason, rating }: { 
+      taskId: string; 
+      bidderId: string; 
+      action: 'approved' | 'rejected'; 
+      reason?: string;
+      rating?: number;
+    }) => {
       const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
       const updatedTasks = tasks.map((task: Task) => {
         if (task.id === taskId) {
@@ -36,6 +45,9 @@ const AdminSubmittedTasks = () => {
             submission.status = action;
             if (reason) {
               submission.rejectionReason = reason;
+            }
+            if (rating && action === 'approved') {
+              submission.rating = rating;
             }
           }
         }
@@ -69,24 +81,14 @@ const AdminSubmittedTasks = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="grid gap-4">
-                        <h3 className="font-semibold">Bidders:</h3>
-                        {task.bidders.map((bidderId: string, index: number) => (
-                          <div key={bidderId} className="flex items-center gap-2">
-                            <span>Tasker {index + 1} (ID: {bidderId})</span>
-                          </div>
-                        ))}
-                      </div>
-
                       <div className="space-y-4">
                         <h3 className="font-semibold">Submissions:</h3>
                         {task.submissions?.map((submission) => (
                           <div key={submission.bidderId} className="border p-4 rounded-lg">
                             <div className="flex justify-between items-start">
                               <div>
-                                <p className="font-medium">Tasker ID: {submission.bidderId}</p>
                                 <p className="text-sm text-gray-600">
-                                  Submitted: {new Date(submission.submittedAt).toLocaleString()}
+                                  Submitted: {new Date(submission.submittedAt || '').toLocaleString()}
                                 </p>
                                 <p className="text-sm text-gray-600">
                                   File: {submission.fileName}
@@ -99,16 +101,31 @@ const AdminSubmittedTasks = () => {
                               </div>
                               {submission.status === 'pending' && (
                                 <div className="flex gap-2">
-                                  <Button
-                                    onClick={() => handleSubmissionAction({
-                                      taskId: task.id,
-                                      bidderId: submission.bidderId,
-                                      action: 'approved'
-                                    })}
-                                    className="bg-green-600 hover:bg-green-700"
-                                  >
-                                    Approve
-                                  </Button>
+                                  <div className="space-y-4">
+                                    <div className="w-[200px]">
+                                      <p className="text-sm font-medium mb-2">Rating (60-80)</p>
+                                      <Slider
+                                        value={[rating]}
+                                        onValueChange={(value) => setRating(value[0])}
+                                        min={60}
+                                        max={80}
+                                        step={1}
+                                        className="mb-4"
+                                      />
+                                      <p className="text-sm text-gray-600 text-center">{rating}%</p>
+                                    </div>
+                                    <Button
+                                      onClick={() => handleSubmissionAction({
+                                        taskId: task.id,
+                                        bidderId: submission.bidderId,
+                                        action: 'approved',
+                                        rating
+                                      })}
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      Approve
+                                    </Button>
+                                  </div>
                                   <div className="flex gap-2">
                                     <Select
                                       onValueChange={(reason) => 
@@ -141,6 +158,7 @@ const AdminSubmittedTasks = () => {
                                     : 'bg-red-100 text-red-800'
                                 }`}>
                                   {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                                  {submission.rating && ` (${submission.rating}%)`}
                                 </span>
                               )}
                             </div>
