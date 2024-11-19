@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid } from "./task/TaskBidLogic";
-import { useState } from "react";
 import TaskFilters from "./task/TaskFilters";
 import { Task } from "@/types/task";
 
@@ -14,27 +13,16 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   isAdmin?: boolean;
 }) => {
   const queryClient = useQueryClient();
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'short_essay' | 'long_essay' | 'item_listing' | 'voice_recording'>('all');
 
   const { data: tasks = [], refetch } = useQuery({
-    queryKey: ['tasks', selectedCategory],
+    queryKey: ['tasks'],
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
-      if (selectedCategory !== 'all') {
-        tasks = tasks.filter((task: Task) => task.category === selectedCategory);
-      }
-
-      // For admin, show all tasks. For taskers, only show tasks without bids after 4 PM
+      // For admin, show all tasks. For taskers, only show tasks with less than 10 bids
       if (!isAdmin) {
-        const now = new Date();
-        const fourPM = new Date(now);
-        fourPM.setHours(16, 0, 0, 0);
-
-        if (now > fourPM) {
-          return tasks.filter((task: Task) => task.currentBids > 0);
-        }
+        return tasks.filter((task: Task) => task.currentBids < task.bidsNeeded);
       }
 
       return tasks;
@@ -91,12 +79,14 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         </div>
       )}
 
-      <div className="relative z-10 mb-8">
-        <TaskFilters 
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-        />
-      </div>
+      {isAdmin && (
+        <div className="relative z-10 mb-8">
+          <TaskFilters 
+            selectedCategory="all"
+            onCategoryChange={() => {}}
+          />
+        </div>
+      )}
 
       <div className="grid gap-4">
         {displayedTasks.length === 0 ? (
@@ -112,7 +102,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
               isAdmin={isAdmin}
               userBids={userBids}
               isPending={bidMutation.isPending}
-              hidePayouts={!isAdmin}
+              hidePayouts={!isAdmin && (!task.submissions?.some(s => s.status === 'approved'))}
             />
           ))
         )}

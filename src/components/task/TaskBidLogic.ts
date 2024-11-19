@@ -8,6 +8,11 @@ export const handleTaskBid = async (
 ) => {
   if (!task) throw new Error("Task not found");
 
+  // Check if task has reached bid threshold
+  if (task.currentBids >= task.bidsNeeded) {
+    throw new Error("Task has reached maximum bids");
+  }
+
   const currentBids = parseInt(localStorage.getItem('userBids') || '0');
   const bidsRequired = 1; // Each task requires 1 bid
   
