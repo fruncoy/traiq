@@ -50,12 +50,26 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
 
   // Get all tasks and update the specific task's submissions
   const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+  const taskToUpdate = tasks.find((t: Task) => t.id === task.id);
+  
+  if (!taskToUpdate) {
+    console.error("Task not found for submission:", task.id);
+    throw new Error("Task not found");
+  }
+
+  // Create a new submission with unique ID
+  const newSubmission = {
+    ...submission,
+    id: `${submission.bidderId}-${Date.now()}`, // Ensure unique ID
+    submittedAt: new Date().toISOString()
+  };
+
+  // Update task submissions
   const updatedTasks = tasks.map((t: Task) => {
     if (t.id === task.id) {
-      const existingSubmissions = t.submissions || [];
       return {
         ...t,
-        submissions: [...existingSubmissions, submission]
+        submissions: [...(t.submissions || []), newSubmission]
       };
     }
     return t;
@@ -66,17 +80,17 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
 
   // Update user submissions separately
   const userSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-  const newSubmission = {
-    id: submission.bidderId + Date.now(),
+  const userSubmission = {
+    id: newSubmission.id,
     taskId: task.id,
     taskTitle: task.title,
     taskCode: task.code,
     fileName: submission.fileName,
     status: 'pending',
-    submittedAt: new Date().toISOString()
+    submittedAt: newSubmission.submittedAt
   };
   
-  userSubmissions.push(newSubmission);
+  userSubmissions.push(userSubmission);
   localStorage.setItem('taskSubmissions', JSON.stringify(userSubmissions));
   console.log("Updated user submissions:", userSubmissions);
 

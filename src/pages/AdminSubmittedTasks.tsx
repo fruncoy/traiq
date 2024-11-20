@@ -15,17 +15,22 @@ const AdminSubmittedTasks = () => {
     queryKey: ['tasks'],
     queryFn: async () => {
       const tasks = localStorage.getItem('tasks');
-      console.log("Retrieved tasks from storage:", tasks);
+      console.log("Retrieved all tasks:", tasks);
       return tasks ? JSON.parse(tasks) : [];
     }
   });
 
-  // Filter tasks that have submissions
+  // Filter tasks that have submissions and count total submissions
   const tasksWithSubmissions = tasks.filter((task: Task) => 
     task.submissions && task.submissions.length > 0
   );
 
+  const totalSubmissions = tasksWithSubmissions.reduce((acc, task) => 
+    acc + (task.submissions?.length || 0), 0
+  );
+
   console.log("Tasks with submissions:", tasksWithSubmissions);
+  console.log("Total submissions:", totalSubmissions);
 
   const { mutate: handleSubmissionAction, isPending } = useMutation({
     mutationFn: async ({ taskId, bidderId, action, reason }: { 
@@ -93,7 +98,7 @@ const AdminSubmittedTasks = () => {
         <div className="p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Task Submissions ({tasksWithSubmissions.length})</CardTitle>
+              <CardTitle>Task Submissions ({totalSubmissions})</CardTitle>
             </CardHeader>
             <CardContent>
               {tasksWithSubmissions.length === 0 ? (
