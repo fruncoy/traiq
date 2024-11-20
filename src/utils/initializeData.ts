@@ -6,14 +6,14 @@ export const initializeDefaultTasks = () => {
   
   // Initialize with empty data
   localStorage.setItem('tasks', '[]');
-  localStorage.setItem('userBids', '0'); // Start with 0 bids
+  localStorage.setItem('archivedTasks', '[]');
+  localStorage.setItem('userBids', '0');
   localStorage.setItem('userActiveTasks', '[]');
   localStorage.setItem('activeTasks', '[]');
   localStorage.setItem('taskSubmissions', '[]');
   localStorage.setItem('notifications', '[]');
   localStorage.setItem('activities', '[]');
   localStorage.setItem('totalSpent', '0');
-  localStorage.setItem('potentialEarnings', '0');
   localStorage.setItem('userEarnings', '{}');
-  localStorage.setItem('financeRecords', '[]');
+  localStorage.setItem('earningsHistory', '{}');
 };

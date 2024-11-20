@@ -2,10 +2,14 @@ import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfWeek, endOfWeek, format } from "date-fns";
 
 const AdminFinances = () => {
-  // Total Revenue from bid purchases
+  const today = new Date();
+  const weekStart = startOfWeek(today);
+  const weekEnd = endOfWeek(today);
+  
+  // Total Revenue from bid purchases for current week
   const { data: totalRevenue = 0 } = useQuery({
     queryKey: ['total-revenue'],
     queryFn: async () => {
@@ -14,31 +18,27 @@ const AdminFinances = () => {
     }
   });
 
-  // Calculate potential payouts for approved tasks for the current day
-  const { data: potentialPayouts = 0 } = useQuery({
-    queryKey: ['potential-payouts'],
+  // Calculate approved payouts for the current week
+  const { data: approvedPayouts = 0 } = useQuery({
+    queryKey: ['approved-payouts'],
     queryFn: async () => {
       const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      const today = new Date();
-      const startOfToday = startOfDay(today);
-      const endOfToday = endOfDay(today);
-
       return tasks.reduce((total: number, task: any) => {
         const approvedSubmissions = task.submissions?.filter((submission: any) => {
           const submissionDate = new Date(submission.submittedAt);
           return submission.status === 'approved' && 
-                 submissionDate >= startOfToday && 
-                 submissionDate <= endOfToday;
+                 submissionDate >= weekStart && 
+                 submissionDate <= weekEnd;
         }) || [];
 
-        const payoutForTask = approvedSubmissions.length * task.taskerPayout;
+        const payoutForTask = approvedSubmissions.length * (task.category === 'genai' ? 400 : 200);
         return total + payoutForTask;
       }, 0);
     }
   });
 
-  // Net balance is revenue minus potential payouts
-  const netBalance = totalRevenue - potentialPayouts;
+  // Calculate profit (Total Revenue - Approved Payouts)
+  const profit = totalRevenue - approvedPayouts;
 
   const { data: recentPayouts = [] } = useQuery({
     queryKey: ['recent-payouts'],
@@ -51,7 +51,7 @@ const AdminFinances = () => {
             .map((s: any) => ({
               id: `${task.id}-${s.bidderId}`,
               taskCode: task.code,
-              amount: task.taskerPayout,
+              amount: task.category === 'genai' ? 400 : 200,
               status: 'Approved',
               date: s.submittedAt
             }))
@@ -66,39 +66,44 @@ const AdminFinances = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-[#1E40AF]">Financial Management</h2>
+            <div className="text-sm text-gray-600">
+              Week: {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Total Revenue</CardTitle>
+                <CardTitle>Weekly Revenue</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">KES {totalRevenue}</div>
-                <p className="text-sm text-gray-500">From bid purchases</p>
+                <p className="text-sm text-gray-500">From bid purchases this week</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Today's Potential Payouts</CardTitle>
+                <CardTitle>Approved Payouts</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">KES {potentialPayouts}</div>
-                <p className="text-sm text-gray-500">Pending payouts for today's approved tasks</p>
+                <div className="text-3xl font-bold">KES {approvedPayouts}</div>
+                <p className="text-sm text-gray-500">Total approved task payouts</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Net Balance</CardTitle>
+                <CardTitle>Profit</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">KES {netBalance}</div>
-                <p className="text-sm text-gray-500">Revenue - Today's Potential Payouts</p>
+                <div className={`text-3xl font-bold ${profit < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  KES {profit}
+                </div>
+                <p className="text-sm text-gray-500">Revenue - Approved Payouts</p>
               </CardContent>
             </Card>
           </div>
@@ -123,7 +128,7 @@ const AdminFinances = () => {
                       <TableCell>{payout.taskCode}</TableCell>
                       <TableCell>KES {payout.amount}</TableCell>
                       <TableCell>{payout.status}</TableCell>
-                      <TableCell>{new Date(payout.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{format(new Date(payout.date), 'MMM d, yyyy')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

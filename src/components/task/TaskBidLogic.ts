@@ -1,4 +1,5 @@
 import { Task, TaskSubmission } from "@/types/task";
+import { startOfWeek, endOfWeek, isAfter, isBefore, setHours } from "date-fns";
 
 export const handleTaskBid = async (
   task: Task, 
@@ -34,6 +35,13 @@ export const handleTaskBid = async (
 };
 
 export const processTaskSubmission = async (task: Task, submission: TaskSubmission) => {
+  const now = new Date();
+  const deadline = setHours(new Date(task.deadline), 16); // 4 PM deadline
+
+  if (isAfter(now, deadline)) {
+    throw new Error("Task submission deadline (4 PM) has passed");
+  }
+
   const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
   const updatedTasks = tasks.map((t: Task) => {
     if (t.id === task.id) {
@@ -69,8 +77,6 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     date: new Date().toISOString()
   });
   localStorage.setItem('notifications', JSON.stringify(notifications));
-  
-  return task;
 };
 
 export const approveSubmission = async (taskId: string, bidderId: string) => {
@@ -79,13 +85,31 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   
   if (!task) throw new Error("Task not found");
   
-  // Get total revenue from bid purchases
-  const totalRevenue = parseFloat(localStorage.getItem('totalSpent') || '0');
-  const taskerPayout = task.category === 'genai' ? 500 : 250;
+  // Get total revenue from bid purchases for current week
+  const today = new Date();
+  const weekStart = startOfWeek(today);
+  const weekEnd = endOfWeek(today);
   
-  // Check if there's enough revenue for payout
-  if (totalRevenue < taskerPayout) {
-    throw new Error("Insufficient revenue for payout");
+  const totalRevenue = parseFloat(localStorage.getItem('totalSpent') || '0');
+  
+  // Calculate current week's approved payouts
+  const approvedPayouts = tasks.reduce((total: number, t: Task) => {
+    const approvedSubmissions = t.submissions?.filter(s => {
+      const submissionDate = new Date(s.submittedAt || '');
+      return s.status === 'approved' && 
+             submissionDate >= weekStart && 
+             submissionDate <= weekEnd;
+    }) || [];
+    return total + (approvedSubmissions.length * (t.category === 'genai' ? 400 : 200));
+  }, 0);
+  
+  // Calculate new total including this submission
+  const taskerPayout = task.category === 'genai' ? 400 : 200;
+  const newTotal = approvedPayouts + taskerPayout;
+  
+  // Check if there's enough revenue
+  if (newTotal > totalRevenue) {
+    throw new Error("Insufficient revenue for payout. Current week's payouts would exceed revenue.");
   }
   
   // Update task submission status
@@ -107,23 +131,39 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   userEarnings[bidderId] = (userEarnings[bidderId] || 0) + taskerPayout;
   localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   
-  // Update total earnings history
+  // Update earnings history
   const earningsHistory = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
   earningsHistory[bidderId] = (earningsHistory[bidderId] || 0) + taskerPayout;
   localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory));
-  
-  // Update task submissions
-  const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-  const updatedTaskSubmissions = taskSubmissions.map((submission: any) => {
-    if (submission.taskId === taskId) {
-      return { ...submission, status: 'approved' };
-    }
-    return submission;
-  });
-  localStorage.setItem('taskSubmissions', JSON.stringify(updatedTaskSubmissions));
   
   // Save updated tasks
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
   return task;
+};
+
+export const resetWeeklyTasks = () => {
+  const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+  
+  // Archive current week's tasks
+  const archivedTasks = JSON.parse(localStorage.getItem('archivedTasks') || '[]');
+  const tasksToArchive = tasks.filter((task: Task) => {
+    const taskDate = new Date(task.datePosted);
+    const weekStart = startOfWeek(new Date());
+    return isBefore(taskDate, weekStart);
+  });
+  
+  // Add to archive
+  archivedTasks.push(...tasksToArchive);
+  localStorage.setItem('archivedTasks', JSON.stringify(archivedTasks));
+  
+  // Remove old tasks
+  const currentTasks = tasks.filter((task: Task) => {
+    const taskDate = new Date(task.datePosted);
+    const weekStart = startOfWeek(new Date());
+    return !isBefore(taskDate, weekStart);
+  });
+  
+  localStorage.setItem('tasks', JSON.stringify(currentTasks));
+  localStorage.setItem('totalSpent', '0'); // Reset weekly revenue
 };
