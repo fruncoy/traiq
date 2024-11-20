@@ -61,6 +61,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   const formattedDeadline = formatDeadline(task.deadline);
   const requiredBids = task.category === 'genai' ? 10 : 5;
   const approvedSubmission = task.submissions?.find(s => s.status === 'approved');
+  const taskPayout = task.category === 'genai' ? 700 : 300;
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -109,7 +110,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
                 <span className="font-medium">
                   {approvedSubmission ? 'Payout:' : 'Possible Payout:'}
                 </span>
-                <span>KES {task.category === 'genai' ? '400' : '200'}</span>
+                <span>KES {taskPayout}</span>
               </div>
             )}
           </div>

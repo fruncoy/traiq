@@ -85,32 +85,8 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   
   if (!task) throw new Error("Task not found");
   
-  // Get total revenue from bid purchases for current week
-  const today = new Date();
-  const weekStart = startOfWeek(today);
-  const weekEnd = endOfWeek(today);
-  
-  const totalRevenue = parseFloat(localStorage.getItem('totalSpent') || '0');
-  
-  // Calculate current week's approved payouts
-  const approvedPayouts = tasks.reduce((total: number, t: Task) => {
-    const approvedSubmissions = t.submissions?.filter(s => {
-      const submissionDate = new Date(s.submittedAt || '');
-      return s.status === 'approved' && 
-             submissionDate >= weekStart && 
-             submissionDate <= weekEnd;
-    }) || [];
-    return total + (approvedSubmissions.length * (t.category === 'genai' ? 400 : 200));
-  }, 0);
-  
-  // Calculate new total including this submission
-  const taskerPayout = task.category === 'genai' ? 400 : 200;
-  const newTotal = approvedPayouts + taskerPayout;
-  
-  // Check if there's enough revenue
-  if (newTotal > totalRevenue) {
-    throw new Error("Insufficient revenue for payout. Current week's payouts would exceed revenue.");
-  }
+  // Calculate payout amount based on task category
+  const taskerPayout = task.category === 'genai' ? 700 : 300;
   
   // Update task submission status
   const updatedTasks = tasks.map((t: Task) => {
