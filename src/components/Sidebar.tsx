@@ -23,6 +23,13 @@ interface SidebarProps {
   children?: React.ReactNode;
 }
 
+interface LinkItem {
+  name: string;
+  path: string;
+  icon: React.ComponentType<any>;
+  badge?: number;
+}
+
 const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
@@ -40,7 +47,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
 
   const hasUnreadNotifications = notifications.some((n: any) => !n.read);
 
-  const adminLinks = [
+  const adminLinks: LinkItem[] = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
     { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
     { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload },
@@ -50,7 +57,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ];
 
-  const taskerLinks = [
+  const taskerLinks: LinkItem[] = [
     { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
     { name: "Buy Bids", path: "/tasker/buy-bids", icon: CreditCard },
     { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
