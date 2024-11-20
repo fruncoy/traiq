@@ -47,11 +47,6 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
-  // Update potential payouts based on task category
-  const potentialPayouts = parseFloat(localStorage.getItem('potentialPayouts') || '0');
-  const taskPayout = task.category === 'genai' ? 500 : 250;
-  localStorage.setItem('potentialPayouts', (potentialPayouts + taskPayout).toString());
-  
   // Update user submissions
   const userSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
   userSubmissions.push({
@@ -61,8 +56,7 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     taskCode: task.code,
     fileName: submission.fileName,
     status: 'pending',
-    submittedAt: new Date().toISOString(),
-    payout: taskPayout
+    submittedAt: new Date().toISOString()
   });
   localStorage.setItem('taskSubmissions', JSON.stringify(userSubmissions));
   
@@ -102,7 +96,7 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   
   // Update user earnings with correct payout amount
   const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-  const taskerPayout = task.category === 'genai' ? 400 : 200;
+  const taskerPayout = task.category === 'genai' ? 500 : 250;
   userEarnings[bidderId] = (userEarnings[bidderId] || 0) + taskerPayout;
   localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   
@@ -110,16 +104,6 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   const earningsHistory = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
   earningsHistory[bidderId] = (earningsHistory[bidderId] || 0) + taskerPayout;
   localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory));
-  
-  // Update platform revenue from bid purchases only
-  const totalRevenue = parseFloat(localStorage.getItem('totalSpent') || '0');
-  const platformFee = task.category === 'genai' ? 100 : 50;
-  localStorage.setItem('totalSpent', (totalRevenue + platformFee).toString());
-  
-  // Update potential payouts
-  const potentialPayouts = parseFloat(localStorage.getItem('potentialPayouts') || '0');
-  const taskPayout = task.category === 'genai' ? 500 : 250;
-  localStorage.setItem('potentialPayouts', (potentialPayouts - taskPayout).toString());
   
   // Update task submissions in localStorage
   const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
