@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Task } from "@/types/task";
 import { useState } from "react";
 import { approveSubmission } from "../components/task/TaskBidLogic";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const rejectionReasons = [
   "Plagiarism",
@@ -31,12 +32,11 @@ const AdminSubmittedTasks = () => {
   });
 
   const { mutate: handleSubmissionAction } = useMutation({
-    mutationFn: async ({ taskId, bidderId, action, reason, rating }: { 
+    mutationFn: async ({ taskId, bidderId, action, reason }: { 
       taskId: string; 
       bidderId: string; 
       action: 'approved' | 'rejected'; 
       reason?: string;
-      rating?: number;
     }) => {
       if (action === 'approved') {
         return approveSubmission(taskId, bidderId);
@@ -55,29 +55,18 @@ const AdminSubmittedTasks = () => {
         return task;
       });
       
-      // Update task submissions
-      const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-      const updatedTaskSubmissions = taskSubmissions.map((submission: any) => {
-        if (submission.taskId === taskId) {
-          return { ...submission, status: 'rejected', rejectionReason: reason };
-        }
-        return submission;
-      });
-      localStorage.setItem('taskSubmissions', JSON.stringify(updatedTaskSubmissions));
       localStorage.setItem('tasks', JSON.stringify(updatedTasks));
       return updatedTasks;
     },
     onSuccess: () => {
-      // Invalidate all relevant queries to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
       queryClient.invalidateQueries({ queryKey: ['user-earnings'] });
       queryClient.invalidateQueries({ queryKey: ['total-earned'] });
-      queryClient.invalidateQueries({ queryKey: ['potential-payouts'] });
       toast.success("Submission status updated successfully");
     },
-    onError: () => {
-      toast.error("Failed to update submission status");
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update submission status");
     }
   });
 
@@ -99,92 +88,97 @@ const AdminSubmittedTasks = () => {
                     <CardTitle>{task.title} - {task.code}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-4">
-                        <h3 className="font-semibold">Submissions:</h3>
-                        {task.submissions?.map((submission) => (
-                          <div key={submission.bidderId} className="border p-4 rounded-lg">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="text-sm text-gray-600">
-                                  Submitted: {new Date(submission.submittedAt || '').toLocaleString()}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  File: {submission.fileName}
-                                </p>
-                                {submission.rejectionReason && (
-                                  <p className="text-sm text-red-600">
-                                    Rejection Reason: {submission.rejectionReason}
-                                  </p>
-                                )}
-                              </div>
-                              {submission.status === 'pending' && (
-                                <div className="flex gap-2">
-                                  <div className="space-y-4">
-                                    <div className="w-[200px]">
-                                      <p className="text-sm font-medium mb-2">Rating (60-80)</p>
-                                      <Slider
-                                        value={[rating]}
-                                        onValueChange={(value) => setRating(value[0])}
-                                        min={60}
-                                        max={80}
-                                        step={1}
-                                        className="mb-4"
-                                      />
-                                      <p className="text-sm text-gray-600 text-center">{rating}%</p>
+                    <Accordion type="single" collapsible>
+                      <AccordionItem value="submissions">
+                        <AccordionTrigger>
+                          Submissions ({task.submissions?.length || 0})
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4">
+                            {task.submissions?.map((submission) => (
+                              <div key={submission.bidderId} className="border p-4 rounded-lg">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="text-sm text-gray-600">
+                                      Submitted: {new Date(submission.submittedAt || '').toLocaleString()}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      File: {submission.fileName}
+                                    </p>
+                                    {submission.rejectionReason && (
+                                      <p className="text-sm text-red-600">
+                                        Rejection Reason: {submission.rejectionReason}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {submission.status === 'pending' && (
+                                    <div className="flex gap-2">
+                                      <div className="space-y-4">
+                                        <div className="w-[200px]">
+                                          <p className="text-sm font-medium mb-2">Rating (60-80)</p>
+                                          <Slider
+                                            value={[rating]}
+                                            onValueChange={(value) => setRating(value[0])}
+                                            min={60}
+                                            max={80}
+                                            step={1}
+                                            className="mb-4"
+                                          />
+                                          <p className="text-sm text-gray-600 text-center">{rating}%</p>
+                                        </div>
+                                        <Button
+                                          onClick={() => handleSubmissionAction({
+                                            taskId: task.id,
+                                            bidderId: submission.bidderId,
+                                            action: 'approved'
+                                          })}
+                                          className="bg-green-600 hover:bg-green-700"
+                                        >
+                                          Approve
+                                        </Button>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Select
+                                          onValueChange={(reason) => 
+                                            handleSubmissionAction({
+                                              taskId: task.id,
+                                              bidderId: submission.bidderId,
+                                              action: 'rejected',
+                                              reason
+                                            })
+                                          }
+                                        >
+                                          <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="Select reason to reject" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {rejectionReasons.map((reason) => (
+                                              <SelectItem key={reason} value={reason}>
+                                                {reason}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
                                     </div>
-                                    <Button
-                                      onClick={() => handleSubmissionAction({
-                                        taskId: task.id,
-                                        bidderId: submission.bidderId,
-                                        action: 'approved',
-                                        rating
-                                      })}
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      Approve
-                                    </Button>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Select
-                                      onValueChange={(reason) => 
-                                        handleSubmissionAction({
-                                          taskId: task.id,
-                                          bidderId: submission.bidderId,
-                                          action: 'rejected',
-                                          reason
-                                        })
-                                      }
-                                    >
-                                      <SelectTrigger className="w-[200px]">
-                                        <SelectValue placeholder="Select reason to reject" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {rejectionReasons.map((reason) => (
-                                          <SelectItem key={reason} value={reason}>
-                                            {reason}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
+                                  )}
+                                  {submission.status !== 'pending' && (
+                                    <span className={`px-2 py-1 rounded text-sm ${
+                                      submission.status === 'approved' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                                      {submission.rating && ` (${submission.rating}%)`}
+                                    </span>
+                                  )}
                                 </div>
-                              )}
-                              {submission.status !== 'pending' && (
-                                <span className={`px-2 py-1 rounded text-sm ${
-                                  submission.status === 'approved' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                                  {submission.rating && ` (${submission.rating}%)`}
-                                </span>
-                              )}
-                            </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </CardContent>
                 </Card>
               ))}

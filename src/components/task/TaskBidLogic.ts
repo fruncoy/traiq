@@ -47,7 +47,6 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
-  // Update user submissions
   const userSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
   userSubmissions.push({
     id: submission.bidderId + Date.now(),
@@ -80,6 +79,15 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   
   if (!task) throw new Error("Task not found");
   
+  // Get total revenue from bid purchases
+  const totalRevenue = parseFloat(localStorage.getItem('totalSpent') || '0');
+  const taskerPayout = task.category === 'genai' ? 500 : 250;
+  
+  // Check if there's enough revenue for payout
+  if (totalRevenue < taskerPayout) {
+    throw new Error("Insufficient revenue for payout");
+  }
+  
   // Update task submission status
   const updatedTasks = tasks.map((t: Task) => {
     if (t.id === taskId) {
@@ -94,9 +102,8 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
     return t;
   });
   
-  // Update user earnings with correct payout amount
+  // Update user earnings
   const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-  const taskerPayout = task.category === 'genai' ? 500 : 250;
   userEarnings[bidderId] = (userEarnings[bidderId] || 0) + taskerPayout;
   localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   
@@ -105,7 +112,7 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   earningsHistory[bidderId] = (earningsHistory[bidderId] || 0) + taskerPayout;
   localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory));
   
-  // Update task submissions in localStorage
+  // Update task submissions
   const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
   const updatedTaskSubmissions = taskSubmissions.map((submission: any) => {
     if (submission.taskId === taskId) {
