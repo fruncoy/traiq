@@ -29,19 +29,6 @@ const adminUsers: AdminUser[] = [
   }
 ];
 
-const notifications = [
-  {
-    id: "1",
-    message: "New task submitted",
-    date: "2024-02-20"
-  },
-  {
-    id: "2",
-    message: "Tasker account suspended",
-    date: "2024-02-19"
-  }
-];
-
 const AdminSettings = () => {
   const handleSaveChanges = () => {
     toast.success("Settings saved successfully");
@@ -62,7 +49,6 @@ const AdminSettings = () => {
           <Tabs defaultValue="general" className="w-full">
             <TabsList>
               <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="admins">Admin Accounts</TabsTrigger>
             </TabsList>
 
@@ -83,24 +69,6 @@ const AdminSettings = () => {
                   <Button onClick={handleSaveChanges} className="text-white bg-primary hover:bg-primary/90">
                     Save Changes
                   </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="notifications">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Notifications</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {notifications.map((notification) => (
-                      <div key={notification.id} className="flex justify-between items-center p-4 bg-white rounded-lg border">
-                        <span>{notification.message}</span>
-                        <span className="text-sm text-gray-500">{notification.date}</span>
-                      </div>
-                    ))}
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
