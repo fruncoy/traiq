@@ -38,7 +38,21 @@ const AdminSubmittedTasks = () => {
       reason?: string;
     }) => {
       if (action === 'approved') {
-        return approveSubmission(taskId, bidderId, ratings[`${taskId}-${bidderId}`]);
+        // Update the tasks in localStorage with the rating before calling approveSubmission
+        const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+        const updatedTasks = tasks.map((task: Task) => {
+          if (task.id === taskId) {
+            const submission = task.submissions?.find(s => s.bidderId === bidderId);
+            if (submission) {
+              submission.rating = ratings[`${taskId}-${bidderId}`];
+            }
+          }
+          return task;
+        });
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+        
+        // Now call approveSubmission with just taskId and bidderId
+        return approveSubmission(taskId, bidderId);
       }
 
       const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
@@ -68,14 +82,14 @@ const AdminSubmittedTasks = () => {
     }
   });
 
-  const tasksWithSubmissions = tasks.filter((task: Task) => task.submissions && task.submissions.length > 0);
-
   const handleRatingChange = (taskId: string, bidderId: string, value: number) => {
     setRatings(prev => ({
       ...prev,
       [`${taskId}-${bidderId}`]: value
     }));
   };
+
+  const tasksWithSubmissions = tasks.filter((task: Task) => task.submissions && task.submissions.length > 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
