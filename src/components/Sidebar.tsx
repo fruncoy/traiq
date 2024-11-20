@@ -29,14 +29,16 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const navigate = useNavigate();
 
   // Query to check for unread notifications
-  const { data: hasUnreadNotifications = false } = useQuery({
-    queryKey: ['unread-notifications'],
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications'],
     queryFn: async () => {
-      const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-      return notifications.some((n: any) => !n.read);
+      const stored = localStorage.getItem('notifications');
+      return stored ? JSON.parse(stored) : [];
     },
     refetchInterval: 5000
   });
+
+  const hasUnreadNotifications = notifications.some((n: any) => !n.read);
 
   const adminLinks = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -57,7 +59,8 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { 
       name: "Notifications", 
       path: "/tasker/notifications", 
-      icon: hasUnreadNotifications ? BellDot : Bell 
+      icon: hasUnreadNotifications ? BellDot : Bell,
+      badge: hasUnreadNotifications ? notifications.filter((n: any) => !n.read).length : undefined
     },
     { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
@@ -84,14 +87,21 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
+                  "flex items-center justify-between px-4 py-3 rounded-lg transition-colors",
                   isActive 
                     ? "bg-blue-50 text-[#1E40AF]" 
                     : "text-gray-600 hover:bg-gray-50"
                 )}
               >
-                <Icon size={20} />
-                <span className="text-sm font-medium">{link.name}</span>
+                <div className="flex items-center space-x-3">
+                  <Icon size={20} />
+                  <span className="text-sm font-medium">{link.name}</span>
+                </div>
+                {link.badge && (
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                    {link.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
