@@ -47,9 +47,10 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
-  // Update potential payouts
+  // Update potential payouts based on task category
   const potentialPayouts = parseFloat(localStorage.getItem('potentialPayouts') || '0');
-  localStorage.setItem('potentialPayouts', (potentialPayouts + task.payout).toString());
+  const taskPayout = task.category === 'genai' ? 500 : 250;
+  localStorage.setItem('potentialPayouts', (potentialPayouts + taskPayout).toString());
   
   // Update user submissions
   const userSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
@@ -61,7 +62,7 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     fileName: submission.fileName,
     status: 'pending',
     submittedAt: new Date().toISOString(),
-    payout: task.payout
+    payout: taskPayout
   });
   localStorage.setItem('taskSubmissions', JSON.stringify(userSubmissions));
   
@@ -71,6 +72,7 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     title: "Task Submitted",
     message: `Your submission for task ${task.code} is pending review`,
     type: "info",
+    read: false,
     date: new Date().toISOString()
   });
   localStorage.setItem('notifications', JSON.stringify(notifications));
@@ -98,23 +100,26 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
     return t;
   });
   
-  // Update user earnings
+  // Update user earnings with correct payout amount
   const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-  userEarnings[bidderId] = (userEarnings[bidderId] || 0) + task.taskerPayout;
+  const taskerPayout = task.category === 'genai' ? 400 : 200;
+  userEarnings[bidderId] = (userEarnings[bidderId] || 0) + taskerPayout;
   localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
   
   // Update total earnings history
   const earningsHistory = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
-  earningsHistory[bidderId] = (earningsHistory[bidderId] || 0) + task.taskerPayout;
+  earningsHistory[bidderId] = (earningsHistory[bidderId] || 0) + taskerPayout;
   localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory));
   
-  // Update platform revenue
+  // Update platform revenue from bid purchases only
   const totalRevenue = parseFloat(localStorage.getItem('totalSpent') || '0');
-  localStorage.setItem('totalSpent', (totalRevenue + task.platformFee).toString());
+  const platformFee = task.category === 'genai' ? 100 : 50;
+  localStorage.setItem('totalSpent', (totalRevenue + platformFee).toString());
   
   // Update potential payouts
   const potentialPayouts = parseFloat(localStorage.getItem('potentialPayouts') || '0');
-  localStorage.setItem('potentialPayouts', (potentialPayouts - task.payout).toString());
+  const taskPayout = task.category === 'genai' ? 500 : 250;
+  localStorage.setItem('potentialPayouts', (potentialPayouts - taskPayout).toString());
   
   // Update task submissions in localStorage
   const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
