@@ -16,38 +16,54 @@ const TaskSubmissionForm = () => {
     queryKey: ['user-active-tasks'],
     queryFn: async () => {
       const tasks = localStorage.getItem('userActiveTasks');
+      console.log("Retrieved active tasks:", tasks);
       return tasks ? JSON.parse(tasks) : [];
     }
   });
 
   const { mutate: submitTask, isPending } = useMutation({
     mutationFn: async (task: Task) => {
+      console.log("Submitting task:", task);
+      if (!file) {
+        throw new Error("No file selected");
+      }
+
       const submission: TaskSubmission = {
+        id: `submission-${Date.now()}`,
         bidderId: 'current-user-id',
         status: 'pending',
         submittedAt: new Date().toISOString(),
-        fileName: file?.name
+        fileName: file.name
       };
-      const result = await processTaskSubmission(task, submission);
+
+      console.log("Processing submission:", submission);
+      await processTaskSubmission(task, submission);
+
+      // Update local storage after successful submission
       const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
       const updatedTasks = userActiveTasks.filter((t: Task) => t.id !== task.id);
       localStorage.setItem('userActiveTasks', JSON.stringify(updatedTasks));
-      return result;
+      
+      return { task, submission };
     },
-    onSuccess: (result) => {
+    onSuccess: ({ task }) => {
+      console.log("Task submitted successfully:", task);
       toast.success("Task submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
       setSelectedTask("");
       setFile(null);
     },
-    onError: () => {
-      toast.error("Failed to submit task");
+    onError: (error: Error) => {
+      console.error("Task submission failed:", error);
+      toast.error(error.message || "Failed to submit task");
     }
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submitted with task:", selectedTask);
+
     if (!selectedTask) {
       toast.error("Please select a task");
       return;
@@ -60,6 +76,8 @@ const TaskSubmissionForm = () => {
     const task = activeTasks.find((t: Task) => t.id === selectedTask);
     if (task) {
       submitTask(task);
+    } else {
+      toast.error("Selected task not found");
     }
   };
 
