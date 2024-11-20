@@ -1,6 +1,6 @@
+import Sidebar from "../Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Sidebar from "../Sidebar";
 import { useQuery } from "@tanstack/react-query";
 import TaskSubmissionForm from "./TaskSubmissionForm";
 
@@ -13,6 +13,8 @@ const SubmitTaskPage = () => {
     },
     refetchInterval: 5000
   });
+
+  console.log("Current submissions:", submissions); // Debug log
 
   return (
     <Sidebar>
@@ -37,22 +39,35 @@ const SubmitTaskPage = () => {
               ) : (
                 submissions.map((submission: any) => (
                   <div
-                    key={submission.id}
-                    className="p-4 border rounded-lg bg-white"
+                    key={`${submission.taskId}-${submission.bidderId}`}
+                    className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                      <div className="space-y-2 flex-1">
                         <h3 className="font-semibold text-[#1E40AF]">{submission.taskTitle}</h3>
+                        <p className="text-sm text-gray-600">Task ID: {submission.taskId}</p>
                         <p className="text-sm text-gray-600">File: {submission.fileName}</p>
+                        <p className="text-xs text-gray-500">
+                          Submitted: {new Date(submission.submittedAt).toLocaleString()}
+                        </p>
                       </div>
-                      <Badge
-                        variant={submission.status === 'approved' ? 'default' : 'secondary'}
-                        className={submission.status === 'approved' ? 'bg-[#1E40AF] text-white' : ''}
-                      >
-                        {submission.status}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge
+                          variant={submission.status === 'approved' ? 'default' : 'secondary'}
+                          className={submission.status === 'approved' ? 'bg-[#1E40AF] text-white' : ''}
+                        >
+                          {submission.status}
+                        </Badge>
+                        {submission.status === 'approved' && submission.rating && (
+                          <span className="text-sm text-green-600">Rating: {submission.rating}%</span>
+                        )}
+                        {submission.status === 'rejected' && submission.rejectionReason && (
+                          <span className="text-sm text-red-600">
+                            Reason: {submission.rejectionReason}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500">{new Date(submission.submittedAt).toLocaleString()}</p>
                   </div>
                 ))
               )}
