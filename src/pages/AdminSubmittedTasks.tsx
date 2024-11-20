@@ -37,11 +37,11 @@ const AdminSubmittedTasks = () => {
   );
 
   // Group submissions by task code for better organization
-  const submissionsByTask = tasksWithSubmissions.reduce((acc: SubmissionsByTask, task: Task) => {
-    if (!acc[task.code]) {
+  const submissionsByTask: SubmissionsByTask = tasksWithSubmissions.reduce((acc: SubmissionsByTask, task: Task) => {
+    if (task.submissions && task.submissions.length > 0) {
       acc[task.code] = {
         task,
-        submissions: task.submissions || []
+        submissions: task.submissions
       };
     }
     return acc;
@@ -120,7 +120,7 @@ const AdminSubmittedTasks = () => {
               <CardTitle>Task Submissions ({totalSubmissions})</CardTitle>
             </CardHeader>
             <CardContent>
-              {Object.entries(submissionsByTask).length === 0 ? (
+              {Object.keys(submissionsByTask).length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No submissions yet</p>
               ) : (
                 Object.entries(submissionsByTask).map(([taskCode, { task, submissions }]) => (
