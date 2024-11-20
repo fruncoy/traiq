@@ -26,14 +26,22 @@ export const handleTaskBid = async (
   };
   
   // Update tasks in localStorage
-  const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
+  const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+  const updatedTasks = allTasks.map(t => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-  console.log("Updated tasks after bid:", updatedTasks);
-
-  // Update user's active tasks
+  
+  // Update user's active tasks - ensure we store the full task object
   const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
-  userActiveTasks.push(updatedTask);
+  const existingTaskIndex = userActiveTasks.findIndex((t: Task) => t.id === updatedTask.id);
+  
+  if (existingTaskIndex === -1) {
+    userActiveTasks.push(updatedTask);
+  } else {
+    userActiveTasks[existingTaskIndex] = updatedTask;
+  }
+  
   localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
+  console.log("Updated user active tasks:", userActiveTasks);
 
   return updatedTask;
 };
@@ -60,7 +68,7 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   // Create a new submission with unique ID
   const newSubmission = {
     ...submission,
-    id: `${submission.bidderId}-${Date.now()}`, // Ensure unique ID
+    id: `${submission.bidderId}-${Date.now()}`,
     submittedAt: new Date().toISOString()
   };
 
@@ -92,7 +100,11 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   
   userSubmissions.push(userSubmission);
   localStorage.setItem('taskSubmissions', JSON.stringify(userSubmissions));
-  console.log("Updated user submissions:", userSubmissions);
+
+  // Remove from active tasks after submission
+  const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
+  const updatedActiveTasks = userActiveTasks.filter((t: Task) => t.id !== task.id);
+  localStorage.setItem('userActiveTasks', JSON.stringify(updatedActiveTasks));
 
   // Add notification
   const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
@@ -130,6 +142,16 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
     return t;
   });
   
+  // Update user submissions
+  const userSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+  const updatedUserSubmissions = userSubmissions.map((s: any) => {
+    if (s.taskId === taskId) {
+      return { ...s, status: 'approved' };
+    }
+    return s;
+  });
+  localStorage.setItem('taskSubmissions', JSON.stringify(updatedUserSubmissions));
+  
   // Update user earnings
   const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
   userEarnings[bidderId] = (userEarnings[bidderId] || 0) + taskerPayout;
@@ -140,34 +162,20 @@ export const approveSubmission = async (taskId: string, bidderId: string) => {
   earningsHistory[bidderId] = (earningsHistory[bidderId] || 0) + taskerPayout;
   localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory));
   
+  // Add notification for approval
+  const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+  notifications.unshift({
+    id: Date.now().toString(),
+    title: "Task Approved",
+    message: `Your submission for task ${task.code} has been approved! KES ${taskerPayout} has been added to your balance.`,
+    type: "success",
+    read: false,
+    date: new Date().toISOString()
+  });
+  localStorage.setItem('notifications', JSON.stringify(notifications));
+  
   // Save updated tasks
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
   return task;
-};
-
-export const resetWeeklyTasks = () => {
-  const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-  
-  // Archive current week's tasks
-  const archivedTasks = JSON.parse(localStorage.getItem('archivedTasks') || '[]');
-  const tasksToArchive = tasks.filter((task: Task) => {
-    const taskDate = new Date(task.datePosted);
-    const weekStart = startOfWeek(new Date());
-    return isBefore(taskDate, weekStart);
-  });
-  
-  // Add to archive
-  archivedTasks.push(...tasksToArchive);
-  localStorage.setItem('archivedTasks', JSON.stringify(archivedTasks));
-  
-  // Remove old tasks
-  const currentTasks = tasks.filter((task: Task) => {
-    const taskDate = new Date(task.datePosted);
-    const weekStart = startOfWeek(new Date());
-    return !isBefore(taskDate, weekStart);
-  });
-  
-  localStorage.setItem('tasks', JSON.stringify(currentTasks));
-  localStorage.setItem('totalSpent', '0'); // Reset weekly revenue
 };

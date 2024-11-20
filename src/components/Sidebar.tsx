@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -34,6 +34,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Query to check for unread notifications
   const { data: notifications = [] } = useQuery({
@@ -46,6 +47,16 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   });
 
   const hasUnreadNotifications = notifications.some((n: any) => !n.read);
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
+
+  // Mark notifications as read when visiting the notifications page
+  React.useEffect(() => {
+    if (location.pathname === '/tasker/notifications' && hasUnreadNotifications) {
+      const updatedNotifications = notifications.map((n: any) => ({ ...n, read: true }));
+      localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  }, [location.pathname, hasUnreadNotifications]);
 
   const adminLinks: LinkItem[] = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -67,7 +78,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       name: "Notifications", 
       path: "/tasker/notifications", 
       icon: hasUnreadNotifications ? BellDot : Bell,
-      badge: hasUnreadNotifications ? notifications.filter((n: any) => !n.read).length : undefined
+      badge: unreadCount
     },
     { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
@@ -104,7 +115,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
                   <Icon size={20} />
                   <span className="text-sm font-medium">{link.name}</span>
                 </div>
-                {link.badge && (
+                {link.badge && link.badge > 0 && (
                   <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
                     {link.badge}
                   </span>

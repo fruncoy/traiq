@@ -49,7 +49,7 @@ const App = () => {
             <Route path="/tasker/bidded-tasks" element={<BiddedTasksPage />} />
           </Routes>
         </BrowserRouter>
-        <Sonner />
+        <Sonner duration={3000} /> {/* Reduced toast duration to 3 seconds */}
       </TooltipProvider>
     </QueryClientProvider>
   );
