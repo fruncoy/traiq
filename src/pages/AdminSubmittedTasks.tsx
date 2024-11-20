@@ -20,6 +20,13 @@ const AdminSubmittedTasks = () => {
     }
   });
 
+  // Filter tasks that have submissions
+  const tasksWithSubmissions = tasks.filter((task: Task) => 
+    task.submissions && task.submissions.length > 0
+  );
+
+  console.log("Tasks with submissions:", tasksWithSubmissions);
+
   const { mutate: handleSubmissionAction, isPending } = useMutation({
     mutationFn: async ({ taskId, bidderId, action, reason }: { 
       taskId: string; 
@@ -27,9 +34,10 @@ const AdminSubmittedTasks = () => {
       action: 'approved' | 'rejected'; 
       reason?: string;
     }) => {
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      
       if (action === 'approved') {
         // Store rating before approval
-        const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
         const updatedTasks = tasks.map((task: Task) => {
           if (task.id === taskId) {
             const submission = task.submissions?.find(s => s.bidderId === bidderId);
@@ -45,7 +53,7 @@ const AdminSubmittedTasks = () => {
         return approveSubmission(taskId, bidderId);
       }
 
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      // Handle rejection
       const updatedTasks = tasks.map((task: Task) => {
         if (task.id === taskId) {
           const updatedSubmissions = task.submissions?.map(s => {
@@ -79,19 +87,13 @@ const AdminSubmittedTasks = () => {
     }));
   };
 
-  const tasksWithSubmissions = tasks.filter((task: Task) => 
-    task.submissions && task.submissions.length > 0
-  );
-
-  console.log("Tasks with submissions:", tasksWithSubmissions);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
         <div className="p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Task Submissions</CardTitle>
+              <CardTitle>Task Submissions ({tasksWithSubmissions.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {tasksWithSubmissions.length === 0 ? (

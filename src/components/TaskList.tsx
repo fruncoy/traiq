@@ -18,7 +18,9 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
+      console.log("Retrieved tasks:", tasks);
 
+      // For non-admin users, filter available tasks
       if (!isAdmin) {
         const userId = 'current-user-id';
         return tasks.filter((task: Task) => {
@@ -27,6 +29,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         });
       }
 
+      // For admin, show all tasks
       return tasks;
     }
   });
