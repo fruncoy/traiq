@@ -7,6 +7,13 @@ import { Task } from "@/types/task";
 import { approveSubmission } from "../components/task/TaskBidLogic";
 import SubmissionCard from "../components/admin/SubmissionCard";
 
+interface SubmissionsByTask {
+  [key: string]: {
+    task: Task;
+    submissions: any[];
+  };
+}
+
 const AdminSubmittedTasks = () => {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
@@ -38,11 +45,18 @@ const AdminSubmittedTasks = () => {
       };
     }
     return acc;
-  }, {} as Record<string, { task: Task, submissions: any[] }>);
+  }, {} as SubmissionsByTask);
 
   console.log("Tasks with submissions:", tasksWithSubmissions);
   console.log("Total submissions:", totalSubmissions);
   console.log("Submissions grouped by task:", submissionsByTask);
+
+  const handleRatingChange = (taskId: string, bidderId: string, value: number) => {
+    setRatings(prev => ({
+      ...prev,
+      [`${taskId}-${bidderId}`]: value
+    }));
+  };
 
   const { mutate: handleSubmissionAction, isPending } = useMutation({
     mutationFn: async ({ taskId, bidderId, action, reason }: { 
