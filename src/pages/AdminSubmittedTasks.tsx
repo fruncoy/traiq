@@ -29,8 +29,20 @@ const AdminSubmittedTasks = () => {
     acc + (task.submissions?.length || 0), 0
   );
 
+  // Group submissions by task code for better organization
+  const submissionsByTask = tasksWithSubmissions.reduce((acc, task) => {
+    if (!acc[task.code]) {
+      acc[task.code] = {
+        task,
+        submissions: task.submissions || []
+      };
+    }
+    return acc;
+  }, {} as Record<string, { task: Task, submissions: any[] }>);
+
   console.log("Tasks with submissions:", tasksWithSubmissions);
   console.log("Total submissions:", totalSubmissions);
+  console.log("Submissions grouped by task:", submissionsByTask);
 
   const { mutate: handleSubmissionAction, isPending } = useMutation({
     mutationFn: async ({ taskId, bidderId, action, reason }: { 
@@ -85,13 +97,6 @@ const AdminSubmittedTasks = () => {
     }
   });
 
-  const handleRatingChange = (taskId: string, bidderId: string, value: number) => {
-    setRatings(prev => ({
-      ...prev,
-      [`${taskId}-${bidderId}`]: value
-    }));
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
@@ -101,28 +106,35 @@ const AdminSubmittedTasks = () => {
               <CardTitle>Task Submissions ({totalSubmissions})</CardTitle>
             </CardHeader>
             <CardContent>
-              {tasksWithSubmissions.length === 0 ? (
+              {Object.entries(submissionsByTask).length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No submissions yet</p>
               ) : (
-                tasksWithSubmissions.map((task: Task) => (
-                  task.submissions?.map((submission) => (
-                    <SubmissionCard
-                      key={`${task.id}-${submission.bidderId}`}
-                      task={task}
-                      submission={submission}
-                      rating={ratings[`${task.id}-${submission.bidderId}`] || 70}
-                      onRatingChange={(value) => handleRatingChange(task.id, submission.bidderId, value)}
-                      onAction={(action, reason) => 
-                        handleSubmissionAction({
-                          taskId: task.id,
-                          bidderId: submission.bidderId,
-                          action,
-                          reason
-                        })
-                      }
-                      isPending={isPending}
-                    />
-                  ))
+                Object.entries(submissionsByTask).map(([taskCode, { task, submissions }]) => (
+                  <div key={taskCode} className="mb-6">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Task: {task.title} (Code: {taskCode}) - {submissions.length} submissions
+                    </h3>
+                    <div className="space-y-4">
+                      {submissions.map((submission) => (
+                        <SubmissionCard
+                          key={`${task.id}-${submission.bidderId}`}
+                          task={task}
+                          submission={submission}
+                          rating={ratings[`${task.id}-${submission.bidderId}`] || 70}
+                          onRatingChange={(value) => handleRatingChange(task.id, submission.bidderId, value)}
+                          onAction={(action, reason) => 
+                            handleSubmissionAction({
+                              taskId: task.id,
+                              bidderId: submission.bidderId,
+                              action,
+                              reason
+                            })
+                          }
+                          isPending={isPending}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 ))
               )}
             </CardContent>
