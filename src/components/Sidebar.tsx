@@ -7,6 +7,7 @@ import {
   Users, 
   Settings, 
   LogOut, 
+  BellDot,
   Bell, 
   Upload, 
   CreditCard,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -25,6 +27,16 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Query to check for unread notifications
+  const { data: hasUnreadNotifications = false } = useQuery({
+    queryKey: ['unread-notifications'],
+    queryFn: async () => {
+      const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+      return notifications.some((n: any) => !n.read);
+    },
+    refetchInterval: 5000
+  });
 
   const adminLinks = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -42,7 +54,11 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
     { name: "Bidded Tasks", path: "/tasker/bidded-tasks", icon: Briefcase },
     { name: "Submit Task", path: "/tasker/submit-task", icon: Upload },
-    { name: "Notifications", path: "/tasker/notifications", icon: Bell },
+    { 
+      name: "Notifications", 
+      path: "/tasker/notifications", 
+      icon: hasUnreadNotifications ? BellDot : Bell 
+    },
     { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
 
