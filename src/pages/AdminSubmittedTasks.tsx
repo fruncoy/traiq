@@ -37,7 +37,7 @@ const AdminSubmittedTasks = () => {
   );
 
   // Group submissions by task code for better organization
-  const submissionsByTask = tasksWithSubmissions.reduce((acc, task) => {
+  const submissionsByTask = tasksWithSubmissions.reduce((acc: SubmissionsByTask, task: Task) => {
     if (!acc[task.code]) {
       acc[task.code] = {
         task,
