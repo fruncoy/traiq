@@ -1,64 +1,63 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Ticket, TicketPriority } from "@/types/ticket";
+import { useQueryClient } from "@tanstack/react-query";
 
 const TicketForm = () => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    priority: "low" as TicketPriority,
+    priority: "",
     attachment: ""
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.title || !formData.description || !formData.priority) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
-    const newTicket: Ticket = {
+    const newTicket = {
       id: Date.now().toString(),
-      ...formData,
       taskerId: 'current-user-id',
+      title: formData.title,
+      description: formData.description,
+      priority: formData.priority,
+      attachment: formData.attachment,
       status: 'pending',
       createdAt: new Date().toISOString(),
       responses: []
     };
 
-    const existingTickets = JSON.parse(localStorage.getItem('tickets') || '[]');
-    localStorage.setItem('tickets', JSON.stringify([...existingTickets, newTicket]));
+    // Save to localStorage
+    const tickets = JSON.parse(localStorage.getItem('tickets') || '[]');
+    localStorage.setItem('tickets', JSON.stringify([...tickets, newTicket]));
 
-    queryClient.invalidateQueries({ queryKey: ['tickets'] });
-    
+    // Reset form
     setFormData({
       title: "",
       description: "",
-      priority: "low",
+      priority: "",
       attachment: ""
     });
 
-    toast.success("Ticket submitted successfully");
-  };
+    // Invalidate queries
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, attachment: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
+    toast.success("Ticket submitted successfully");
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submit a Support Ticket</CardTitle>
+        <CardTitle>Submit a Ticket</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,7 +67,6 @@ const TicketForm = () => {
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter ticket title"
-              required
             />
           </div>
 
@@ -77,8 +75,7 @@ const TicketForm = () => {
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe your issue..."
-              required
+              placeholder="Describe your issue or request"
             />
           </div>
 
@@ -86,10 +83,7 @@ const TicketForm = () => {
             <label className="text-sm font-medium">Priority Level</label>
             <Select
               value={formData.priority}
-              onValueChange={(value: TicketPriority) => 
-                setFormData(prev => ({ ...prev, priority: value }))
-              }
-            >
+              onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select priority" />
               </SelectTrigger>
@@ -105,12 +99,20 @@ const TicketForm = () => {
             <label className="text-sm font-medium">Attachment (optional)</label>
             <Input
               type="file"
-              onChange={handleFileChange}
-              accept="image/*,.pdf,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setFormData(prev => ({ ...prev, attachment: reader.result as string }));
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
             />
           </div>
 
-          <Button type="submit" className="w-full">Submit Ticket</Button>
+          <Button type="submit">Submit Ticket</Button>
         </form>
       </CardContent>
     </Card>
