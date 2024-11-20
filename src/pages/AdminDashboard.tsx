@@ -4,22 +4,18 @@ import DashboardMetrics from "../components/DashboardMetrics";
 import ActivityFeed from "../components/ActivityFeed";
 import QuickActions from "../components/QuickActions";
 import { useQuery } from "@tanstack/react-query";
+import { startOfDay, endOfDay } from "date-fns";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const today = new Date();
+  const startOfToday = startOfDay(today);
+  const endOfToday = endOfDay(today);
 
   const { data: totalRevenue = 0 } = useQuery({
     queryKey: ['total-revenue'],
     queryFn: async () => {
       return parseFloat(localStorage.getItem('totalSpent') || '0');
-    }
-  });
-
-  const { data: activeTasks = [] } = useQuery({
-    queryKey: ['active-tasks'],
-    queryFn: async () => {
-      const tasks = localStorage.getItem('activeTasks');
-      return tasks ? JSON.parse(tasks) : [];
     }
   });
 
@@ -31,11 +27,28 @@ const AdminDashboard = () => {
     }
   });
 
-  const { data: submissions = [] } = useQuery({
-    queryKey: ['task-submissions'],
+  const { data: todaySubmissions = [] } = useQuery({
+    queryKey: ['today-submissions'],
     queryFn: async () => {
-      const subs = localStorage.getItem('taskSubmissions');
-      return subs ? JSON.parse(subs) : [];
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      return tasks.filter((task: any) => {
+        const submissions = task.submissions || [];
+        return submissions.some((sub: any) => {
+          const subDate = new Date(sub.submittedAt);
+          return subDate >= startOfToday && subDate <= endOfToday;
+        });
+      });
+    }
+  });
+
+  const { data: pendingSubmissions = [] } = useQuery({
+    queryKey: ['pending-submissions'],
+    queryFn: async () => {
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      return tasks.filter((task: any) => {
+        const submissions = task.submissions || [];
+        return submissions.some((sub: any) => sub.status === 'pending');
+      });
     }
   });
 
@@ -43,16 +56,16 @@ const AdminDashboard = () => {
     { 
       label: "Total Tasks", 
       value: allTasks.length.toString(), 
-      description: "Active tasks in the system" 
+      description: "Total tasks in the system" 
     },
     { 
-      label: "Active Tasks", 
-      value: activeTasks.length.toString(), 
-      description: "Tasks being worked on" 
+      label: "Today's Submissions", 
+      value: todaySubmissions.length.toString(), 
+      description: "Task submissions for today" 
     },
     { 
-      label: "Pending Submissions", 
-      value: submissions.length.toString(), 
+      label: "Pending Reviews", 
+      value: pendingSubmissions.length.toString(), 
       description: "Tasks awaiting review" 
     },
     { 
