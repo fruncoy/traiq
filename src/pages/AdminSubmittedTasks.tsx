@@ -14,9 +14,9 @@ const AdminSubmittedTasks = () => {
     queryKey: ['tasks'],
     queryFn: async () => {
       const tasks = localStorage.getItem('tasks');
-      console.log("Retrieved all tasks:", tasks);
       return tasks ? JSON.parse(tasks) : [];
-    }
+    },
+    refetchInterval: 1000 // Poll every second for real-time updates
   });
 
   // Filter tasks that have submissions

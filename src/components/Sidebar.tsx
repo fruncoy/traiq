@@ -36,7 +36,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       const stored = localStorage.getItem('notifications');
       return stored ? JSON.parse(stored) : [];
     },
-    refetchInterval: 5000
+    refetchInterval: 1000 // Poll every second for real-time updates
   });
 
   const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
@@ -48,7 +48,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       return tickets.filter((t: any) => t.status === 'pending');
     },
     enabled: isAdmin,
-    refetchInterval: isAdmin ? 5000 : false
+    refetchInterval: isAdmin ? 1000 : false
   });
 
   const { data: pendingSubmissions = [], isLoading: submissionsLoading } = useQuery({
@@ -61,8 +61,20 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       );
     },
     enabled: isAdmin,
-    refetchInterval: isAdmin ? 5000 : false
+    refetchInterval: isAdmin ? 1000 : false
   });
+
+  // Mark notifications as read when visiting notifications page
+  React.useEffect(() => {
+    if (location.pathname === '/tasker/notifications') {
+      const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+      const updatedNotifications = storedNotifications.map((n: any) => ({
+        ...n,
+        read: true
+      }));
+      localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+    }
+  }, [location.pathname]);
 
   const hasUnreadNotifications = notifications.some((n: any) => !n.read);
   const unreadCount = notifications.filter((n: any) => !n.read).length;

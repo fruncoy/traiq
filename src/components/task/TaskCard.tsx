@@ -63,6 +63,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   const approvedSubmission = task.submissions?.find(s => s.status === 'approved');
   const taskPayout = task.category === 'genai' ? 700 : 300;
 
+  // Get last 5 submissions for this tasker
+  const taskerSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
+    .filter((s: any) => s.bidderId === 'current-user-id')
+    .slice(0, 5);
+
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -83,7 +88,6 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             )}
           </div>
           
-          <p className="text-sm text-gray-500">{task.code}</p>
           <p className="text-gray-600 text-sm">{task.description}</p>
 
           <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
@@ -112,6 +116,39 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
                 </span>
                 <span>KES {taskPayout}</span>
               </div>
+            )}
+          </div>
+
+          {/* Submission History */}
+          <div className="flex gap-2 mt-4">
+            {taskerSubmissions.length > 0 ? (
+              taskerSubmissions.map((submission: any, index: number) => (
+                <div
+                  key={index}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    submission.status === 'approved' 
+                      ? 'bg-green-500' 
+                      : submission.status === 'rejected'
+                      ? 'bg-red-500'
+                      : 'bg-yellow-500'
+                  }`}
+                >
+                  {submission.status === 'approved' ? (
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  ) : submission.status === 'rejected' ? (
+                    <XCircle className="w-4 h-4 text-white" />
+                  ) : (
+                    <Clock className="w-4 h-4 text-white" />
+                  )}
+                </div>
+              ))
+            ) : (
+              Array(5).fill(null).map((_, index) => (
+                <div
+                  key={index}
+                  className="w-8 h-8 rounded-full bg-gray-200"
+                />
+              ))
             )}
           </div>
         </div>
