@@ -113,7 +113,6 @@ const AdminTasks = () => {
                     <TableHead>Title</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Unique Code</TableHead>
                     <TableHead>Total Bidders</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
@@ -121,7 +120,7 @@ const AdminTasks = () => {
                 <TableBody>
                   {availableTasks.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={5} className="text-center py-4">
                         No tasks available. Upload tasks to get started.
                       </TableCell>
                     </TableRow>
@@ -131,7 +130,6 @@ const AdminTasks = () => {
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{task.description}</TableCell>
                         <TableCell>{task.category}</TableCell>
-                        <TableCell>{task.code}</TableCell>
                         <TableCell>{task.currentBids}/10</TableCell>
                         <TableCell>
                           {task.currentBids >= 10 ? 'Active' : 'Available'}

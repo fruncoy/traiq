@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 @layer base {
-  /* Add custom styles for dropdowns */
   .select-content {
     @apply bg-[#1E40AF] text-white border-none;
   }
@@ -14,5 +13,13 @@
 
   .notification-dot {
     @apply w-2 h-2 bg-red-500 rounded-full absolute -top-1 -right-1;
+  }
+
+  [role="dialog"] {
+    @apply bg-gray-900 text-white;
+  }
+
+  [role="dialog"] button {
+    @apply text-white hover:bg-gray-700;
   }
 }
