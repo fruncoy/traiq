@@ -64,9 +64,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   const taskPayout = task.category === 'genai' ? 700 : 300;
 
   // Get last 5 task submissions for admin view
-  const taskerHistory = isAdmin ? JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
-    .filter((s: any) => s.bidderId === task.bidderId)
-    .slice(0, 5) : [];
+  const taskerHistory = isAdmin && task.submissions?.[0]?.bidderId ? 
+    JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
+      .filter((s: any) => s.bidderId === task.submissions?.[0]?.bidderId)
+      .slice(0, 5) 
+    : [];
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
