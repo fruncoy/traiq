@@ -64,7 +64,22 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       return handleTaskBid(task, userBids, tasks);
     },
     onSuccess: (task) => {
-      toast.success("Task assigned successfully!");
+      toast.success("Task bid placed successfully!", {
+        className: "bg-green-50",
+        description: `You have successfully bid on task ${task.code}`,
+        action: {
+          label: "View Task",
+          onClick: () => window.location.href = "/tasker/bidded-tasks"
+        },
+        duration: 5000,
+        style: {
+          background: 'white',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          padding: '12px',
+          color: '#1a202c'
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
@@ -76,14 +91,38 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     onError: (error: Error) => {
       setShowConfirmDialog(false);
       if (error.message === "insufficient_bids") {
-        toast.error("Insufficient bids", {
+        toast.error("You don't have enough bids for this task", {
+          description: `This task requires ${task?.category === 'genai' ? '10' : '5'} bids. Please purchase more bids to continue.`,
           action: {
             label: "Buy Bids",
             onClick: () => window.location.href = "/tasker/buy-bids"
+          },
+          duration: 5000,
+          style: {
+            background: 'white',
+            border: '1px solid #fee2e2',
+            borderRadius: '8px',
+            padding: '12px',
+            color: '#991b1b'
+          }
+        });
+      } else if (error.message === "already_bid") {
+        toast.error("You have already bid on this task", {
+          description: "You cannot bid on the same task multiple times.",
+          duration: 5000,
+          style: {
+            background: 'white',
+            border: '1px solid #fee2e2',
+            borderRadius: '8px',
+            padding: '12px',
+            color: '#991b1b'
           }
         });
       } else {
-        toast.error("Failed to place bid");
+        toast.error("Failed to place bid", {
+          description: "An unexpected error occurred. Please try again.",
+          duration: 5000
+        });
       }
     }
   });
@@ -99,7 +138,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   };
 
-  // Pagination logic
   const totalPages = Math.ceil(tasks.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;

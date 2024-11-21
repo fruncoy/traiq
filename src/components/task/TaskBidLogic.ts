@@ -7,7 +7,7 @@ export const handleTaskBid = async (
   tasks: Task[],
 ) => {
   if (!task) throw new Error("Task not found");
-  console.log("Processing bid for task:", task.code);
+  console.log("Processing bid for task:", task.code, "User bids:", userBids);
 
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   if (!currentTasker.id) throw new Error("No tasker logged in");
@@ -19,6 +19,7 @@ export const handleTaskBid = async (
   if (taskerIndex === -1) throw new Error("Tasker not found");
   
   const bidsRequired = task.category === 'genai' ? 10 : 5;
+  console.log("Bids required:", bidsRequired, "Current user bids:", taskers[taskerIndex].bids);
   
   // Check if tasker has enough bids
   if (taskers[taskerIndex].bids < bidsRequired) {
@@ -59,13 +60,12 @@ export const handleTaskBid = async (
   }
   
   localStorage.setItem(`userActiveTasks_${currentTasker.id}`, JSON.stringify(userActiveTasks));
-  console.log("Updated user active tasks:", userActiveTasks);
 
   // Track bid activity for admin
   const activities = JSON.parse(localStorage.getItem('activities') || '[]');
   activities.unshift({
     id: Date.now().toString(),
-    type: 'submission',
+    type: 'bid',
     message: `Tasker ${currentTasker.username} bid on task ${task.code}`,
     timestamp: new Date().toISOString(),
     taskerId: currentTasker.id
