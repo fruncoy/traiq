@@ -12,6 +12,7 @@ export const handleTaskBid = async (
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   if (!currentTasker.id) throw new Error("No tasker logged in");
 
+  // Get all taskers and find current tasker
   const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
   const taskerIndex = taskers.findIndex((t: any) => t.id === currentTasker.id);
   
@@ -19,7 +20,15 @@ export const handleTaskBid = async (
   
   const bidsRequired = task.category === 'genai' ? 10 : 5;
   
-  if (taskers[taskerIndex].bids < bidsRequired) throw new Error("insufficient_bids");
+  // Check if tasker has enough bids
+  if (taskers[taskerIndex].bids < bidsRequired) {
+    throw new Error("insufficient_bids");
+  }
+
+  // Check if tasker has already bid on this task
+  if (task.bidders?.includes(currentTasker.id)) {
+    throw new Error("already_bid");
+  }
   
   // Update tasker's bids
   taskers[taskerIndex].bids -= bidsRequired;
@@ -36,11 +45,11 @@ export const handleTaskBid = async (
   
   // Update tasks in localStorage
   const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-  const updatedTasks = allTasks.map(t => t.id === task.id ? updatedTask : t);
+  const updatedTasks = allTasks.map((t: Task) => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
   // Update user's active tasks
-  const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
+  const userActiveTasks = JSON.parse(localStorage.getItem(`userActiveTasks_${currentTasker.id}`) || '[]');
   const existingTaskIndex = userActiveTasks.findIndex((t: Task) => t.id === updatedTask.id);
   
   if (existingTaskIndex === -1) {
@@ -49,8 +58,19 @@ export const handleTaskBid = async (
     userActiveTasks[existingTaskIndex] = updatedTask;
   }
   
-  localStorage.setItem('userActiveTasks', JSON.stringify(userActiveTasks));
+  localStorage.setItem(`userActiveTasks_${currentTasker.id}`, JSON.stringify(userActiveTasks));
   console.log("Updated user active tasks:", userActiveTasks);
+
+  // Track bid activity for admin
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  activities.unshift({
+    id: Date.now().toString(),
+    type: 'submission',
+    message: `Tasker ${currentTasker.username} bid on task ${task.code}`,
+    timestamp: new Date().toISOString(),
+    taskerId: currentTasker.id
+  });
+  localStorage.setItem('activities', JSON.stringify(activities));
 
   return updatedTask;
 };
@@ -100,7 +120,7 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   console.log("Updated tasks after submission:", updatedTasks);
 
   // Update user submissions separately
-  const userSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+  const userSubmissions = JSON.parse(localStorage.getItem(`taskSubmissions_${currentTasker.id}`) || '[]');
   const userSubmission = {
     id: newSubmission.id,
     taskId: task.id,
@@ -112,15 +132,15 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   };
   
   userSubmissions.push(userSubmission);
-  localStorage.setItem('taskSubmissions', JSON.stringify(userSubmissions));
+  localStorage.setItem(`taskSubmissions_${currentTasker.id}`, JSON.stringify(userSubmissions));
 
   // Remove from active tasks after submission
-  const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
+  const userActiveTasks = JSON.parse(localStorage.getItem(`userActiveTasks_${currentTasker.id}`) || '[]');
   const updatedActiveTasks = userActiveTasks.filter((t: Task) => t.id !== task.id);
-  localStorage.setItem('userActiveTasks', JSON.stringify(updatedActiveTasks));
+  localStorage.setItem(`userActiveTasks_${currentTasker.id}`, JSON.stringify(updatedActiveTasks));
 
   // Add notification
-  const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+  const notifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
   notifications.unshift({
     id: Date.now().toString(),
     title: "Task Submitted",
@@ -129,5 +149,16 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     read: false,
     date: new Date().toISOString()
   });
-  localStorage.setItem('notifications', JSON.stringify(notifications));
+  localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(notifications));
+
+  // Track submission activity for admin
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  activities.unshift({
+    id: Date.now().toString(),
+    type: 'submission',
+    message: `Tasker ${currentTasker.username} submitted task ${task.code}`,
+    timestamp: new Date().toISOString(),
+    taskerId: currentTasker.id
+  });
+  localStorage.setItem('activities', JSON.stringify(activities));
 };
