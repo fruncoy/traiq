@@ -1,15 +1,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 const ProfileSection = () => {
   const [formData, setFormData] = useState({
-    username: "johndoe",
-    email: "john@example.com",
-    phone: "+254 700 000000",
+    username: "",
+    email: "",
+    phone: "",
   });
+
+  useEffect(() => {
+    const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+    if (currentTasker) {
+      setFormData({
+        username: currentTasker.username || "",
+        email: currentTasker.email || "",
+        phone: currentTasker.phone || "",
+      });
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -19,7 +30,23 @@ const ProfileSection = () => {
   };
 
   const handleSaveProfile = () => {
-    toast.success("Profile updated successfully");
+    const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+    const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+    
+    const taskerIndex = taskers.findIndex((t: any) => t.id === currentTasker.id);
+    
+    if (taskerIndex !== -1) {
+      const updatedTasker = {
+        ...taskers[taskerIndex],
+        ...formData
+      };
+      
+      taskers[taskerIndex] = updatedTasker;
+      localStorage.setItem('taskers', JSON.stringify(taskers));
+      localStorage.setItem('currentTasker', JSON.stringify(updatedTasker));
+      
+      toast.success("Profile updated successfully");
+    }
   };
 
   return (

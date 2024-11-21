@@ -1,29 +1,36 @@
 import { Task, TaskSubmission } from "@/types/task";
 import { startOfWeek, endOfWeek, isAfter, isBefore, setHours } from "date-fns";
 
-const CURRENT_USER_ID = 'current-user-id'; // We'll use this constant throughout the file
-
 export const handleTaskBid = async (
   task: Task, 
   userBids: number,
   tasks: Task[],
-  userId: string = CURRENT_USER_ID
 ) => {
   if (!task) throw new Error("Task not found");
   console.log("Processing bid for task:", task.code);
 
-  const currentBids = parseInt(localStorage.getItem('userBids') || '0');
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+  if (!currentTasker.id) throw new Error("No tasker logged in");
+
+  const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+  const taskerIndex = taskers.findIndex((t: any) => t.id === currentTasker.id);
+  
+  if (taskerIndex === -1) throw new Error("Tasker not found");
+  
   const bidsRequired = task.category === 'genai' ? 10 : 5;
   
-  if (currentBids < bidsRequired) throw new Error("insufficient_bids");
+  if (taskers[taskerIndex].bids < bidsRequired) throw new Error("insufficient_bids");
   
-  localStorage.setItem('userBids', (currentBids - bidsRequired).toString());
+  // Update tasker's bids
+  taskers[taskerIndex].bids -= bidsRequired;
+  localStorage.setItem('taskers', JSON.stringify(taskers));
+  localStorage.setItem('currentTasker', JSON.stringify(taskers[taskerIndex]));
 
   // Update task bidding info
   const updatedTask = {
     ...task,
     currentBids: (task.currentBids || 0) + 1,
-    bidders: [...(task.bidders || []), userId],
+    bidders: [...(task.bidders || []), currentTasker.id],
     status: "active"
   };
   
@@ -32,7 +39,7 @@ export const handleTaskBid = async (
   const updatedTasks = allTasks.map(t => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   
-  // Update user's active tasks - ensure we store the full task object
+  // Update user's active tasks
   const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
   const existingTaskIndex = userActiveTasks.findIndex((t: Task) => t.id === updatedTask.id);
   
@@ -58,6 +65,9 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     throw new Error("Task submission deadline (4 PM) has passed");
   }
 
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+  if (!currentTasker.id) throw new Error("No tasker logged in");
+
   // Get all tasks and update the specific task's submissions
   const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
   const taskToUpdate = tasks.find((t: Task) => t.id === task.id);
@@ -67,11 +77,11 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     throw new Error("Task not found");
   }
 
-  // Create a new submission with unique ID and consistent user ID
+  // Create a new submission with unique ID and tasker ID
   const newSubmission = {
     ...submission,
-    id: `${CURRENT_USER_ID}-${Date.now()}`,
-    bidderId: CURRENT_USER_ID,
+    id: `${currentTasker.id}-${Date.now()}`,
+    bidderId: currentTasker.id,
     submittedAt: new Date().toISOString()
   };
 
@@ -97,7 +107,8 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     taskTitle: task.title,
     fileName: submission.fileName,
     status: 'pending',
-    submittedAt: newSubmission.submittedAt
+    submittedAt: newSubmission.submittedAt,
+    bidderId: currentTasker.id
   };
   
   userSubmissions.push(userSubmission);

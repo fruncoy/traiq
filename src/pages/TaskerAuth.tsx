@@ -5,11 +5,34 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+interface Tasker {
+  id: string;
+  username: string;
+  email: string;
+  password: string;
+  bids: number;
+  tasksCompleted: number;
+  totalPayouts: number;
+  pendingPayouts: number;
+  joinDate: string;
+  isSuspended: boolean;
+}
+
 const TaskerAuth = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: ""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +40,10 @@ const TaskerAuth = () => {
     const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
     
     if (isLogin) {
-      const tasker = taskers.find((t: any) => t.username === username && t.password === password);
+      const tasker = taskers.find((t: Tasker) => 
+        t.username === formData.username && t.password === formData.password
+      );
+      
       if (tasker) {
         localStorage.setItem('currentTasker', JSON.stringify(tasker));
         toast.success("Successfully logged in!");
@@ -26,13 +52,21 @@ const TaskerAuth = () => {
         toast.error("Invalid credentials");
       }
     } else {
-      // Generate unique tasker ID
-      const taskerId = `TSK${Date.now().toString().slice(-6)}`;
+      // Check if username already exists
+      if (taskers.some((t: Tasker) => t.username === formData.username)) {
+        toast.error("Username already exists");
+        return;
+      }
+
+      // Generate unique tasker ID with TSK prefix and 6 random digits
+      const taskerId = `TSK${Math.floor(Math.random() * 900000 + 100000)}`;
       
-      const newTasker = {
+      const newTasker: Tasker = {
         id: taskerId,
-        username,
-        password,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        bids: 0,
         tasksCompleted: 0,
         totalPayouts: 0,
         pendingPayouts: 0,
@@ -61,18 +95,32 @@ const TaskerAuth = () => {
               <label className="text-sm font-medium">Username</label>
               <Input
                 type="text"
+                name="username"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={formData.username}
+                onChange={handleChange}
               />
             </div>
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <label className="text-sm font-medium">Password</label>
               <Input
                 type="password"
+                name="password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleChange}
               />
             </div>
             <Button type="submit" className="w-full">

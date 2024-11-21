@@ -47,18 +47,29 @@ const BuyBidsPage = () => {
   const [customBids, setCustomBids] = useState<number>(2);
   const queryClient = useQueryClient();
   
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+  
   const { data: currentBids = 0, refetch } = useQuery({
-    queryKey: ['user-bids'],
+    queryKey: ['user-bids', currentTasker.id],
     queryFn: async () => {
-      const storedBids = localStorage.getItem('userBids');
-      return storedBids ? parseInt(storedBids) : 0;
+      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+      const tasker = taskers.find((t: any) => t.id === currentTasker.id);
+      return tasker?.bids || 0;
     }
   });
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
-      const currentBids = parseInt(localStorage.getItem('userBids') || '0');
-      localStorage.setItem('userBids', (currentBids + bids).toString());
+      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+      const taskerIndex = taskers.findIndex((t: any) => t.id === currentTasker.id);
+      
+      if (taskerIndex === -1) {
+        throw new Error("Tasker not found");
+      }
+      
+      taskers[taskerIndex].bids = (taskers[taskerIndex].bids || 0) + bids;
+      localStorage.setItem('taskers', JSON.stringify(taskers));
+      localStorage.setItem('currentTasker', JSON.stringify(taskers[taskerIndex]));
       
       // Track total spent for admin dashboard
       const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
@@ -70,7 +81,7 @@ const BuyBidsPage = () => {
       toast.success(`Successfully purchased ${variables.bids} bids`, {
         description: `Added ${variables.bids} bids to your account.`
       });
-      queryClient.invalidateQueries({ queryKey: ['user-bids'] });
+      queryClient.invalidateQueries({ queryKey: ['user-bids', currentTasker.id] });
       refetch();
     },
     onError: () => {
