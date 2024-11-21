@@ -90,9 +90,11 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     },
     onError: (error: Error) => {
       setShowConfirmDialog(false);
+      const selectedTask = tasks.find(t => t.id === selectedTaskId);
+      
       if (error.message === "insufficient_bids") {
         toast.error("You don't have enough bids for this task", {
-          description: `This task requires ${task?.category === 'genai' ? '10' : '5'} bids. Please purchase more bids to continue.`,
+          description: `This task requires ${selectedTask?.category === 'genai' ? '10' : '5'} bids. Please purchase more bids to continue.`,
           action: {
             label: "Buy Bids",
             onClick: () => window.location.href = "/tasker/buy-bids"
