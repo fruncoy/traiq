@@ -59,11 +59,21 @@ const App = () => {
           </Routes>
         </BrowserRouter>
         <Sonner 
-          duration={2000} 
-          position="top-right"
-          closeButton
-          theme="dark"
-          richColors
+          position="bottom-right"
+          expand={true}
+          closeButton={true}
+          richColors={true}
+          theme="light"
+          className="!fixed !bottom-4 !right-4"
+          toastOptions={{
+            style: {
+              background: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '12px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            },
+          }}
         />
       </TooltipProvider>
     </QueryClientProvider>
