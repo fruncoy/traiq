@@ -1,11 +1,13 @@
 import { Task, TaskSubmission } from "@/types/task";
 import { startOfWeek, endOfWeek, isAfter, isBefore, setHours } from "date-fns";
 
+const CURRENT_USER_ID = 'current-user-id'; // We'll use this constant throughout the file
+
 export const handleTaskBid = async (
   task: Task, 
   userBids: number,
   tasks: Task[],
-  userId: string = 'current-user-id'
+  userId: string = CURRENT_USER_ID
 ) => {
   if (!task) throw new Error("Task not found");
   console.log("Processing bid for task:", task.code);
@@ -47,7 +49,7 @@ export const handleTaskBid = async (
 };
 
 export const processTaskSubmission = async (task: Task, submission: TaskSubmission) => {
-  console.log("Processing submission for task:", task.code);
+  console.log("Processing submission for task:", task.title);
   
   const now = new Date();
   const deadline = setHours(new Date(task.deadline), 16);
@@ -65,10 +67,11 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     throw new Error("Task not found");
   }
 
-  // Create a new submission with unique ID
+  // Create a new submission with unique ID and consistent user ID
   const newSubmission = {
     ...submission,
-    id: `${submission.bidderId}-${Date.now()}`,
+    id: `${CURRENT_USER_ID}-${Date.now()}`,
+    bidderId: CURRENT_USER_ID,
     submittedAt: new Date().toISOString()
   };
 
@@ -92,7 +95,6 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
     id: newSubmission.id,
     taskId: task.id,
     taskTitle: task.title,
-    taskCode: task.code,
     fileName: submission.fileName,
     status: 'pending',
     submittedAt: newSubmission.submittedAt
@@ -111,71 +113,10 @@ export const processTaskSubmission = async (task: Task, submission: TaskSubmissi
   notifications.unshift({
     id: Date.now().toString(),
     title: "Task Submitted",
-    message: `Your submission for task ${task.code} is pending review`,
+    message: `Your submission for task ${task.title} is pending review`,
     type: "info",
     read: false,
     date: new Date().toISOString()
   });
   localStorage.setItem('notifications', JSON.stringify(notifications));
-};
-
-export const approveSubmission = async (taskId: string, bidderId: string) => {
-  const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-  const task = tasks.find((t: Task) => t.id === taskId);
-  
-  if (!task) throw new Error("Task not found");
-  
-  // Calculate payout amount based on task category
-  const taskerPayout = task.category === 'genai' ? 700 : 300;
-  
-  // Update task submission status
-  const updatedTasks = tasks.map((t: Task) => {
-    if (t.id === taskId) {
-      const updatedSubmissions = t.submissions?.map(s => {
-        if (s.bidderId === bidderId) {
-          return { ...s, status: 'approved' };
-        }
-        return s;
-      });
-      return { ...t, submissions: updatedSubmissions };
-    }
-    return t;
-  });
-  
-  // Update user submissions
-  const userSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-  const updatedUserSubmissions = userSubmissions.map((s: any) => {
-    if (s.taskId === taskId) {
-      return { ...s, status: 'approved' };
-    }
-    return s;
-  });
-  localStorage.setItem('taskSubmissions', JSON.stringify(updatedUserSubmissions));
-  
-  // Update user earnings
-  const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-  userEarnings[bidderId] = (userEarnings[bidderId] || 0) + taskerPayout;
-  localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
-  
-  // Update earnings history
-  const earningsHistory = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
-  earningsHistory[bidderId] = (earningsHistory[bidderId] || 0) + taskerPayout;
-  localStorage.setItem('earningsHistory', JSON.stringify(earningsHistory));
-  
-  // Add notification for approval
-  const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-  notifications.unshift({
-    id: Date.now().toString(),
-    title: "Task Approved",
-    message: `Your submission for task ${task.code} has been approved! KES ${taskerPayout} has been added to your balance.`,
-    type: "success",
-    read: false,
-    date: new Date().toISOString()
-  });
-  localStorage.setItem('notifications', JSON.stringify(notifications));
-  
-  // Save updated tasks
-  localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-  
-  return task;
 };

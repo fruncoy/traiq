@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { processTaskSubmission } from "../task/TaskBidLogic";
 import { Task, TaskSubmission } from "@/types/task";
 
+const CURRENT_USER_ID = 'current-user-id';
+
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -22,31 +24,22 @@ const TaskSubmissionForm = () => {
 
   const { mutate: submitTask, isPending } = useMutation({
     mutationFn: async (task: Task) => {
-      console.log("Submitting task:", task);
       if (!file) {
         throw new Error("No file selected");
       }
 
       const submission: TaskSubmission = {
         id: `submission-${Date.now()}`,
-        bidderId: 'current-user-id',
+        bidderId: CURRENT_USER_ID,
         status: 'pending',
         submittedAt: new Date().toISOString(),
         fileName: file.name
       };
 
-      console.log("Processing submission:", submission);
       await processTaskSubmission(task, submission);
-
-      // Update local storage after successful submission
-      const userActiveTasks = JSON.parse(localStorage.getItem('userActiveTasks') || '[]');
-      const updatedTasks = userActiveTasks.filter((t: Task) => t.id !== task.id);
-      localStorage.setItem('userActiveTasks', JSON.stringify(updatedTasks));
-      
       return { task, submission };
     },
     onSuccess: ({ task }) => {
-      console.log("Task submitted successfully:", task);
       toast.success("Task submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
@@ -54,14 +47,12 @@ const TaskSubmissionForm = () => {
       setFile(null);
     },
     onError: (error: Error) => {
-      console.error("Task submission failed:", error);
       toast.error(error.message || "Failed to submit task");
     }
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted with task:", selectedTask);
 
     if (!selectedTask) {
       toast.error("Please select a task");
@@ -100,7 +91,6 @@ const TaskSubmissionForm = () => {
                 >
                   <div className="flex flex-col gap-1">
                     <span className="font-medium">{task.title}</span>
-                    <span className="text-sm text-gray-500">{task.code}</span>
                   </div>
                 </SelectItem>
               ))
