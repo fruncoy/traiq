@@ -14,31 +14,29 @@ const AdminFinances = () => {
     queryKey: ['total-revenue'],
     queryFn: async () => {
       const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
+      console.log("Total revenue from bids:", totalSpent);
       return totalSpent;
     }
   });
 
-  // Calculate approved payouts for the current week
+  // Calculate approved payouts
   const { data: approvedPayouts = 0 } = useQuery({
     queryKey: ['approved-payouts'],
     queryFn: async () => {
       const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      return tasks.reduce((total: number, task: any) => {
-        const approvedSubmissions = task.submissions?.filter((submission: any) => {
-          const submissionDate = new Date(submission.submittedAt);
-          return submission.status === 'approved' && 
-                 submissionDate >= weekStart && 
-                 submissionDate <= weekEnd;
-        }) || [];
-
-        const payoutForTask = approvedSubmissions.length * (task.category === 'genai' ? 400 : 200);
-        return total + payoutForTask;
+      const totalPayouts = tasks.reduce((total: number, task: any) => {
+        const approvedSubmissions = task.submissions?.filter((s: any) => s.status === 'approved') || [];
+        const payoutPerTask = task.category === 'genai' ? 700 : 300;
+        return total + (approvedSubmissions.length * payoutPerTask);
       }, 0);
+      console.log("Total approved payouts:", totalPayouts);
+      return totalPayouts;
     }
   });
 
   // Calculate profit (Total Revenue - Approved Payouts)
   const profit = totalRevenue - approvedPayouts;
+  console.log("Calculated profit:", profit);
 
   const { data: recentPayouts = [] } = useQuery({
     queryKey: ['recent-payouts'],
@@ -51,7 +49,7 @@ const AdminFinances = () => {
             .map((s: any) => ({
               id: `${task.id}-${s.bidderId}`,
               taskCode: task.code,
-              amount: task.category === 'genai' ? 400 : 200,
+              amount: task.category === 'genai' ? 700 : 300,
               status: 'Approved',
               date: s.submittedAt
             }))

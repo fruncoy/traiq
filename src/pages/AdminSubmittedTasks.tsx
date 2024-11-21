@@ -5,7 +5,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
-import { approveSubmission } from "../components/task/TaskBidLogic";
 
 const AdminSubmittedTasks = () => {
   const [ratings, setRatings] = useState<Record<string, number>>({});
@@ -36,37 +35,43 @@ const AdminSubmittedTasks = () => {
       action: 'approved' | 'rejected'; 
       reason?: string;
     }) => {
-      if (action === 'approved') {
-        const updatedTasks = tasks.map((task: Task) => {
-          if (task.id === taskId) {
-            const submission = task.submissions?.find(s => s.bidderId === bidderId);
-            if (submission) {
-              submission.rating = ratings[`${taskId}-${bidderId}`];
-            }
-          }
-          return task;
-        });
-        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-        console.log("Updated tasks with rating:", updatedTasks);
-        
-        return approveSubmission(taskId, bidderId);
-      }
-
-      const updatedTasks = tasks.map((task: Task) => {
-        if (task.id === taskId) {
-          const updatedSubmissions = task.submissions?.map(s => {
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const task = tasks.find((t: Task) => t.id === taskId);
+      
+      if (!task) throw new Error("Task not found");
+      
+      const updatedTasks = tasks.map((t: Task) => {
+        if (t.id === taskId) {
+          const updatedSubmissions = t.submissions?.map(s => {
             if (s.bidderId === bidderId) {
-              return { ...s, status: 'rejected', rejectionReason: reason };
+              return { 
+                ...s, 
+                status: action,
+                ...(reason && { rejectionReason: reason })
+              };
             }
             return s;
           });
-          return { ...task, submissions: updatedSubmissions };
+          return { ...t, submissions: updatedSubmissions };
         }
-        return task;
+        return t;
       });
       
       localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-      console.log("Updated tasks after rejection:", updatedTasks);
+      console.log("Updated tasks after submission action:", updatedTasks);
+      
+      // Add notification
+      const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+      notifications.unshift({
+        id: Date.now().toString(),
+        title: `Submission ${action}`,
+        message: `Task ${task.code} submission has been ${action}`,
+        type: action === 'approved' ? 'success' : 'error',
+        read: false,
+        date: new Date().toISOString()
+      });
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+      
       return updatedTasks;
     },
     onSuccess: () => {
@@ -82,25 +87,36 @@ const AdminSubmittedTasks = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
         <div className="p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Submissions ({totalSubmissions})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {tasksWithSubmissions.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">No submissions yet</p>
-              ) : (
-                tasksWithSubmissions.map((task: Task) => (
-                  <div key={task.id} className="mb-8">
-                    <h3 className="text-lg font-semibold mb-4">
-                      Task: {task.title} (Code: {task.code}) - {task.submissions?.length} submissions
-                    </h3>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-[#1E40AF]">Task Submissions ({totalSubmissions})</h2>
+          </div>
+
+          <div className="space-y-6">
+            {tasksWithSubmissions.length === 0 ? (
+              <Card>
+                <CardContent className="p-6">
+                  <p className="text-center text-gray-500">No submissions yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              tasksWithSubmissions.map((task: Task) => (
+                <Card key={task.id} className="overflow-hidden">
+                  <CardHeader className="bg-gray-50 border-b">
+                    <CardTitle className="text-lg">
+                      Task: {task.title} (Code: {task.code})
+                      <span className="ml-2 text-sm font-normal text-gray-600">
+                        {task.submissions?.length} submission{task.submissions?.length !== 1 ? 's' : ''}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Tasker ID</TableHead>
                           <TableHead>File</TableHead>
                           <TableHead>Date</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -113,7 +129,18 @@ const AdminSubmittedTasks = () => {
                               {new Date(submission.submittedAt || '').toLocaleString()}
                             </TableCell>
                             <TableCell>
-                              {submission.status === 'pending' ? (
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                submission.status === 'approved' 
+                                  ? 'bg-green-100 text-green-800'
+                                  : submission.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {submission.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {submission.status === 'pending' && (
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleSubmissionAction({
@@ -121,7 +148,7 @@ const AdminSubmittedTasks = () => {
                                       bidderId: submission.bidderId,
                                       action: 'approved'
                                     })}
-                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                    className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
                                     disabled={isPending}
                                   >
                                     Approve
@@ -131,33 +158,25 @@ const AdminSubmittedTasks = () => {
                                       taskId: task.id,
                                       bidderId: submission.bidderId,
                                       action: 'rejected',
-                                      reason: 'Rejected'
+                                      reason: 'Rejected by admin'
                                     })}
-                                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
                                     disabled={isPending}
                                   >
                                     Reject
                                   </button>
                                 </div>
-                              ) : (
-                                <span className={`px-3 py-1 rounded ${
-                                  submission.status === 'approved' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {submission.status}
-                                </span>
                               )}
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </div>
       </Sidebar>
     </div>
