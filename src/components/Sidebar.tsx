@@ -12,7 +12,8 @@ import {
   Upload, 
   CreditCard,
   Briefcase,
-  TicketIcon
+  TicketIcon,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -37,13 +38,40 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const queryClient = useQueryClient();
 
   // Query to check for unread notifications
-  const { data: notifications = [] } = useQuery({
+  const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       const stored = localStorage.getItem('notifications');
       return stored ? JSON.parse(stored) : [];
     },
     refetchInterval: 5000
+  });
+
+  // Query to check for pending tickets (admin only)
+  const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
+    queryKey: ['pending-tickets'],
+    queryFn: async () => {
+      if (!isAdmin) return [];
+      const stored = localStorage.getItem('tickets');
+      const tickets = stored ? JSON.parse(stored) : [];
+      return tickets.filter((t: any) => t.status === 'pending');
+    },
+    enabled: isAdmin,
+    refetchInterval: isAdmin ? 5000 : false
+  });
+
+  // Query to check for pending task submissions (admin only)
+  const { data: pendingSubmissions = [], isLoading: submissionsLoading } = useQuery({
+    queryKey: ['pending-submissions'],
+    queryFn: async () => {
+      if (!isAdmin) return [];
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      return tasks.filter((t: any) => 
+        t.submissions?.some((s: any) => s.status === 'pending')
+      );
+    },
+    enabled: isAdmin,
+    refetchInterval: isAdmin ? 5000 : false
   });
 
   const hasUnreadNotifications = notifications.some((n: any) => !n.read);
@@ -61,10 +89,20 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const adminLinks: LinkItem[] = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
     { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
-    { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload },
+    { 
+      name: "Submitted Tasks", 
+      path: "/admin/submitted-tasks", 
+      icon: Upload,
+      badge: pendingSubmissions.length
+    },
     { name: "Finances", path: "/admin/finances", icon: DollarSign },
     { name: "Taskers", path: "/admin/taskers", icon: Users },
-    { name: "Tickets", path: "/admin/tickets", icon: TicketIcon },
+    { 
+      name: "Tickets", 
+      path: "/admin/tickets", 
+      icon: TicketIcon,
+      badge: pendingTickets.length
+    },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ];
 
@@ -89,6 +127,14 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     toast.success("Successfully logged out");
     navigate("/");
   };
+
+  if (notificationsLoading || ticketsLoading || submissionsLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-white">

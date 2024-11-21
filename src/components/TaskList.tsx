@@ -1,10 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid } from "./task/TaskBidLogic";
 import { Task } from "@/types/task";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
   limit?: number;
@@ -12,15 +23,16 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   isAdmin?: boolean;
 }) => {
   const queryClient = useQueryClient();
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const { data: tasks = [], refetch } = useQuery({
+  const { data: tasks = [], refetch, isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
       console.log("Retrieved tasks:", tasks);
 
-      // For non-admin users, filter available tasks
       if (!isAdmin) {
         const userId = 'current-user-id';
         return tasks.filter((task: Task) => {
@@ -29,7 +41,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         });
       }
 
-      // For admin, show all tasks
       return tasks;
     }
   });
@@ -56,8 +67,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       refetch();
+      setShowConfirmDialog(false);
     },
     onError: (error: Error) => {
+      setShowConfirmDialog(false);
       if (error.message === "insufficient_bids") {
         toast.error("Insufficient bids", {
           action: {
@@ -71,7 +84,26 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   });
 
+  const handleBidClick = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmBid = () => {
+    if (selectedTaskId) {
+      bidMutation.mutate(selectedTaskId);
+    }
+  };
+
   const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -94,7 +126,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
             <TaskCard
               key={task.id}
               task={task}
-              onBid={(taskId) => bidMutation.mutate(taskId)}
+              onBid={(taskId) => handleBidClick(taskId)}
               isAdmin={isAdmin}
               userBids={userBids}
               isPending={bidMutation.isPending}
@@ -114,6 +146,27 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
           </Link>
         </div>
       )}
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bid</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to place a bid on this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBid}>
+              {bidMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Confirm Bid"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
