@@ -63,10 +63,10 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   const approvedSubmission = task.submissions?.find(s => s.status === 'approved');
   const taskPayout = task.category === 'genai' ? 700 : 300;
 
-  // Get last 5 submissions for this tasker
-  const taskerSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
-    .filter((s: any) => s.bidderId === 'current-user-id')
-    .slice(0, 5);
+  // Get last 5 task submissions for admin view
+  const taskerHistory = isAdmin ? JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
+    .filter((s: any) => s.bidderId === task.bidderId)
+    .slice(0, 5) : [];
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -119,38 +119,45 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             )}
           </div>
 
-          {/* Submission History */}
-          <div className="flex gap-2 mt-4">
-            {taskerSubmissions.length > 0 ? (
-              taskerSubmissions.map((submission: any, index: number) => (
-                <div
-                  key={index}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    submission.status === 'approved' 
-                      ? 'bg-green-500' 
-                      : submission.status === 'rejected'
-                      ? 'bg-red-500'
-                      : 'bg-yellow-500'
-                  }`}
-                >
-                  {submission.status === 'approved' ? (
-                    <CheckCircle className="w-4 h-4 text-white" />
-                  ) : submission.status === 'rejected' ? (
-                    <XCircle className="w-4 h-4 text-white" />
-                  ) : (
-                    <Clock className="w-4 h-4 text-white" />
-                  )}
-                </div>
-              ))
-            ) : (
-              Array(5).fill(null).map((_, index) => (
-                <div
-                  key={index}
-                  className="w-8 h-8 rounded-full bg-gray-200"
-                />
-              ))
-            )}
-          </div>
+          {/* Task History */}
+          {isAdmin && (
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium">Task History:</span>
+              <div className="flex gap-2">
+                {taskerHistory.length > 0 ? (
+                  taskerHistory.map((submission: any, index: number) => (
+                    <div
+                      key={index}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        submission.status === 'approved' 
+                          ? 'bg-green-500' 
+                          : submission.status === 'rejected'
+                          ? 'bg-red-500'
+                          : 'bg-yellow-500'
+                      }`}
+                      title={`Task: ${submission.taskCode} - ${submission.status}`}
+                    >
+                      {submission.status === 'approved' ? (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      ) : submission.status === 'rejected' ? (
+                        <XCircle className="w-3 h-3 text-white" />
+                      ) : (
+                        <Clock className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  Array(5).fill(null).map((_, index) => (
+                    <div
+                      key={index}
+                      className="w-6 h-6 rounded-full bg-gray-200"
+                      title="No previous tasks"
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -18,6 +18,7 @@ import NotificationsPage from "./components/tasker/NotificationsPage";
 import BuyBidsPage from "./components/tasker/BuyBidsPage";
 import SubmitTaskPage from "./components/tasker/SubmitTaskPage";
 import BiddedTasksPage from "./components/tasker/BiddedTasksPage";
+import TaskerAuth from "./pages/TaskerAuth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +41,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/tasker-auth" element={<TaskerAuth />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/tasks" element={<AdminTasks />} />
             <Route path="/admin/submitted-tasks" element={<AdminSubmittedTasks />} />

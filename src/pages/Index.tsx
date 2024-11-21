@@ -33,7 +33,7 @@ const Index = () => {
                 Admin Dashboard
               </Link>
               <Link
-                to="/tasker"
+                to="/tasker-auth"
                 className="bg-[#4169E1] text-white px-8 py-3 rounded-md hover:bg-[#3457c9] transition-colors"
               >
                 Tasker Dashboard
