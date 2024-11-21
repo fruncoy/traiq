@@ -38,11 +38,12 @@ const BiddedTasksPage = () => {
             userTasks.map((task: Task) => (
               <Card key={task.id}>
                 <CardContent className="pt-6">
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold">{task.title}</h3>
-                        <p className="text-sm text-gray-600">ID: {task.code}</p>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">{task.title}</h3>
+                        <p className="text-sm text-gray-600">{task.code}</p>
+                        <p className="text-sm text-gray-700">{task.description}</p>
                       </div>
                       <Badge variant="outline">
                         Deadline: {formatDate(task.deadline)}

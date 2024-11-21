@@ -83,7 +83,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             )}
           </div>
           
-          <p className="text-sm text-gray-500">Code: {task.code}</p>
+          <p className="text-sm text-gray-500">{task.code}</p>
           <p className="text-gray-600 text-sm">{task.description}</p>
 
           <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
