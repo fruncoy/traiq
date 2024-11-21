@@ -1,11 +1,11 @@
 import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
 import { approveSubmission } from "../components/task/TaskBidLogic";
-import SubmissionCard from "../components/admin/SubmissionCard";
 
 interface SubmissionsByTask {
   [key: string]: {
@@ -46,17 +46,6 @@ const AdminSubmittedTasks = () => {
     }
     return acc;
   }, {} as SubmissionsByTask);
-
-  console.log("Tasks with submissions:", tasksWithSubmissions);
-  console.log("Total submissions:", totalSubmissions);
-  console.log("Submissions grouped by task:", submissionsByTask);
-
-  const handleRatingChange = (taskId: string, bidderId: string, value: number) => {
-    setRatings(prev => ({
-      ...prev,
-      [`${taskId}-${bidderId}`]: value
-    }));
-  };
 
   const { mutate: handleSubmissionAction, isPending } = useMutation({
     mutationFn: async ({ taskId, bidderId, action, reason }: { 
@@ -124,30 +113,68 @@ const AdminSubmittedTasks = () => {
                 <p className="text-center text-gray-500 py-4">No submissions yet</p>
               ) : (
                 Object.entries(submissionsByTask).map(([taskCode, { task, submissions }]) => (
-                  <div key={taskCode} className="mb-6">
+                  <div key={taskCode} className="mb-8">
                     <h3 className="text-lg font-semibold mb-4">
                       Task: {task.title} (Code: {taskCode}) - {submissions.length} submissions
                     </h3>
-                    <div className="space-y-4">
-                      {submissions.map((submission) => (
-                        <SubmissionCard
-                          key={`${task.id}-${submission.bidderId}`}
-                          task={task}
-                          submission={submission}
-                          rating={ratings[`${task.id}-${submission.bidderId}`] || 70}
-                          onRatingChange={(value) => handleRatingChange(task.id, submission.bidderId, value)}
-                          onAction={(action, reason) => 
-                            handleSubmissionAction({
-                              taskId: task.id,
-                              bidderId: submission.bidderId,
-                              action,
-                              reason
-                            })
-                          }
-                          isPending={isPending}
-                        />
-                      ))}
-                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tasker ID</TableHead>
+                          <TableHead>File</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {submissions.map((submission) => (
+                          <TableRow key={`${task.id}-${submission.bidderId}`}>
+                            <TableCell>{submission.bidderId}</TableCell>
+                            <TableCell>{submission.fileName}</TableCell>
+                            <TableCell>
+                              {new Date(submission.submittedAt || '').toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              {submission.status === 'pending' ? (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleSubmissionAction({
+                                      taskId: task.id,
+                                      bidderId: submission.bidderId,
+                                      action: 'approved'
+                                    })}
+                                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                                    disabled={isPending}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => handleSubmissionAction({
+                                      taskId: task.id,
+                                      bidderId: submission.bidderId,
+                                      action: 'rejected',
+                                      reason: 'Rejected'
+                                    })}
+                                    className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                                    disabled={isPending}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className={`px-2 py-1 rounded ${
+                                  submission.status === 'approved' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {submission.status}
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 ))
               )}
