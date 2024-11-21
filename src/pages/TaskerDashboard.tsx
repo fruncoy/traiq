@@ -9,12 +9,14 @@ import { useQuery } from "@tanstack/react-query";
 
 const TaskerDashboard = () => {
   const location = useLocation();
-  const userId = 'current-user-id';
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
   const { data: userBids = 0 } = useQuery({
-    queryKey: ['user-bids'],
+    queryKey: ['user-bids', currentTasker.id],
     queryFn: async () => {
-      return parseInt(localStorage.getItem('userBids') || '0');
+      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+      const tasker = taskers.find((t: any) => t.id === currentTasker.id);
+      return tasker?.bids || 0;
     }
   });
 
@@ -27,18 +29,18 @@ const TaskerDashboard = () => {
   });
 
   const { data: userEarnings = 0 } = useQuery({
-    queryKey: ['user-earnings'],
+    queryKey: ['user-earnings', currentTasker.id],
     queryFn: async () => {
       const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-      return earnings[userId] || 0;
+      return earnings[currentTasker.id] || 0;
     }
   });
 
   const { data: totalEarned = 0 } = useQuery({
-    queryKey: ['total-earned'],
+    queryKey: ['total-earned', currentTasker.id],
     queryFn: async () => {
       const history = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
-      return history[userId] || 0;
+      return history[currentTasker.id] || 0;
     }
   });
 

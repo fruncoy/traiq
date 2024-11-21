@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 
 const getActivityIcon = (type: ActivityType) => {
   switch (type) {
@@ -14,6 +15,8 @@ const getActivityIcon = (type: ActivityType) => {
       return <XCircle className="h-4 w-4 text-red-500" />;
     case "pending":
       return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+    case "bid":
+      return <Clock className="h-4 w-4 text-purple-500" />;
   }
 };
 
@@ -22,7 +25,11 @@ const ActivityFeed = () => {
     queryKey: ['activities'],
     queryFn: async () => {
       const storedActivities = localStorage.getItem('activities');
-      return storedActivities ? JSON.parse(storedActivities) : [];
+      const activities = storedActivities ? JSON.parse(storedActivities) : [];
+      // Sort activities by timestamp in descending order (most recent first)
+      return activities.sort((a: Activity, b: Activity) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
     },
     refetchInterval: 5000 // Refresh every 5 seconds
   });
@@ -43,7 +50,9 @@ const ActivityFeed = () => {
                 {getActivityIcon(activity.type)}
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium">{activity.message}</p>
-                  <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                  </p>
                 </div>
               </div>
             ))}
