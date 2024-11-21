@@ -23,17 +23,18 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+
   const { data: tasks = [], refetch, isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
-      if (!isAdmin) {
-        const userId = 'current-user-id';
+      if (!isAdmin && currentTasker.id) {
         return tasks.filter((task: Task) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
-          return task.currentBids < maxBids && !task.bidders?.includes(userId);
+          return task.currentBids < maxBids && !task.bidders?.includes(currentTasker.id);
         });
       }
 
@@ -42,10 +43,11 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   });
 
   const { data: userBids = 0 } = useQuery({
-    queryKey: ['user-bids'],
+    queryKey: ['user-bids', currentTasker.id],
     queryFn: async () => {
-      const storedBids = localStorage.getItem('userBids');
-      return storedBids ? parseInt(storedBids) : 0;
+      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+      const tasker = taskers.find((t: any) => t.id === currentTasker.id);
+      return tasker?.bids || 0;
     }
   });
 
