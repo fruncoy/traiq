@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid } from "./task/TaskBidLogic";
 import { Task } from "@/types/task";
+import { LoadingSpinner } from "./ui/loading-spinner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +17,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { Button } from "./ui/button";
+
+const ITEMS_PER_PAGE = 5;
 
 const TaskList = ({ limit, showViewMore = false, isAdmin = false }: { 
   limit?: number;
@@ -25,13 +29,13 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const queryClient = useQueryClient();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: tasks = [], refetch, isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
-      console.log("Retrieved tasks:", tasks);
 
       if (!isAdmin) {
         const userId = 'current-user-id';
@@ -95,14 +99,14 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   };
 
-  const displayedTasks = limit ? tasks.slice(0, limit) : tasks;
+  // Pagination logic
+  const totalPages = Math.ceil(tasks.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const displayedTasks = limit ? tasks.slice(0, limit) : tasks.slice(startIndex, endIndex);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -136,6 +140,28 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         )}
       </div>
 
+      {!limit && totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="px-4 py-2">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {showViewMore && !isAdmin && tasks.length > 0 && (
         <div className="flex justify-between items-center mt-6">
           <Link to="/tasker/bidded-tasks" className="text-[#1E40AF] hover:underline flex items-center gap-2">
@@ -159,7 +185,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmBid}>
               {bidMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoadingSpinner size="small" />
               ) : (
                 "Confirm Bid"
               )}
