@@ -1,23 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import TaskCard from "./task/TaskCard";
 import { handleTaskBid } from "./task/TaskBidLogic";
 import { Task } from "@/types/task";
 import { LoadingSpinner } from "./ui/loading-spinner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useState } from "react";
 import { Button } from "./ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { TaskListHeader } from "./task/TaskListHeader";
+import { TaskListFooter } from "./task/TaskListFooter";
+import { TaskBidDialog } from "./task/TaskBidDialog";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -65,6 +57,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     },
     onSuccess: (task) => {
       toast.success("Task bid placed successfully!", {
+        position: "bottom-right",
         className: "bg-green-50",
         description: `You have successfully bid on task ${task.code}`,
         action: {
@@ -94,6 +87,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       
       if (error.message === "insufficient_bids") {
         toast.error("You don't have enough bids for this task", {
+          position: "bottom-right",
           description: `This task requires ${selectedTask?.category === 'genai' ? '10' : '5'} bids. Please purchase more bids to continue.`,
           action: {
             label: "Buy Bids",
@@ -108,21 +102,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
             color: '#991b1b'
           }
         });
-      } else if (error.message === "already_bid") {
-        toast.error("You have already bid on this task", {
-          description: "You cannot bid on the same task multiple times.",
-          duration: 5000,
-          style: {
-            background: 'white',
-            border: '1px solid #fee2e2',
-            borderRadius: '8px',
-            padding: '12px',
-            color: '#991b1b'
-          }
-        });
       } else {
         toast.error("Failed to place bid", {
-          description: "An unexpected error occurred. Please try again.",
+          position: "bottom-right",
+          description: error.message,
           duration: 5000
         });
       }
@@ -151,14 +134,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
   return (
     <div className="space-y-4">
-      {showViewMore && (
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Available Tasks</h2>
-          <div className="text-sm text-gray-600">
-            Available Bids: <span className="font-semibold">{userBids}</span>
-          </div>
-        </div>
-      )}
+      <TaskListHeader showViewMore={showViewMore} userBids={userBids} />
 
       <div className="grid gap-4">
         {displayedTasks.length === 0 ? (
@@ -170,7 +146,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
             <TaskCard
               key={task.id}
               task={task}
-              onBid={(taskId) => handleBidClick(taskId)}
+              onBid={handleBidClick}
               isAdmin={isAdmin}
               userBids={userBids}
               isPending={bidMutation.isPending}
@@ -202,37 +178,18 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         </div>
       )}
 
-      {showViewMore && !isAdmin && tasks.length > 0 && (
-        <div className="flex justify-between items-center mt-6">
-          <Link to="/tasker/bidded-tasks" className="text-[#1E40AF] hover:underline flex items-center gap-2">
-            View my bidded tasks <ArrowRight size={16} />
-          </Link>
-          <Link to="/tasker/buy-bids" className="text-[#1E40AF] hover:underline flex items-center gap-2">
-            Buy more bids <ArrowRight size={16} />
-          </Link>
-        </div>
-      )}
+      <TaskListFooter 
+        showViewMore={showViewMore} 
+        isAdmin={isAdmin} 
+        tasksExist={tasks.length > 0} 
+      />
 
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Bid</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to place a bid on this task? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmBid}>
-              {bidMutation.isPending ? (
-                <LoadingSpinner size="small" />
-              ) : (
-                "Confirm Bid"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <TaskBidDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={confirmBid}
+        isPending={bidMutation.isPending}
+      />
     </div>
   );
 };
