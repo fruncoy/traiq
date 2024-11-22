@@ -7,10 +7,10 @@ const BuyBidsPage = () => {
   const currentTasker = JSON.parse(sessionStorage.getItem('currentTasker') || '{}');
 
   const bidPackages = [
-    { bids: 50, amount: 5, popular: false },
-    { bids: 100, amount: 9, popular: true },
-    { bids: 200, amount: 17, popular: false },
-    { bids: 500, amount: 40, popular: false },
+    { bids: 50, amount: 60, popular: false },
+    { bids: 100, amount: 100, popular: true },
+    { bids: 200, amount: 180, popular: false },
+    { bids: 500, amount: 400, popular: false },
   ];
 
   const { data: currentBids = 0 } = useQuery({
@@ -30,7 +30,6 @@ const BuyBidsPage = () => {
         throw new Error("No tasker logged in");
       }
 
-      // Update taskers array first
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
       const updatedTaskers = taskers.map((t: any) => {
         if (t.id === currentTasker.id) {
@@ -43,7 +42,6 @@ const BuyBidsPage = () => {
       });
       localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
 
-      // Update current tasker in sessionStorage
       const updatedCurrentTasker = {
         ...currentTasker,
         bids: currentTasker.bids + bids
@@ -82,9 +80,9 @@ const BuyBidsPage = () => {
             </CardHeader>
             <CardContent>
               <div className="text-center mb-4">
-                <p className="text-2xl font-bold">${pkg.amount}</p>
+                <p className="text-2xl font-bold">KES {pkg.amount}</p>
                 <p className="text-sm text-gray-500">
-                  ${(pkg.amount / pkg.bids).toFixed(2)} per bid
+                  KES {(pkg.amount / pkg.bids).toFixed(2)} per bid
                 </p>
               </div>
               <Button
