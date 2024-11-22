@@ -38,7 +38,8 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
     }
   };
 
-  const requiredBids = task.category === 'genai' ? 10 : 5;
+  // Always set to 10 regardless of category
+  const requiredBids = 10;
   const taskPayout = task.category === 'genai' ? 700 : 300;
   const formattedDeadline = formatDeadline(task.deadline);
 
