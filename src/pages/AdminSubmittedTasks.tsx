@@ -111,6 +111,10 @@ const AdminSubmittedTasks = () => {
     }
   });
 
+  const handleAction = (taskId: string, bidderId: string, action: 'approved' | 'rejected', reason?: string) => {
+    handleSubmissionAction({ taskId, bidderId, action, reason });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
@@ -142,7 +146,7 @@ const AdminSubmittedTasks = () => {
                   <CardContent className="p-0">
                     <TaskSubmissionsTable
                       task={task}
-                      onAction={handleSubmissionAction}
+                      onAction={handleAction}
                       isPending={isPending}
                       allSubmissions={allSubmissions}
                     />
