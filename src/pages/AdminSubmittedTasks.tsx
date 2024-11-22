@@ -17,25 +17,13 @@ const AdminSubmittedTasks = () => {
     refetchInterval: 1000
   });
 
-  const { data: allSubmissions = [] } = useQuery({
-    queryKey: ['all-submissions'],
-    queryFn: async () => {
-      const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      return allTasks.flatMap((task: Task) => 
-        (task.submissions || []).map(s => ({
-          ...s,
-          taskCode: task.code,
-          taskTitle: task.title
-        }))
-      );
-    }
-  });
-
+  // Get all tasks that have submissions
   const tasksWithSubmissions = tasks.filter((task: Task) => 
     task.submissions && task.submissions.length > 0
   );
 
-  const totalSubmissions = tasksWithSubmissions.reduce((acc, task) => 
+  // Calculate total submissions across all tasks
+  const totalSubmissions = tasksWithSubmissions.reduce((acc: number, task: Task) => 
     acc + (task.submissions?.length || 0), 0
   );
 
@@ -103,7 +91,6 @@ const AdminSubmittedTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-submissions'] });
       toast.success("Submission status updated successfully");
     },
     onError: () => {
@@ -148,7 +135,7 @@ const AdminSubmittedTasks = () => {
                       task={task}
                       onAction={handleAction}
                       isPending={isPending}
-                      allSubmissions={allSubmissions}
+                      allSubmissions={tasksWithSubmissions.flatMap(t => t.submissions || [])}
                     />
                   </CardContent>
                 </Card>
