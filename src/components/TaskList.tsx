@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import TaskCard from "./task/TaskCard";
-import { handleTaskBid } from "./task/TaskBidLogic";
+import { handleBidSubmission } from "./task/TaskBidLogic";
 import { Task } from "@/types/task";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { Button } from "./ui/button";
@@ -61,7 +61,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     mutationFn: async (taskId: string) => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error("Task not found");
-      return handleTaskBid(task, userBids, tasks);
+      return handleBidSubmission(task, userBids);
     },
     onSuccess: (task) => {
       toast.success("Task bid placed successfully!", {
