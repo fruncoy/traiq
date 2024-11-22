@@ -49,17 +49,20 @@ const BuyBidsPage = () => {
   
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   
+  // Update to fetch current bids directly from taskers array
   const { data: currentBids = 0 } = useQuery({
     queryKey: ['user-bids', currentTasker.id],
     queryFn: async () => {
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
       const tasker = taskers.find((t: any) => t.id === currentTasker.id);
       return tasker?.bids || 0;
-    }
+    },
+    refetchInterval: 1000 // Refresh every second
   });
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
+      // Update taskers array first
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
       const updatedTaskers = taskers.map((t: any) => {
         if (t.id === currentTasker.id) {
@@ -67,11 +70,13 @@ const BuyBidsPage = () => {
         }
         return t;
       });
-      
       localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
       
-      // Update current tasker
-      const updatedCurrentTasker = { ...currentTasker, bids: (currentTasker.bids || 0) + bids };
+      // Then update current tasker
+      const updatedCurrentTasker = { 
+        ...currentTasker, 
+        bids: (currentTasker.bids || 0) + bids 
+      };
       localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
       
       // Track total spent

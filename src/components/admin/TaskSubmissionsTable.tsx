@@ -15,8 +15,9 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending, allSubmissions
   const [selectedTaskerId, setSelectedTaskerId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Ensure we're getting all submissions for this task
-  const taskSubmissions = task.submissions || [];
+  // Get ALL submissions for this task from localStorage
+  const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
+    .filter((submission: any) => submission.taskId === task.id);
 
   return (
     <Table>
@@ -37,7 +38,7 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending, allSubmissions
             .find((t: any) => t.id === submission.bidderId);
             
           return (
-            <TableRow key={`${task.id}-${submission.bidderId}`}>
+            <TableRow key={`${submission.taskId}-${submission.bidderId}-${submission.submittedAt}`}>
               <TableCell>{submission.bidderId}</TableCell>
               <TableCell>{tasker?.username || 'Unknown'}</TableCell>
               <TableCell>{submission.fileName}</TableCell>
