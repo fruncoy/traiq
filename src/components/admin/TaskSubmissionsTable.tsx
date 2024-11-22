@@ -15,6 +15,9 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending, allSubmissions
   const [selectedTaskerId, setSelectedTaskerId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Ensure we're getting all submissions for this task
+  const taskSubmissions = task.submissions || [];
+
   return (
     <Table>
       <TableHeader>
@@ -29,7 +32,7 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending, allSubmissions
         </TableRow>
       </TableHeader>
       <TableBody>
-        {task.submissions?.map((submission: any) => {
+        {taskSubmissions.map((submission: any) => {
           const tasker = JSON.parse(localStorage.getItem('taskers') || '[]')
             .find((t: any) => t.id === submission.bidderId);
             

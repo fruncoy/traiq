@@ -16,7 +16,8 @@ const AdminTasks = () => {
     queryFn: async () => {
       const tasks = localStorage.getItem('tasks');
       return tasks ? JSON.parse(tasks) : [];
-    }
+    },
+    refetchInterval: 5000 // Added to keep data fresh
   });
 
   const uploadMutation = useMutation({
@@ -31,37 +32,33 @@ const AdminTasks = () => {
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-            const processedTasks = jsonData.map((row: any) => {
-              const isGenAi = row.Category?.toLowerCase() === 'genai';
-              const deadline = new Date();
-              deadline.setDate(deadline.getDate() + 1); // 24 hours from now
-              deadline.setHours(16, 0, 0, 0); // But submission time is 4 PM
+            const processedTasks = jsonData.map((row: any) => ({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              code: row.UniqueCode,
+              title: row.Title,
+              description: row.Description,
+              category: row.Category?.toLowerCase() === 'genai' ? 'genai' : 'creai',
+              payout: row.Category?.toLowerCase() === 'genai' ? 500 : 250,
+              taskerPayout: row.Category?.toLowerCase() === 'genai' ? 400 : 200,
+              platformFee: row.Category?.toLowerCase() === 'genai' ? 100 : 50,
+              bidsNeeded: row.Category?.toLowerCase() === 'genai' ? 10 : 5,
+              maxBidders: 10,
+              currentBids: 0,
+              datePosted: new Date().toISOString(),
+              deadline: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
+              status: "pending",
+              bidders: [],
+              selectedTaskers: [],
+              submissions: [],
+              rating: 0,
+              totalRatings: 0
+            }));
 
-              return {
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                code: row.UniqueCode,
-                title: row.Title,
-                description: row.Description,
-                category: isGenAi ? 'genai' : 'creai',
-                payout: isGenAi ? 500 : 250,
-                taskerPayout: isGenAi ? 400 : 200,
-                platformFee: isGenAi ? 100 : 50,
-                bidsNeeded: isGenAi ? 10 : 5,
-                maxBidders: 10,
-                currentBids: 0,
-                datePosted: new Date().toISOString(),
-                deadline: deadline.toISOString(),
-                status: "pending",
-                bidders: [],
-                selectedTaskers: [],
-                submissions: [],
-                rating: 0,
-                totalRatings: 0
-              };
-            });
-
-            localStorage.setItem('tasks', JSON.stringify(processedTasks));
-            resolve(processedTasks);
+            // Merge with existing tasks instead of replacing
+            const existingTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            const updatedTasks = [...existingTasks, ...processedTasks];
+            localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+            return updatedTasks;
           } catch (error) {
             reject(error);
           }
@@ -92,7 +89,7 @@ const AdminTasks = () => {
           <h2 className="text-2xl font-bold">Task Management</h2>
           <Card className="mt-6">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Available Tasks</CardTitle>
+              <CardTitle>Available Tasks ({availableTasks.length})</CardTitle>
               <div className="relative">
                 <input
                   type="file"
@@ -114,13 +111,14 @@ const AdminTasks = () => {
                     <TableHead>Description</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Total Bidders</TableHead>
+                    <TableHead>Submissions</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {availableTasks.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4">
+                      <TableCell colSpan={6} className="text-center py-4">
                         No tasks available. Upload tasks to get started.
                       </TableCell>
                     </TableRow>
@@ -129,10 +127,17 @@ const AdminTasks = () => {
                       <TableRow key={task.id}>
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{task.description}</TableCell>
-                        <TableCell>{task.category}</TableCell>
+                        <TableCell className="capitalize">{task.category}</TableCell>
                         <TableCell>{task.bidders?.length || 0}/10</TableCell>
+                        <TableCell>{task.submissions?.length || 0}</TableCell>
                         <TableCell>
-                          {task.bidders?.length >= 10 ? 'Active' : 'Available'}
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            task.bidders?.length >= 10 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {task.bidders?.length >= 10 ? 'Active' : 'Available'}
+                          </span>
                         </TableCell>
                       </TableRow>
                     ))
