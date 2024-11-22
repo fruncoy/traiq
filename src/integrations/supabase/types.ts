@@ -47,6 +47,7 @@ export type Database = {
           is_suspended: boolean | null
           join_date: string | null
           pending_payouts: number | null
+          phone: string | null
           tasks_completed: number | null
           total_payouts: number | null
           username: string | null
@@ -59,6 +60,7 @@ export type Database = {
           is_suspended?: boolean | null
           join_date?: string | null
           pending_payouts?: number | null
+          phone?: string | null
           tasks_completed?: number | null
           total_payouts?: number | null
           username?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           is_suspended?: boolean | null
           join_date?: string | null
           pending_payouts?: number | null
+          phone?: string | null
           tasks_completed?: number | null
           total_payouts?: number | null
           username?: string | null
