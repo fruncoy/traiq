@@ -13,7 +13,8 @@ import {
   CreditCard,
   Briefcase,
   TicketIcon,
-  Menu
+  Menu,
+  User
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -112,21 +113,52 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
 
   return (
     <div className="flex h-screen bg-white">
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50">
-        <div className="flex items-center justify-between px-4 h-full">
-          <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-            aria-label="Toggle menu"
-          >
-            <Menu size={24} />
-          </button>
+      {/* Mobile Header - Updated to match design */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between h-16 px-4">
+            <div className="flex items-center">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 hover:bg-gray-100 rounded-lg mr-2"
+                aria-label="Toggle menu"
+              >
+                <Menu size={24} />
+              </button>
+              <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <User size={20} className="text-gray-600" />
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-gray-100 rounded-full"
+                aria-label="Logout"
+              >
+                <LogOut size={20} className="text-gray-600" />
+              </button>
+            </div>
+          </div>
+          <div className="px-4 py-2 border-b border-gray-200">
+            <h1 className="text-lg font-semibold text-gray-800">
+              {location.pathname === "/admin" ? "Dashboard" : 
+               location.pathname === "/admin/tasks" ? "Tasks" :
+               location.pathname === "/admin/submitted-tasks" ? "Submitted Tasks" :
+               location.pathname === "/admin/finances" ? "Finances" :
+               location.pathname === "/admin/taskers" ? "Taskers" : 
+               location.pathname === "/admin/tickets" ? "Tickets" :
+               location.pathname === "/admin/settings" ? "Settings" :
+               location.pathname === "/tasker" ? "Dashboard" :
+               location.pathname === "/tasker/buy-bids" ? "Buy Bids" :
+               location.pathname === "/tasker/tasks" ? "Tasks" :
+               location.pathname === "/tasker/bidded-tasks" ? "Bidded Tasks" :
+               location.pathname === "/tasker/submit-task" ? "Submit Task" :
+               location.pathname === "/tasker/notifications" ? "Notifications" : "Settings"}
+            </h1>
+          </div>
         </div>
       </div>
 
-      {/* Sidebar */}
+      {/* Desktop/Tablet Sidebar - Keeping existing implementation */}
       <div className={cn(
         "fixed lg:relative w-64 h-screen bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out z-40",
         "lg:translate-x-0",
@@ -142,7 +174,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6 mt-16 lg:mt-0">
+        <header className="h-16 border-b border-gray-200 hidden lg:flex items-center justify-between px-6">
           <h1 className="text-xl font-semibold text-gray-800">
             {location.pathname === "/admin" ? "Dashboard" : 
              location.pathname === "/admin/tasks" ? "Tasks" :
@@ -167,7 +199,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
           </button>
         </header>
 
-        <main className="flex-1 overflow-auto p-6 bg-gray-50">
+        <main className="flex-1 overflow-auto p-6 bg-gray-50 mt-32 lg:mt-0">
           {children}
         </main>
       </div>
