@@ -62,12 +62,14 @@ const AdminSubmittedTasks = () => {
       // Update tasker's balance if approved
       if (action === 'approved') {
         const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+        const payout = task.category === 'genai' ? 700 : 300;
+        
         const updatedTaskers = taskers.map((t: any) => {
           if (t.id === bidderId) {
-            const payout = task.category === 'genai' ? 700 : 300;
+            const newBalance = (t.balance || 0) + payout;
             return {
               ...t,
-              balance: (t.balance || 0) + payout,
+              balance: newBalance,
               completedTasks: (t.completedTasks || 0) + 1,
               totalEarnings: (t.totalEarnings || 0) + payout
             };
@@ -75,6 +77,20 @@ const AdminSubmittedTasks = () => {
           return t;
         });
         localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
+
+        // Update current tasker if it's the same user
+        const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+        if (currentTasker.id === bidderId) {
+          currentTasker.balance = (currentTasker.balance || 0) + payout;
+          currentTasker.completedTasks = (currentTasker.completedTasks || 0) + 1;
+          currentTasker.totalEarnings = (currentTasker.totalEarnings || 0) + payout;
+          localStorage.setItem('currentTasker', JSON.stringify(currentTasker));
+        }
+
+        // Update earnings in userEarnings
+        const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
+        userEarnings[bidderId] = (userEarnings[bidderId] || 0) + payout;
+        localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
       }
 
       // Add notification for the tasker
@@ -95,6 +111,8 @@ const AdminSubmittedTasks = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['taskers'] });
+      queryClient.invalidateQueries({ queryKey: ['user-earnings'] });
+      queryClient.invalidateQueries({ queryKey: ['total-earned'] });
       toast.success("Submission status updated successfully");
     },
     onError: () => {

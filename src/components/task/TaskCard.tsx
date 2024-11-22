@@ -11,11 +11,12 @@ interface TaskCardProps {
   isAdmin?: boolean;
   userBids: number;
   isPending: boolean;
-  hidePayouts?: boolean;
 }
 
 const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) => {
   const handleBidClick = () => {
+    if (!task?.title) return; // Prevent bidding on invalid tasks
+    
     if (userBids <= 0) {
       toast.error("You have insufficient bids. Please purchase more bids to continue.", {
         action: {
@@ -38,7 +39,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
     }
   };
 
-  const MAX_BIDDERS = 10; // All tasks now have 10 max bidders
+  const MAX_BIDDERS = 10;
   const requiredBids = task.category === 'genai' ? 10 : 5;
   const taskerPayout = task.category === 'genai' ? 700 : 300;
   const formattedDeadline = formatDeadline(task.deadline);
@@ -47,6 +48,8 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
   const actualBidders = task.bidders?.filter(bidderId => 
     taskers.some((t: any) => t.id === bidderId)
   ) || [];
+
+  if (!task?.title) return null; // Don't render invalid tasks
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">

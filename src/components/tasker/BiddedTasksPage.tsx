@@ -12,7 +12,17 @@ const BiddedTasksPage = () => {
     queryKey: ['user-active-tasks', currentTasker.id],
     queryFn: async () => {
       const tasks = localStorage.getItem(`userActiveTasks_${currentTasker.id}`);
-      return tasks ? JSON.parse(tasks) : [];
+      const allTasks = tasks ? JSON.parse(tasks) : [];
+      
+      // Filter out tasks that have been submitted
+      const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+      return allTasks.filter((task: Task) => {
+        const hasSubmitted = submissions.some((s: any) => 
+          s.taskId === task.id && 
+          s.bidderId === currentTasker.id
+        );
+        return !hasSubmitted;
+      });
     }
   });
 
