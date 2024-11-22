@@ -11,16 +11,19 @@ interface TaskBidDialogProps {
 export const TaskBidDialog = ({ open, onOpenChange, onConfirm, isPending }: TaskBidDialogProps) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="bg-white border border-gray-200 shadow-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirm Bid</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogTitle className="text-xl font-semibold text-gray-900">Confirm Bid</AlertDialogTitle>
+          <AlertDialogDescription className="text-gray-600">
             Are you sure you want to place a bid on this task? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+        <AlertDialogFooter className="gap-2">
+          <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 text-gray-900">Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={onConfirm}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             {isPending ? <LoadingSpinner size="small" /> : "Confirm Bid"}
           </AlertDialogAction>
         </AlertDialogFooter>

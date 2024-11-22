@@ -6,10 +6,12 @@ import { Task } from "@/types/task";
 import { format, isValid, parseISO } from "date-fns";
 
 const BiddedTasksPage = () => {
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+
   const { data: userTasks = [] } = useQuery({
-    queryKey: ['user-active-tasks'],
+    queryKey: ['user-active-tasks', currentTasker.id],
     queryFn: async () => {
-      const tasks = localStorage.getItem('userActiveTasks');
+      const tasks = localStorage.getItem(`userActiveTasks_${currentTasker.id}`);
       return tasks ? JSON.parse(tasks) : [];
     }
   });
