@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -12,7 +12,8 @@ import {
   Upload, 
   CreditCard,
   Briefcase,
-  TicketIcon
+  TicketIcon,
+  Menu
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import { SidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarNav } from "./sidebar/SidebarNav";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { LinkItem } from "./sidebar/types";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -27,6 +29,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
@@ -85,17 +88,13 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     navigate("/");
   };
 
-  if (notificationsLoading || ticketsLoading || submissionsLoading) {
-    return <LoadingSpinner />;
-  }
-
   const links: LinkItem[] = isAdmin ? [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
     { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
-    { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload, badge: pendingSubmissions.length },
+    { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload, badge: pendingSubmissions?.length },
     { name: "Finances", path: "/admin/finances", icon: DollarSign },
     { name: "Taskers", path: "/admin/taskers", icon: Users },
-    { name: "Tickets", path: "/admin/tickets", icon: TicketIcon, badge: pendingTickets.length },
+    { name: "Tickets", path: "/admin/tickets", icon: TicketIcon, badge: pendingTickets?.length },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ] : [
     { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
@@ -107,15 +106,43 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
 
+  if (notificationsLoading || ticketsLoading || submissionsLoading) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <div className="flex h-screen bg-white">
-      <div className="w-64 border-r border-gray-200 flex-shrink-0">
-        <SidebarHeader />
-        <SidebarNav links={links} />
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50">
+        <div className="flex items-center justify-between px-4 h-full">
+          <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+            aria-label="Toggle menu"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
       </div>
 
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed lg:relative w-64 h-screen bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out z-40",
+        "lg:translate-x-0",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="hidden lg:block">
+          <SidebarHeader />
+        </div>
+        <div className="mt-16 lg:mt-0">
+          <SidebarNav links={links} />
+        </div>
+      </div>
+
+      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
+        <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6 mt-16 lg:mt-0">
           <h1 className="text-xl font-semibold text-gray-800">
             {location.pathname === "/admin" ? "Dashboard" : 
              location.pathname === "/admin/tasks" ? "Tasks" :
@@ -144,6 +171,14 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
           {children}
         </main>
       </div>
+
+      {/* Mobile menu overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </div>
   );
 };
