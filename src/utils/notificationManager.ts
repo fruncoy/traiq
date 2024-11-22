@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { createNotification } from "./notificationUtils";
 
 export const checkDeadlines = () => {
   const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
@@ -10,9 +10,21 @@ export const checkDeadlines = () => {
     const hoursLeft = timeLeft / (1000 * 60 * 60);
     
     if (hoursLeft <= 24 && hoursLeft > 0 && !task.notified) {
-      toast.warning(`Task ${task.code} is due in ${Math.floor(hoursLeft)} hours!`, {
-        duration: 6000,
-      });
+      // Instead of toast, create a notification
+      const taskerId = task.bidders?.[0];
+      if (taskerId) {
+        const notifications = JSON.parse(localStorage.getItem(`notifications_${taskerId}`) || '[]');
+        notifications.unshift({
+          id: Date.now().toString(),
+          title: 'Task Deadline Approaching',
+          message: `Task ${task.code} is due in ${Math.floor(hoursLeft)} hours!`,
+          type: 'warning',
+          read: false,
+          date: new Date().toISOString(),
+          taskerId
+        });
+        localStorage.setItem(`notifications_${taskerId}`, JSON.stringify(notifications));
+      }
       
       // Mark as notified
       task.notified = true;

@@ -64,9 +64,12 @@ const AdminSubmittedTasks = () => {
         const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
         const updatedTaskers = taskers.map((t: any) => {
           if (t.id === bidderId) {
+            const payout = task.category === 'genai' ? 700 : 300;
             return {
               ...t,
-              balance: (t.balance || 0) + task.taskerPayout
+              balance: (t.balance || 0) + payout,
+              completedTasks: (t.completedTasks || 0) + 1,
+              totalEarnings: (t.totalEarnings || 0) + payout
             };
           }
           return t;
@@ -91,16 +94,13 @@ const AdminSubmittedTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['taskers'] });
       toast.success("Submission status updated successfully");
     },
     onError: () => {
       toast.error("Failed to update submission status");
     }
   });
-
-  const handleAction = (taskId: string, bidderId: string, action: 'approved' | 'rejected', reason?: string) => {
-    handleSubmissionAction({ taskId, bidderId, action, reason });
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
