@@ -10,6 +10,7 @@ import { useState } from "react";
 import { TaskListHeader } from "./task/TaskListHeader";
 import { TaskListFooter } from "./task/TaskListFooter";
 import { TaskBidDialog } from "./task/TaskBidDialog";
+import { EmptyState } from "./task/EmptyState";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -142,9 +143,11 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
       <div className="grid gap-4">
         {displayedTasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No tasks available at the moment.
-          </div>
+          <EmptyState
+            title="No tasks available"
+            description="Check back later for new tasks to work on"
+            image="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d"
+          />
         ) : (
           displayedTasks.map((task) => (
             <TaskCard
