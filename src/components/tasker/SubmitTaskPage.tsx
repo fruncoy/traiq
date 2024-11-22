@@ -10,10 +10,23 @@ const SubmitTaskPage = () => {
   const { data: submissions = [] } = useQuery({
     queryKey: ['task-submissions', currentTasker.id],
     queryFn: async () => {
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
       const subs = localStorage.getItem(`taskSubmissions_${currentTasker.id}`);
-      return subs ? JSON.parse(subs) : [];
+      const userSubmissions = subs ? JSON.parse(subs) : [];
+      
+      // Map submissions to include their current status from tasks
+      return userSubmissions.map((sub: any) => {
+        const task = tasks.find((t: any) => t.id === sub.taskId);
+        const taskSubmission = task?.submissions?.find((s: any) => 
+          s.bidderId === currentTasker.id && s.id === sub.id
+        );
+        return {
+          ...sub,
+          status: taskSubmission?.status || sub.status
+        };
+      });
     },
-    refetchInterval: 5000
+    refetchInterval: 1000
   });
 
   return (

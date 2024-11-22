@@ -7,18 +7,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const PaymentSection = () => {
   const queryClient = useQueryClient();
-  const userId = 'current-user-id';
   const [formData, setFormData] = useState({
     mpesaNumber: "+254 700 000000",
     withdrawAmount: ""
   });
 
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+
   const { data: userEarnings = 0 } = useQuery({
-    queryKey: ['user-earnings'],
+    queryKey: ['user-earnings', currentTasker.id],
     queryFn: async () => {
       const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-      return earnings[userId] || 0;
-    }
+      return earnings[currentTasker.id] || 0;
+    },
+    refetchInterval: 1000
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,10 +44,10 @@ const PaymentSection = () => {
     const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
     const history = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
     
-    earnings[userId] = userEarnings - amount;
+    earnings[currentTasker.id] = userEarnings - amount;
     localStorage.setItem('userEarnings', JSON.stringify(earnings));
     
-    history[userId] = (history[userId] || 0) + amount;
+    history[currentTasker.id] = (history[currentTasker.id] || 0) + amount;
     localStorage.setItem('earningsHistory', JSON.stringify(history));
 
     setFormData(prev => ({ ...prev, withdrawAmount: "" }));

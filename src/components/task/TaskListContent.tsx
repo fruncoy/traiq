@@ -9,6 +9,7 @@ interface TaskListContentProps {
   tasks: Task[];
   limit?: number;
   currentPage: number;
+  setCurrentPage: (page: number) => void;
   ITEMS_PER_PAGE: number;
   handleBidClick: (taskId: string) => void;
   isAdmin?: boolean;
@@ -20,6 +21,7 @@ export const TaskListContent = ({
   tasks,
   limit,
   currentPage,
+  setCurrentPage,
   ITEMS_PER_PAGE,
   handleBidClick,
   isAdmin,
@@ -51,7 +53,6 @@ export const TaskListContent = ({
             isAdmin={isAdmin}
             userBids={userBids}
             isPending={bidMutation.isPending}
-            hidePayouts={false}
           />
         ))}
       </div>
@@ -60,7 +61,7 @@ export const TaskListContent = ({
         <div className="flex justify-center gap-2 mt-4">
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -70,7 +71,7 @@ export const TaskListContent = ({
           </span>
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
           >
             <ChevronRight className="h-4 w-4" />
