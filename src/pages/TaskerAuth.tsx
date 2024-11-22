@@ -34,6 +34,12 @@ const TaskerAuth = () => {
     });
   };
 
+  const generateUniqueId = () => {
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `TSK-${timestamp}-${randomStr}`;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -45,6 +51,8 @@ const TaskerAuth = () => {
       );
       
       if (tasker) {
+        // Clear any existing currentTasker data first
+        localStorage.removeItem('currentTasker');
         localStorage.setItem('currentTasker', JSON.stringify(tasker));
         toast.success("Successfully logged in!");
         navigate("/tasker");
@@ -58,11 +66,8 @@ const TaskerAuth = () => {
         return;
       }
 
-      // Generate unique tasker ID with TSK prefix and 6 random digits
-      const taskerId = `TSK${Math.floor(Math.random() * 900000 + 100000)}`;
-      
       const newTasker: Tasker = {
-        id: taskerId,
+        id: generateUniqueId(),
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -76,6 +81,9 @@ const TaskerAuth = () => {
       
       taskers.push(newTasker);
       localStorage.setItem('taskers', JSON.stringify(taskers));
+      
+      // Clear any existing currentTasker data first
+      localStorage.removeItem('currentTasker');
       localStorage.setItem('currentTasker', JSON.stringify(newTasker));
       
       toast.success("Account created successfully!");

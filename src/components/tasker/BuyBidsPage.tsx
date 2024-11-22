@@ -53,15 +53,20 @@ const BuyBidsPage = () => {
   const { data: currentBids = 0 } = useQuery({
     queryKey: ['user-bids', currentTasker.id],
     queryFn: async () => {
+      if (!currentTasker.id) return 0;
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
       const tasker = taskers.find((t: any) => t.id === currentTasker.id);
       return tasker?.bids || 0;
     },
-    refetchInterval: 1000 // Refresh every second
+    refetchInterval: 1000
   });
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
+      if (!currentTasker.id) {
+        throw new Error("No tasker logged in");
+      }
+
       // Update taskers array first
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
       const updatedTaskers = taskers.map((t: any) => {
