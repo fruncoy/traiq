@@ -5,16 +5,16 @@ import { useQuery } from "@tanstack/react-query";
 import TaskSubmissionForm from "./TaskSubmissionForm";
 
 const SubmitTaskPage = () => {
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+
   const { data: submissions = [] } = useQuery({
-    queryKey: ['task-submissions'],
+    queryKey: ['task-submissions', currentTasker.id],
     queryFn: async () => {
-      const subs = localStorage.getItem('taskSubmissions');
+      const subs = localStorage.getItem(`taskSubmissions_${currentTasker.id}`);
       return subs ? JSON.parse(subs) : [];
     },
     refetchInterval: 5000
   });
-
-  console.log("Current submissions:", submissions); // Debug log
 
   return (
     <Sidebar>
@@ -39,7 +39,7 @@ const SubmitTaskPage = () => {
               ) : (
                 submissions.map((submission: any) => (
                   <div
-                    key={`${submission.taskId}-${submission.bidderId}`}
+                    key={submission.id}
                     className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow"
                   >
                     <div className="flex flex-col md:flex-row justify-between items-start gap-4">

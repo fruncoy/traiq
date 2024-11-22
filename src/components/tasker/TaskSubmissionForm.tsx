@@ -7,17 +7,18 @@ import { toast } from "sonner";
 import { processTaskSubmission } from "../task/TaskBidLogic";
 import { Task, TaskSubmission } from "@/types/task";
 
-const CURRENT_USER_ID = 'current-user-id';
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
   const { data: activeTasks = [] } = useQuery({
-    queryKey: ['user-active-tasks'],
+    queryKey: ['user-active-tasks', currentTasker.id],
     queryFn: async () => {
-      const tasks = localStorage.getItem('userActiveTasks');
+      const tasks = localStorage.getItem(`userActiveTasks_${currentTasker.id}`);
       return tasks ? JSON.parse(tasks) : [];
     }
   });
@@ -28,9 +29,13 @@ const TaskSubmissionForm = () => {
         throw new Error("No file selected");
       }
 
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error("File size exceeds 10MB limit");
+      }
+
       const submission: TaskSubmission = {
         id: `submission-${Date.now()}`,
-        bidderId: CURRENT_USER_ID,
+        bidderId: currentTasker.id,
         status: 'pending',
         submittedAt: new Date().toISOString(),
         fileName: file.name
@@ -41,8 +46,8 @@ const TaskSubmissionForm = () => {
     },
     onSuccess: ({ task }) => {
       toast.success("Task submitted successfully!");
-      queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-active-tasks', currentTasker.id] });
+      queryClient.invalidateQueries({ queryKey: ['task-submissions', currentTasker.id] });
       setSelectedTask("");
       setFile(null);
     },
@@ -50,6 +55,20 @@ const TaskSubmissionForm = () => {
       toast.error(error.message || "Failed to submit task");
     }
   });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        toast.error("File size exceeds 10MB limit", {
+          description: "Please select a smaller file"
+        });
+        e.target.value = ''; // Reset input
+        return;
+      }
+      setFile(selectedFile);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +110,7 @@ const TaskSubmissionForm = () => {
                 >
                   <div className="flex flex-col gap-1">
                     <span className="font-medium">{task.title}</span>
+                    <span className="text-sm text-gray-500">{task.code}</span>
                   </div>
                 </SelectItem>
               ))
@@ -100,10 +120,10 @@ const TaskSubmissionForm = () => {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Upload File</label>
+        <label className="text-sm font-medium">Upload File (Max 10MB)</label>
         <Input
           type="file"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={handleFileChange}
           accept=".pdf,.doc,.docx,.txt"
           className="bg-white"
         />
