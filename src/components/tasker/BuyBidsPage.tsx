@@ -49,7 +49,7 @@ const BuyBidsPage = () => {
   
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   
-  const { data: currentBids = 0, refetch } = useQuery({
+  const { data: currentBids = 0 } = useQuery({
     queryKey: ['user-bids', currentTasker.id],
     queryFn: async () => {
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
@@ -61,31 +61,31 @@ const BuyBidsPage = () => {
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-      const taskerIndex = taskers.findIndex((t: any) => t.id === currentTasker.id);
+      const updatedTaskers = taskers.map((t: any) => {
+        if (t.id === currentTasker.id) {
+          return { ...t, bids: (t.bids || 0) + bids };
+        }
+        return t;
+      });
       
-      if (taskerIndex === -1) {
-        throw new Error("Tasker not found");
-      }
+      localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
       
-      taskers[taskerIndex].bids = (taskers[taskerIndex].bids || 0) + bids;
-      localStorage.setItem('taskers', JSON.stringify(taskers));
-      localStorage.setItem('currentTasker', JSON.stringify(taskers[taskerIndex]));
+      // Update current tasker
+      const updatedCurrentTasker = { ...currentTasker, bids: (currentTasker.bids || 0) + bids };
+      localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
       
-      // Track total spent for admin dashboard
+      // Track total spent
       const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
       localStorage.setItem('totalSpent', (totalSpent + amount).toString());
       
       return { success: true, bids, amount };
     },
     onSuccess: (_, variables) => {
-      toast.success(`Successfully purchased ${variables.bids} bids`, {
-        description: `Added ${variables.bids} bids to your account.`
-      });
-      queryClient.invalidateQueries({ queryKey: ['user-bids', currentTasker.id] });
-      refetch();
+      toast.success(`Successfully purchased ${variables.bids} bids`);
+      queryClient.invalidateQueries({ queryKey: ['user-bids'] });
     },
     onError: () => {
-      toast.error("Failed to process purchase. Please try again.");
+      toast.error("Failed to process purchase");
     }
   });
 

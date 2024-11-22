@@ -1,41 +1,49 @@
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, Circle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface TaskSubmissionHistoryProps {
   taskerId: string;
 }
 
 export const TaskSubmissionHistory = ({ taskerId }: TaskSubmissionHistoryProps) => {
-  const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
-    .filter((s: any) => s.bidderId === taskerId)
-    .slice(0, 5);
+  const { data: submissions = [] } = useQuery({
+    queryKey: ['tasker-submissions-history', taskerId],
+    queryFn: async () => {
+      const allSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+      return allSubmissions
+        .filter((s: any) => s.bidderId === taskerId)
+        .sort((a: any, b: any) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+        .slice(0, 5);
+    }
+  });
+
+  const circles = Array(5).fill(null);
 
   return (
     <div className="flex gap-2">
-      {submissions.length > 0 ? (
-        submissions.map((submission: any, index: number) => (
+      {circles.map((_, index) => {
+        const submission = submissions[index];
+        const isApproved = submission?.status === 'approved';
+        const hasSubmission = !!submission;
+
+        return (
           <div
             key={index}
             className={`w-6 h-6 rounded-full flex items-center justify-center ${
-              submission.status === 'approved' ? 'bg-green-500' : 'bg-red-500'
+              isApproved ? 'bg-green-500' : 
+              hasSubmission ? 'bg-blue-500' : 
+              'bg-gray-200'
             }`}
-            title={`Task: ${submission.taskCode} - ${submission.status}`}
+            title={submission ? `Task: ${submission.taskCode} - ${submission.status}` : 'No submission'}
           >
-            {submission.status === 'approved' ? (
+            {isApproved ? (
               <CheckCircle className="w-3 h-3 text-white" />
             ) : (
-              <XCircle className="w-3 h-3 text-white" />
+              <Circle className="w-3 h-3 text-white" />
             )}
           </div>
-        ))
-      ) : (
-        Array(5).fill(null).map((_, index) => (
-          <div
-            key={index}
-            className="w-6 h-6 rounded-full bg-gray-200"
-            title="No previous submissions"
-          />
-        ))
-      )}
+        );
+      })}
     </div>
   );
 };

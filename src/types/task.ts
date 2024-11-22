@@ -3,11 +3,14 @@ export type TaskCategory = "genai" | "creai";
 
 export interface TaskSubmission {
   id: string;
+  taskId: string;
+  taskCode: string;
+  taskTitle: string;
   bidderId: string;
   status: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
-  submittedAt?: string;
-  fileName?: string;
+  submittedAt: string;
+  fileName: string;
   rating?: number;
 }
 

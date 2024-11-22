@@ -4,10 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { processTaskSubmission } from "../task/TaskBidLogic";
-import { Task, TaskSubmission } from "@/types/task";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+import { Task } from "@/types/task";
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
@@ -15,39 +12,69 @@ const TaskSubmissionForm = () => {
   const queryClient = useQueryClient();
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
+  // Get only tasks that haven't been submitted by this tasker
   const { data: activeTasks = [] } = useQuery({
     queryKey: ['user-active-tasks', currentTasker.id],
     queryFn: async () => {
       const tasks = localStorage.getItem(`userActiveTasks_${currentTasker.id}`);
-      return tasks ? JSON.parse(tasks) : [];
+      const allTasks = tasks ? JSON.parse(tasks) : [];
+      const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+      
+      // Filter out tasks that have already been submitted by this tasker
+      return allTasks.filter((task: Task) => {
+        const hasSubmitted = submissions.some((s: any) => 
+          s.taskId === task.id && s.bidderId === currentTasker.id
+        );
+        return !hasSubmitted;
+      });
     }
   });
 
   const { mutate: submitTask, isPending } = useMutation({
     mutationFn: async (task: Task) => {
-      if (!file) {
-        throw new Error("No file selected");
-      }
+      if (!file) throw new Error("No file selected");
+      if (file.size > 10 * 1024 * 1024) throw new Error("File size exceeds 10MB limit");
 
-      if (file.size > MAX_FILE_SIZE) {
-        throw new Error("File size exceeds 10MB limit");
-      }
-
-      const submission: TaskSubmission = {
+      const submission = {
         id: `submission-${Date.now()}`,
+        taskId: task.id,
+        taskCode: task.code,
+        taskTitle: task.title,
         bidderId: currentTasker.id,
         status: 'pending',
         submittedAt: new Date().toISOString(),
         fileName: file.name
       };
 
-      await processTaskSubmission(task, submission);
-      return { task, submission };
+      // Store submission
+      const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
+      submissions.push(submission);
+      localStorage.setItem('taskSubmissions', JSON.stringify(submissions));
+
+      // Update task submissions
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const updatedTasks = tasks.map((t: Task) => {
+        if (t.id === task.id) {
+          return {
+            ...t,
+            submissions: [...(t.submissions || []), submission]
+          };
+        }
+        return t;
+      });
+      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+
+      // Store submission for tasker
+      const taskerSubmissions = JSON.parse(localStorage.getItem(`taskSubmissions_${currentTasker.id}`) || '[]');
+      taskerSubmissions.push(submission);
+      localStorage.setItem(`taskSubmissions_${currentTasker.id}`, JSON.stringify(taskerSubmissions));
+
+      return submission;
     },
-    onSuccess: ({ task }) => {
+    onSuccess: () => {
       toast.success("Task submitted successfully!");
-      queryClient.invalidateQueries({ queryKey: ['user-active-tasks', currentTasker.id] });
-      queryClient.invalidateQueries({ queryKey: ['task-submissions', currentTasker.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
       setSelectedTask("");
       setFile(null);
     },
@@ -56,23 +83,8 @@ const TaskSubmissionForm = () => {
     }
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.size > MAX_FILE_SIZE) {
-        toast.error("File size exceeds 10MB limit", {
-          description: "Please select a smaller file"
-        });
-        e.target.value = ''; // Reset input
-        return;
-      }
-      setFile(selectedFile);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!selectedTask) {
       toast.error("Please select a task");
       return;
@@ -85,8 +97,6 @@ const TaskSubmissionForm = () => {
     const task = activeTasks.find((t: Task) => t.id === selectedTask);
     if (task) {
       submitTask(task);
-    } else {
-      toast.error("Selected task not found");
     }
   };
 
@@ -106,7 +116,6 @@ const TaskSubmissionForm = () => {
                 <SelectItem 
                   key={task.id} 
                   value={task.id}
-                  className="py-3 px-4 hover:bg-gray-100 cursor-pointer text-gray-900"
                 >
                   <div className="flex flex-col gap-1">
                     <span className="font-medium">{task.title}</span>
@@ -123,7 +132,7 @@ const TaskSubmissionForm = () => {
         <label className="text-sm font-medium">Upload File (Max 10MB)</label>
         <Input
           type="file"
-          onChange={handleFileChange}
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
           accept=".pdf,.doc,.docx,.txt"
           className="bg-white"
         />
