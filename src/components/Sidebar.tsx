@@ -3,11 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   ClipboardList, 
+  DollarSign, 
+  Users, 
+  Settings, 
+  LogOut, 
+  BellDot,
   Bell, 
-  Settings,
-  DollarSign,
-  Users,
-  Upload,
+  Upload, 
   CreditCard,
   Briefcase,
   TicketIcon,
@@ -15,134 +17,168 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { SidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarNav } from "./sidebar/SidebarNav";
 import { LoadingSpinner } from "./ui/loading-spinner";
+import { LinkItem } from "./sidebar/types";
 import { cn } from "@/lib/utils";
-import { getCurrentTasker, logoutTasker } from "@/utils/auth";
 
 interface SidebarProps {
   isAdmin?: boolean;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
-
-const fetchTasks = async () => {
-  const tasks = localStorage.getItem('tasks');
-  return tasks ? JSON.parse(tasks) : [];
-};
 
 const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const currentTasker = getCurrentTasker();
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
-  const { isLoading, data: tasks } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: fetchTasks
+  const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
+    queryKey: ['notifications', currentTasker.id],
+    queryFn: async () => {
+      const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
+      return stored ? JSON.parse(stored) : [];
+    },
+    refetchInterval: 1000
   });
 
+  const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
+    queryKey: ['pending-tickets'],
+    queryFn: async () => {
+      if (!isAdmin) return [];
+      const stored = localStorage.getItem('tickets');
+      const tickets = stored ? JSON.parse(stored) : [];
+      return tickets.filter((t: any) => t.status === 'pending');
+    },
+    enabled: isAdmin,
+    refetchInterval: isAdmin ? 1000 : false
+  });
+
+  const { data: pendingSubmissions = [], isLoading: submissionsLoading } = useQuery({
+    queryKey: ['pending-submissions'],
+    queryFn: async () => {
+      if (!isAdmin) return [];
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      return tasks.filter((t: any) => 
+        t.submissions?.some((s: any) => s.status === 'pending')
+      );
+    },
+    enabled: isAdmin,
+    refetchInterval: isAdmin ? 1000 : false
+  });
+
+  // Mark notifications as read when visiting notifications page
+  React.useEffect(() => {
+    if (location.pathname === '/tasker/notifications' && currentTasker.id) {
+      const storedNotifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
+      const updatedNotifications = storedNotifications.map((n: any) => ({
+        ...n,
+        read: true
+      }));
+      localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(updatedNotifications));
+    }
+  }, [location.pathname, currentTasker.id]);
+
+  const hasUnreadNotifications = notifications.some((n: any) => !n.read);
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
+
   const handleLogout = () => {
-    logoutTasker();
-    toast.success("Logged out successfully");
+    toast.success("Successfully logged out");
     navigate("/");
   };
 
-  const sidebarLinks = [
-    { icon: LayoutDashboard, name: "Dashboard", path: "/tasker" },
-    { icon: ClipboardList, name: "Tasks", path: "/tasker/tasks" },
-    { icon: Bell, name: "Notifications", path: "/tasker/notifications" },
-    { icon: Settings, name: "Settings", path: "/tasker/settings" },
-    { icon: DollarSign, name: "Payments", path: "/tasker/payments" },
-    { icon: Users, name: "Team", path: "/tasker/team" },
-    { icon: Upload, name: "Upload", path: "/tasker/upload" },
-    { icon: CreditCard, name: "Buy Bids", path: "/tasker/buy-bids" },
-    { icon: Briefcase, name: "My Tasks", path: "/tasker/my-tasks" },
-    { icon: TicketIcon, name: "Tickets", path: "/tasker/tickets" },
-    { icon: Menu, name: "More", path: "/tasker/more" }
+  const links: LinkItem[] = isAdmin ? [
+    { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
+    { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
+    { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload, badge: pendingSubmissions?.length },
+    { name: "Finances", path: "/admin/finances", icon: DollarSign },
+    { name: "Taskers", path: "/admin/taskers", icon: Users },
+    { name: "Tickets", path: "/admin/tickets", icon: TicketIcon, badge: pendingTickets?.length },
+    { name: "Settings", path: "/admin/settings", icon: Settings },
+  ] : [
+    { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
+    { name: "Buy Bids", path: "/tasker/buy-bids", icon: CreditCard },
+    { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
+    { name: "Bidded Tasks", path: "/tasker/bidded-tasks", icon: Briefcase },
+    { name: "Submit Task", path: "/tasker/submit-task", icon: Upload },
+    { name: "Notifications", path: "/tasker/notifications", icon: hasUnreadNotifications ? BellDot : Bell, badge: unreadCount },
+    { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
 
+  if (notificationsLoading || ticketsLoading || submissionsLoading) {
+    return <LoadingSpinner />;
+  }
+
   return (
-    <div className="flex flex-col h-screen">
-      {/* Desktop/Tablet Sidebar - Fixed */}
-      <div className="hidden md:block w-64 fixed h-full bg-white border-r border-gray-200">
-        <div className="h-16 flex items-center px-6">
-          <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
-        </div>
-        <SidebarNav>
-          {sidebarLinks.map((link) => (
-            <div key={link.path} className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-              location.pathname === link.path ? "bg-gray-100" : "hover:bg-gray-50"
-            )}>
-              <link.icon size={20} />
-              <span>{link.name}</span>
-            </div>
-          ))}
-        </SidebarNav>
-        <button 
-          className="absolute bottom-4 left-4 right-4 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
-          onClick={handleLogout}
-        >
-          Logout
-        </button>
-      </div>
-
-      {/* Mobile Header - As per drawing */}
-      <div className="md:hidden flex items-center justify-between px-4 h-16 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <Menu 
-            size={24} 
-            className="text-gray-600 cursor-pointer"
+    <div className="flex h-screen bg-white">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50">
+        <div className="flex items-center justify-between px-4 h-full">
+          <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          />
-          <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Bell size={24} className="text-gray-600" />
-          <Settings size={24} className="text-gray-600" />
+            className="p-2 hover:bg-gray-100 rounded-lg"
+            aria-label="Toggle menu"
+          >
+            <Menu size={24} />
+          </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-white">
-          <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200">
-            <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
-            <Menu 
-              size={24} 
-              className="text-gray-600 cursor-pointer"
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
-          </div>
-          <div className="p-4">
-            {sidebarLinks.map((link) => (
-              <div 
-                key={link.path} 
-                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:bg-gray-50"
-                onClick={() => {
-                  navigate(link.path);
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                <link.icon size={20} />
-                <span>{link.name}</span>
-              </div>
-            ))}
-            <button 
-              className="w-full mt-4 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          </div>
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed lg:relative w-64 h-screen bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out z-40",
+        "lg:translate-x-0",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="hidden lg:block">
+          <SidebarHeader />
         </div>
-      )}
+        <div className="mt-16 lg:mt-0">
+          <SidebarNav links={links} />
+        </div>
+      </div>
 
       {/* Main Content */}
-      <div className="md:ml-64 flex-1 p-4">
-        {isLoading && <LoadingSpinner />}
-        {children}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6 mt-16 lg:mt-0">
+          <h1 className="text-xl font-semibold text-gray-800">
+            {location.pathname === "/admin" ? "Dashboard" : 
+             location.pathname === "/admin/tasks" ? "Tasks" :
+             location.pathname === "/admin/submitted-tasks" ? "Submitted Tasks" :
+             location.pathname === "/admin/finances" ? "Finances" :
+             location.pathname === "/admin/taskers" ? "Taskers" : 
+             location.pathname === "/admin/tickets" ? "Tickets" :
+             location.pathname === "/admin/settings" ? "Settings" :
+             location.pathname === "/tasker" ? "Dashboard" :
+             location.pathname === "/tasker/buy-bids" ? "Buy Bids" :
+             location.pathname === "/tasker/tasks" ? "Tasks" :
+             location.pathname === "/tasker/bidded-tasks" ? "Bidded Tasks" :
+             location.pathname === "/tasker/submit-task" ? "Submit Task" :
+             location.pathname === "/tasker/notifications" ? "Notifications" : "Settings"}
+          </h1>
+          <button
+            onClick={handleLogout}
+            className="p-2 hover:bg-gray-100 rounded-full"
+            aria-label="Logout"
+          >
+            <LogOut size={20} className="text-gray-600" />
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-auto p-6 bg-gray-50">
+          {children}
+        </main>
       </div>
+
+      {/* Mobile menu overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </div>
   );
 };

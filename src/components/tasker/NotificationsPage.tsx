@@ -2,15 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
 import { useQuery } from "@tanstack/react-query";
-import { getCurrentTasker } from "@/utils/auth";
 
 const NotificationsPage = () => {
-  const currentTasker = getCurrentTasker();
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
   const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications', currentTasker?.id],
+    queryKey: ['notifications', currentTasker.id],
     queryFn: async () => {
-      if (!currentTasker?.id) return [];
       const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
       if (!stored) {
         const defaultNotifications = [
