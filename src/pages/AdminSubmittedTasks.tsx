@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Task } from "@/types/task";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { TaskSubmissionHistory } from "@/components/admin/TaskSubmissionHistory";
 
 const AdminSubmittedTasks = () => {
   const [selectedTaskerId, setSelectedTaskerId] = useState<string | null>(null);
@@ -28,7 +29,7 @@ const AdminSubmittedTasks = () => {
       const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
       return allTasks
         .filter((task: Task) => task.submissions?.some(s => s.bidderId === selectedTaskerId))
-        .slice(0, 5); // Get last 5 submissions
+        .slice(0, 5);
     },
     enabled: !!selectedTaskerId
   });
@@ -154,41 +155,7 @@ const AdminSubmittedTasks = () => {
                               </span>
                             </TableCell>
                             <TableCell>
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => setSelectedTaskerId(submission.bidderId)}
-                                  >
-                                    View History
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Tasker Submission History</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    {taskerHistory.length === 0 ? (
-                                      <p className="text-gray-500">No previous submissions</p>
-                                    ) : (
-                                      taskerHistory.map((historyTask: Task) => (
-                                        <div key={historyTask.id} className="p-4 border rounded">
-                                          <p className="font-medium">{historyTask.title}</p>
-                                          <p className="text-sm text-gray-600">Code: {historyTask.code}</p>
-                                          <p className="text-sm text-gray-600">
-                                            Status: {
-                                              historyTask.submissions?.find(
-                                                s => s.bidderId === selectedTaskerId
-                                              )?.status || 'Unknown'
-                                            }
-                                          </p>
-                                        </div>
-                                      ))
-                                    )}
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
+                              <TaskSubmissionHistory taskerId={submission.bidderId} />
                             </TableCell>
                             <TableCell>
                               {submission.status === 'pending' && (
