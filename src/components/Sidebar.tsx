@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -62,28 +62,93 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   ];
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex-1 overflow-y-auto">
-        <SidebarNav>
-          {sidebarLinks.map((link) => (
-            <div key={link.path} className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-              location.pathname === link.path ? "bg-gray-100" : "hover:bg-gray-50"
-            )}>
-              <link.icon size={20} />
-              <span>{link.name}</span>
-            </div>
-          ))}
-        </SidebarNav>
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <div className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200">
+        <div className="h-16 flex items-center px-6 border-b border-gray-200">
+          <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <nav className="p-4 space-y-1">
+            {sidebarLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                  location.pathname === link.path 
+                    ? "bg-blue-50 text-[#1E40AF]" 
+                    : "text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                <link.icon size={20} />
+                <span>{link.name}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="p-4 border-t border-gray-200">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       </div>
-      <button 
-        className="mt-4 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
-        onClick={handleLogout}
-      >
-        Logout
-      </button>
-      {isLoading && <LoadingSpinner />}
-      {children}
+
+      {/* Mobile menu */}
+      <div className="md:hidden">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-4 text-gray-600"
+        >
+          <Menu size={24} />
+        </button>
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-50 bg-white">
+            <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+              <span className="text-2xl font-bold text-[#1E40AF]">TRAIQ</span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-gray-600"
+              >
+                <Menu size={24} />
+              </button>
+            </div>
+            <nav className="p-4 space-y-1">
+              {sidebarLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                    location.pathname === link.path 
+                      ? "bg-blue-50 text-[#1E40AF]" 
+                      : "text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <link.icon size={20} />
+                  <span>{link.name}</span>
+                </Link>
+              ))}
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-4"
+              >
+                Logout
+              </button>
+            </nav>
+          </div>
+        )}
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading && <LoadingSpinner />}
+        {children}
+      </div>
     </div>
   );
 };
