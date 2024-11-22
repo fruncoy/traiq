@@ -19,15 +19,7 @@ const TaskSubmissionForm = () => {
     queryKey: ['user-active-tasks', currentTasker.id],
     queryFn: async () => {
       const tasks = localStorage.getItem(`userActiveTasks_${currentTasker.id}`);
-      const allTasks = tasks ? JSON.parse(tasks) : [];
-      
-      // Filter out tasks that have already been submitted by this tasker
-      const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-      return allTasks.filter((task: Task) => 
-        !submissions.some((s: any) => 
-          s.bidderId === currentTasker.id && s.taskId === task.id
-        )
-      );
+      return tasks ? JSON.parse(tasks) : [];
     }
   });
 
@@ -41,25 +33,12 @@ const TaskSubmissionForm = () => {
         throw new Error("File size exceeds 10MB limit");
       }
 
-      // Check if task was already submitted
-      const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-      const alreadySubmitted = submissions.some(
-        (s: any) => s.bidderId === currentTasker.id && s.taskId === task.id
-      );
-
-      if (alreadySubmitted) {
-        throw new Error("You have already submitted this task");
-      }
-
       const submission: TaskSubmission = {
         id: `submission-${Date.now()}`,
         bidderId: currentTasker.id,
         status: 'pending',
         submittedAt: new Date().toISOString(),
-        fileName: file.name,
-        taskId: task.id,
-        taskCode: task.code,
-        taskTitle: task.title
+        fileName: file.name
       };
 
       await processTaskSubmission(task, submission);
