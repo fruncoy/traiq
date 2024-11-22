@@ -133,7 +133,8 @@ const AdminSubmittedTasks = () => {
                   <CardContent className="p-0">
                     <TaskSubmissionsTable
                       task={task}
-                      onAction={handleAction}
+                      onAction={(taskId, bidderId, action, reason) => 
+                        handleSubmissionAction({ taskId, bidderId, action, reason })}
                       isPending={isPending}
                       allSubmissions={tasksWithSubmissions.flatMap(t => t.submissions || [])}
                     />
