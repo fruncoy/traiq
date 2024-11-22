@@ -121,6 +121,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       <MobileHeader 
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
+        isAdmin={isAdmin}
       />
 
       <div className={cn(
