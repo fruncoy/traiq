@@ -29,14 +29,15 @@ interface SidebarProps {
 const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', currentTasker.id],
     queryFn: async () => {
-      const stored = localStorage.getItem('notifications');
+      const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
       return stored ? JSON.parse(stored) : [];
     },
-    refetchInterval: 1000 // Poll every second for real-time updates
+    refetchInterval: 1000
   });
 
   const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
@@ -66,15 +67,15 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
 
   // Mark notifications as read when visiting notifications page
   React.useEffect(() => {
-    if (location.pathname === '/tasker/notifications') {
-      const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+    if (location.pathname === '/tasker/notifications' && currentTasker.id) {
+      const storedNotifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
       const updatedNotifications = storedNotifications.map((n: any) => ({
         ...n,
         read: true
       }));
-      localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+      localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(updatedNotifications));
     }
-  }, [location.pathname]);
+  }, [location.pathname, currentTasker.id]);
 
   const hasUnreadNotifications = notifications.some((n: any) => !n.read);
   const unreadCount = notifications.filter((n: any) => !n.read).length;

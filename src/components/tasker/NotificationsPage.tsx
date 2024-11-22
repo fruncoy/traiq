@@ -4,10 +4,12 @@ import Sidebar from "../Sidebar";
 import { useQuery } from "@tanstack/react-query";
 
 const NotificationsPage = () => {
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+
   const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', currentTasker.id],
     queryFn: async () => {
-      const stored = localStorage.getItem('notifications');
+      const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
       if (!stored) {
         const defaultNotifications = [
           {
@@ -15,10 +17,12 @@ const NotificationsPage = () => {
             title: 'Welcome to TRAIQ',
             message: 'Start bidding on tasks to earn money!',
             type: 'info',
-            date: new Date().toISOString()
+            date: new Date().toISOString(),
+            read: false,
+            taskerId: currentTasker.id
           }
         ];
-        localStorage.setItem('notifications', JSON.stringify(defaultNotifications));
+        localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(defaultNotifications));
         return defaultNotifications;
       }
       return JSON.parse(stored);

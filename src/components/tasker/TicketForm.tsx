@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const TicketForm = () => {
   const queryClient = useQueryClient();
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -26,7 +27,7 @@ const TicketForm = () => {
 
     const newTicket = {
       id: Date.now().toString(),
-      taskerId: 'current-user-id',
+      taskerId: currentTasker.id,
       title: formData.title,
       description: formData.description,
       priority: formData.priority,

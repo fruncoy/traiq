@@ -5,9 +5,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const AdminSubmittedTasks = () => {
-  const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [selectedTaskerId, setSelectedTaskerId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: tasks = [] } = useQuery({
@@ -16,10 +18,21 @@ const AdminSubmittedTasks = () => {
       const tasks = localStorage.getItem('tasks');
       return tasks ? JSON.parse(tasks) : [];
     },
-    refetchInterval: 1000 // Poll every second for real-time updates
+    refetchInterval: 1000
   });
 
-  // Filter tasks that have submissions
+  const { data: taskerHistory = [] } = useQuery({
+    queryKey: ['tasker-history', selectedTaskerId],
+    queryFn: async () => {
+      if (!selectedTaskerId) return [];
+      const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      return allTasks
+        .filter((task: Task) => task.submissions?.some(s => s.bidderId === selectedTaskerId))
+        .slice(0, 5); // Get last 5 submissions
+    },
+    enabled: !!selectedTaskerId
+  });
+
   const tasksWithSubmissions = tasks.filter((task: Task) => 
     task.submissions && task.submissions.length > 0
   );
@@ -58,19 +71,19 @@ const AdminSubmittedTasks = () => {
       });
       
       localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-      console.log("Updated tasks after submission action:", updatedTasks);
       
-      // Add notification
-      const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+      // Add notification for the tasker
+      const notifications = JSON.parse(localStorage.getItem(`notifications_${bidderId}`) || '[]');
       notifications.unshift({
         id: Date.now().toString(),
         title: `Submission ${action}`,
         message: `Task ${task.code} submission has been ${action}`,
         type: action === 'approved' ? 'success' : 'error',
         read: false,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        taskerId: bidderId
       });
-      localStorage.setItem('notifications', JSON.stringify(notifications));
+      localStorage.setItem(`notifications_${bidderId}`, JSON.stringify(notifications));
       
       return updatedTasks;
     },
@@ -117,6 +130,7 @@ const AdminSubmittedTasks = () => {
                           <TableHead>File</TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>History</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -138,6 +152,43 @@ const AdminSubmittedTasks = () => {
                               }`}>
                                 {submission.status}
                               </span>
+                            </TableCell>
+                            <TableCell>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setSelectedTaskerId(submission.bidderId)}
+                                  >
+                                    View History
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Tasker Submission History</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    {taskerHistory.length === 0 ? (
+                                      <p className="text-gray-500">No previous submissions</p>
+                                    ) : (
+                                      taskerHistory.map((historyTask: Task) => (
+                                        <div key={historyTask.id} className="p-4 border rounded">
+                                          <p className="font-medium">{historyTask.title}</p>
+                                          <p className="text-sm text-gray-600">Code: {historyTask.code}</p>
+                                          <p className="text-sm text-gray-600">
+                                            Status: {
+                                              historyTask.submissions?.find(
+                                                s => s.bidderId === selectedTaskerId
+                                              )?.status || 'Unknown'
+                                            }
+                                          </p>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
                             </TableCell>
                             <TableCell>
                               {submission.status === 'pending' && (
