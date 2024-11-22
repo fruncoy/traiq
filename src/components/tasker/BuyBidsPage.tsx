@@ -1,18 +1,55 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Sidebar from "../Sidebar";
+
+interface BidPackage {
+  id: string;
+  name: string;
+  bids: number;
+  price: number;
+  popular?: boolean;
+}
+
+const bidPackages: BidPackage[] = [
+  {
+    id: "1",
+    name: "Starter",
+    bids: 1,
+    price: 60
+  },
+  {
+    id: "2",
+    name: "Basic",
+    bids: 3,
+    price: 100,
+    popular: true
+  },
+  {
+    id: "3",
+    name: "Standard",
+    bids: 7,
+    price: 200
+  },
+  {
+    id: "4",
+    name: "Premium",
+    bids: 10,
+    price: 400
+  }
+];
 
 const BuyBidsPage = () => {
-  const currentTasker = JSON.parse(sessionStorage.getItem('currentTasker') || '{}');
-
-  const bidPackages = [
-    { bids: 50, amount: 60, popular: false },
-    { bids: 100, amount: 100, popular: true },
-    { bids: 200, amount: 180, popular: false },
-    { bids: 500, amount: 400, popular: false },
-  ];
-
+  const [customBids, setCustomBids] = useState<number>(2);
+  const queryClient = useQueryClient();
+  
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+  
+  // Update to fetch current bids directly from taskers array
   const { data: currentBids = 0 } = useQuery({
     queryKey: ['user-bids', currentTasker.id],
     queryFn: async () => {
@@ -30,73 +67,125 @@ const BuyBidsPage = () => {
         throw new Error("No tasker logged in");
       }
 
+      // Update taskers array first
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
       const updatedTaskers = taskers.map((t: any) => {
         if (t.id === currentTasker.id) {
-          return {
-            ...t,
-            bids: t.bids + bids
-          };
+          return { ...t, bids: (t.bids || 0) + bids };
         }
         return t;
       });
       localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
-
-      const updatedCurrentTasker = {
-        ...currentTasker,
-        bids: currentTasker.bids + bids
+      
+      // Then update current tasker
+      const updatedCurrentTasker = { 
+        ...currentTasker, 
+        bids: (currentTasker.bids || 0) + bids 
       };
-      sessionStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
-
-      return { success: true };
+      localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
+      
+      // Track total spent
+      const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
+      localStorage.setItem('totalSpent', (totalSpent + amount).toString());
+      
+      return { success: true, bids, amount };
     },
-    onSuccess: () => {
-      toast.success("Bids purchased successfully!");
+    onSuccess: (_, variables) => {
+      toast.success(`Successfully purchased ${variables.bids} bids`);
+      queryClient.invalidateQueries({ queryKey: ['user-bids'] });
     },
     onError: () => {
-      toast.error("Failed to purchase bids. Please try again.");
+      toast.error("Failed to process purchase");
     }
   });
 
-  return (
-    <div className="container mx-auto p-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Buy Bids</h1>
-        <p className="text-gray-600">Current Bids: {currentBids}</p>
-      </div>
+  const handleBuyPackage = (pkg: BidPackage) => {
+    purchaseMutation.mutate({ bids: pkg.bids, amount: pkg.price });
+  };
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {bidPackages.map((pkg) => (
-          <Card key={pkg.bids} className={`relative ${pkg.popular ? 'border-blue-500' : ''}`}>
-            {pkg.popular && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">
-                  Most Popular
-                </span>
+  const handleBuyCustom = () => {
+    if (customBids < 2) {
+      toast.error("Minimum 2 bids required for custom package");
+      return;
+    }
+    const amount = customBids * 50;
+    purchaseMutation.mutate({ bids: customBids, amount });
+  };
+
+  return (
+    <Sidebar>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Balance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{currentBids} Bids</div>
+            <p className="text-sm text-gray-500 mt-1">Available for use</p>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {bidPackages.map((pkg) => (
+            <Card key={pkg.id} className={pkg.popular ? "border-primary" : ""}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <CardTitle>{pkg.name}</CardTitle>
+                  {pkg.popular && (
+                    <Badge variant="secondary">Popular</Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-3xl font-bold">
+                      {pkg.bids} {pkg.bids === 1 ? "Bid" : "Bids"}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      KES {pkg.price}
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full"
+                    onClick={() => handleBuyPackage(pkg)}
+                    disabled={purchaseMutation.isPending}
+                  >
+                    {purchaseMutation.isPending ? "Processing..." : "Buy Now"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Custom Package</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min={2}
+                  value={customBids}
+                  onChange={(e) => setCustomBids(Number(e.target.value))}
+                  className="w-32"
+                />
+                <span>Bids at KES 50 each = KES {customBids * 50}</span>
               </div>
-            )}
-            <CardHeader>
-              <CardTitle className="text-center">{pkg.bids} Bids</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center mb-4">
-                <p className="text-2xl font-bold">KES {pkg.amount}</p>
-                <p className="text-sm text-gray-500">
-                  KES {(pkg.amount / pkg.bids).toFixed(2)} per bid
-                </p>
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => purchaseMutation.mutate({ bids: pkg.bids, amount: pkg.amount })}
+              <Button 
+                onClick={handleBuyCustom}
                 disabled={purchaseMutation.isPending}
               >
-                {purchaseMutation.isPending ? 'Processing...' : 'Purchase'}
+                {purchaseMutation.isPending ? "Processing..." : "Buy Custom Package"}
               </Button>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </Sidebar>
   );
 };
 

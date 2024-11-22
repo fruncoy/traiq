@@ -1,6 +1,6 @@
-export const handleBidSubmission = (task: any, userBids: number) => {
+export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) => {
   const requiredBids = task.category === 'genai' ? 10 : 5;
-  const currentTasker = JSON.parse(sessionStorage.getItem('currentTasker') || '{}');
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   
   if (!currentTasker.id) {
     throw new Error("No tasker logged in");
@@ -11,23 +11,25 @@ export const handleBidSubmission = (task: any, userBids: number) => {
     throw new Error("insufficient_bids");
   }
 
-  if (task.currentBids >= task.maxBidders) {
-    throw new Error("max_bidders_reached");
-  }
-
   // Check if user has already bid on this task
-  const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-  const existingTask = tasks.find((t: any) => t.id === task.id);
-  
-  if (existingTask.bidders.includes(currentTasker.id)) {
-    throw new Error("already_bid");
+  const existingBids = tasks.find(t => t.id === task.id)?.bidders || [];
+  if (existingBids.includes(currentTasker.id)) {
+    throw new Error("You have already bid on this task");
   }
 
-  // Update task with new bidder
+  // Check if user has a rejected submission for this task
+  const hasRejectedSubmission = task.submissions?.some((s: any) => 
+    s.bidderId === currentTasker.id && s.status === 'rejected'
+  );
+  if (hasRejectedSubmission) {
+    throw new Error("You cannot bid on this task as your previous submission was rejected");
+  }
+
+  // Update task bidders and current bids count
   const updatedTask = {
     ...task,
-    bidders: [...task.bidders, currentTasker.id],
-    currentBids: task.currentBids + 1
+    bidders: [...(task.bidders || []), currentTasker.id],
+    currentBids: (task.currentBids || 0) + 1
   };
 
   // Update tasks in localStorage
@@ -40,19 +42,20 @@ export const handleBidSubmission = (task: any, userBids: number) => {
     if (t.id === currentTasker.id) {
       return {
         ...t,
-        bids: Math.max(0, t.bids - requiredBids)
+        bids: Math.max(0, t.bids - requiredBids),
+        activeTasks: [...(t.activeTasks || []), task.id]
       };
     }
     return t;
   });
   localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
 
-  // Update current tasker's bids in sessionStorage
+  // Update current tasker's bids
   const updatedCurrentTasker = {
     ...currentTasker,
     bids: Math.max(0, currentTasker.bids - requiredBids)
   };
-  sessionStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
+  localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
 
   // Store task in user's active tasks with the correct tasker ID
   const userActiveTasks = JSON.parse(localStorage.getItem(`userActiveTasks_${currentTasker.id}`) || '[]');
@@ -65,10 +68,12 @@ export const handleBidSubmission = (task: any, userBids: number) => {
   const notifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
   notifications.unshift({
     id: Date.now().toString(),
-    type: 'bid_placed',
-    message: `You have successfully bid on task ${task.code}`,
-    timestamp: new Date().toISOString(),
-    read: false
+    title: 'Task Bid Successful',
+    message: `You have successfully bid on task ${task.code} - ${task.title}`,
+    type: 'success',
+    read: false,
+    date: new Date().toISOString(),
+    taskerId: currentTasker.id
   });
   localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(notifications));
 

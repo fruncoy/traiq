@@ -51,8 +51,9 @@ const TaskerAuth = () => {
       );
       
       if (tasker) {
-        // Use sessionStorage instead of localStorage for current user
-        sessionStorage.setItem('currentTasker', JSON.stringify(tasker));
+        // Clear any existing currentTasker data first
+        localStorage.removeItem('currentTasker');
+        localStorage.setItem('currentTasker', JSON.stringify(tasker));
         toast.success("Successfully logged in!");
         navigate("/tasker");
       } else {
@@ -81,8 +82,9 @@ const TaskerAuth = () => {
       taskers.push(newTasker);
       localStorage.setItem('taskers', JSON.stringify(taskers));
       
-      // Use sessionStorage for current user
-      sessionStorage.setItem('currentTasker', JSON.stringify(newTasker));
+      // Clear any existing currentTasker data first
+      localStorage.removeItem('currentTasker');
+      localStorage.setItem('currentTasker', JSON.stringify(newTasker));
       
       toast.success("Account created successfully!");
       navigate("/tasker");
