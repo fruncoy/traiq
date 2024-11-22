@@ -14,7 +14,7 @@ interface TaskCardProps {
   hidePayouts?: boolean;
 }
 
-const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = false }: TaskCardProps) => {
+const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) => {
   const handleBidClick = () => {
     if (userBids <= 0) {
       toast.error("You have insufficient bids. Please purchase more bids to continue.", {
@@ -38,8 +38,8 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
     }
   };
 
+  const MAX_BIDDERS = 10; // All tasks now have 10 max bidders
   const requiredBids = task.category === 'genai' ? 10 : 5;
-  const maxBidders = task.category === 'genai' ? 10 : 5;
   const taskerPayout = task.category === 'genai' ? 700 : 300;
   const formattedDeadline = formatDeadline(task.deadline);
   
@@ -60,11 +60,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               </h3>
               <p className="text-gray-600 mt-2">{task.description}</p>
             </div>
-            {!isAdmin && actualBidders.length < maxBidders && (
+            {!isAdmin && actualBidders.length < MAX_BIDDERS && (
               <Button 
                 className="bg-[#1E40AF] hover:bg-blue-700 text-white"
                 onClick={handleBidClick}
-                disabled={isPending || actualBidders.length >= maxBidders}
+                disabled={isPending || actualBidders.length >= MAX_BIDDERS}
               >
                 {isPending ? "Bidding..." : "Bid Now"}
               </Button>
@@ -83,7 +83,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             <div className="flex items-center gap-2">
               <Users size={20} className="text-gray-500" />
               <div className="flex flex-col">
-                <span className="text-gray-700">Total Bidders: {actualBidders.length}/{maxBidders}</span>
+                <span className="text-gray-700">Total Bidders: {actualBidders.length}/{MAX_BIDDERS}</span>
                 <span className="text-blue-600">Required Bids: {requiredBids}</span>
               </div>
             </div>
@@ -93,14 +93,12 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               <span className="capitalize text-gray-600">{task.category}</span>
             </div>
 
-            {!hidePayouts && (
-              <div className="flex items-center gap-2">
-                <DollarSign size={20} className="text-green-500" />
-                <span className="text-green-600 font-medium">
-                  Payout: KES {taskerPayout}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <DollarSign size={20} className="text-green-500" />
+              <span className="text-green-600 font-medium">
+                Payout: KES {taskerPayout}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>

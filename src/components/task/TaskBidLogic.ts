@@ -1,5 +1,6 @@
 export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) => {
   const requiredBids = task.category === 'genai' ? 10 : 5;
+  const MAX_BIDDERS = 10; // All tasks now have 10 max bidders
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   
   if (!currentTasker.id) {
@@ -15,6 +16,11 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
   const existingBids = tasks.find(t => t.id === task.id)?.bidders || [];
   if (existingBids.includes(currentTasker.id)) {
     throw new Error("You have already bid on this task");
+  }
+
+  // Check if task has reached maximum bidders
+  if (existingBids.length >= MAX_BIDDERS) {
+    throw new Error("This task has reached its maximum number of bidders");
   }
 
   // Check if user has a rejected submission for this task
@@ -36,7 +42,7 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
   const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
   localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
-  // Update user bids - make sure we're updating the correct tasker
+  // Update user bids
   const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
   const updatedTaskers = taskers.map((t: any) => {
     if (t.id === currentTasker.id) {
@@ -57,14 +63,14 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
   };
   localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
 
-  // Store task in user's active tasks with the correct tasker ID
+  // Store task in user's active tasks
   const userActiveTasks = JSON.parse(localStorage.getItem(`userActiveTasks_${currentTasker.id}`) || '[]');
   if (!userActiveTasks.some((t: any) => t.id === task.id)) {
     userActiveTasks.push(updatedTask);
     localStorage.setItem(`userActiveTasks_${currentTasker.id}`, JSON.stringify(userActiveTasks));
   }
 
-  // Create notification with the correct tasker ID
+  // Create notification
   const notifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
   notifications.unshift({
     id: Date.now().toString(),
