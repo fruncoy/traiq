@@ -15,9 +15,8 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending, allSubmissions
   const [selectedTaskerId, setSelectedTaskerId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Get ALL submissions for this task from localStorage
-  const taskSubmissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]')
-    .filter((submission: any) => submission.taskId === task.id);
+  // Get submissions directly from the task object
+  const taskSubmissions = task.submissions || [];
 
   return (
     <Table>
