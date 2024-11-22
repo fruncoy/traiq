@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { User, Mail, Lock } from "lucide-react";
 
 interface Tasker {
   id: string;
@@ -51,7 +52,6 @@ const TaskerAuth = () => {
       );
       
       if (tasker) {
-        // Use sessionStorage instead of localStorage for current user
         sessionStorage.setItem('currentTasker', JSON.stringify(tasker));
         toast.success("Successfully logged in!");
         navigate("/tasker");
@@ -59,7 +59,6 @@ const TaskerAuth = () => {
         toast.error("Invalid credentials");
       }
     } else {
-      // Check if username already exists
       if (taskers.some((t: Tasker) => t.username === formData.username)) {
         toast.error("Username already exists");
         return;
@@ -80,70 +79,98 @@ const TaskerAuth = () => {
       
       taskers.push(newTasker);
       localStorage.setItem('taskers', JSON.stringify(taskers));
-      
-      // Use sessionStorage for current user
       sessionStorage.setItem('currentTasker', JSON.stringify(newTasker));
-      
       toast.success("Account created successfully!");
       navigate("/tasker");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{isLogin ? "Tasker Login" : "Create Tasker Account"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Username</label>
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-white rounded-2xl shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            {isLogin ? "Welcome Back" : "Create Account"}
+          </h1>
+          <p className="text-gray-600">
+            {isLogin ? "Sign in to continue" : "Sign up to get started"}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <Input
                 type="text"
                 name="username"
+                placeholder="Username"
                 required
                 value={formData.username}
                 onChange={handleChange}
+                className="pl-10 h-12 bg-gray-50 border-none shadow-[inset_5px_5px_10px_#bebebe,inset_-5px_-5px_10px_#ffffff] rounded-xl"
               />
             </div>
+
             {!isLogin && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input
                   type="email"
                   name="email"
+                  placeholder="Email"
                   required
                   value={formData.email}
                   onChange={handleChange}
+                  className="pl-10 h-12 bg-gray-50 border-none shadow-[inset_5px_5px_10px_#bebebe,inset_-5px_-5px_10px_#ffffff] rounded-xl"
                 />
               </div>
             )}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Password</label>
+
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <Input
                 type="password"
                 name="password"
+                placeholder="Password"
                 required
                 value={formData.password}
                 onChange={handleChange}
+                className="pl-10 h-12 bg-gray-50 border-none shadow-[inset_5px_5px_10px_#bebebe,inset_-5px_-5px_10px_#ffffff] rounded-xl"
               />
             </div>
-            <Button type="submit" className="w-full">
-              {isLogin ? "Login" : "Sign Up"}
-            </Button>
-            <p className="text-center text-sm">
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
+          </div>
+
+          {isLogin && (
+            <div className="text-right">
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-blue-600 hover:underline"
+                className="text-sm text-blue-600 hover:underline"
+                onClick={() => toast.info("Password reset functionality coming soon!")}
               >
-                {isLogin ? "Sign Up" : "Login"}
+                Forgot Password?
               </button>
-            </p>
-          </form>
-        </CardContent>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full h-12 bg-primary-DEFAULT hover:bg-primary-dark text-white rounded-xl shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] transition-all duration-200 hover:shadow-[2px_2px_5px_#bebebe,-2px_-2px_5px_#ffffff]"
+          >
+            {isLogin ? "Sign In" : "Sign Up"}
+          </Button>
+
+          <div className="text-center text-sm text-gray-600">
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              {isLogin ? "Sign Up" : "Sign In"}
+            </button>
+          </div>
+        </form>
       </Card>
     </div>
   );
