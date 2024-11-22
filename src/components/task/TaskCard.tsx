@@ -40,10 +40,9 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
 
   const requiredBids = task.category === 'genai' ? 10 : 5;
   const maxBidders = task.category === 'genai' ? 10 : 5;
-  const formattedDeadline = formatDeadline(task.deadline);
   const taskerPayout = task.category === 'genai' ? 700 : 300;
+  const formattedDeadline = formatDeadline(task.deadline);
   
-  // Get actual bidders from localStorage
   const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
   const actualBidders = task.bidders?.filter(bidderId => 
     taskers.some((t: any) => t.id === bidderId)
@@ -55,8 +54,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">{task.title}</h3>
-              <p className="text-gray-600 text-sm mt-1">{task.description}</p>
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                {task.title}
+                {isAdmin && <span className="text-green-500">✓</span>}
+              </h3>
+              <p className="text-gray-600 mt-2">{task.description}</p>
             </div>
             {!isAdmin && actualBidders.length < maxBidders && (
               <Button 
@@ -69,26 +71,34 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+          <div className="grid grid-cols-2 gap-6">
             <div className="flex items-center gap-2">
-              <Clock size={16} className="text-[#1E40AF]" />
-              <span>Deadline: {formattedDeadline}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users size={16} className="text-[#1E40AF]" />
+              <Clock size={20} className="text-gray-500" />
               <div className="flex flex-col">
-                <span>Total Bidders: {actualBidders.length}/{maxBidders}</span>
-                <span className="text-xs text-gray-500">Required Bids: {requiredBids}</span>
+                <span className="text-gray-700">Deadline:</span>
+                <span className="text-gray-600">{formattedDeadline}</span>
               </div>
             </div>
+            
             <div className="flex items-center gap-2">
-              <span className="font-medium">Category:</span> 
-              <span className="capitalize">{task.category}</span>
+              <Users size={20} className="text-gray-500" />
+              <div className="flex flex-col">
+                <span className="text-gray-700">Total Bidders: {actualBidders.length}/{maxBidders}</span>
+                <span className="text-blue-600">Required Bids: {requiredBids}</span>
+              </div>
             </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-gray-700">Category:</span>
+              <span className="capitalize text-gray-600">{task.category}</span>
+            </div>
+
             {!hidePayouts && (
-              <div className="flex items-center gap-2 text-green-600">
-                <DollarSign size={16} />
-                <span>Payout: KES {taskerPayout}</span>
+              <div className="flex items-center gap-2">
+                <DollarSign size={20} className="text-green-500" />
+                <span className="text-green-600 font-medium">
+                  Payout: KES {taskerPayout}
+                </span>
               </div>
             )}
           </div>
