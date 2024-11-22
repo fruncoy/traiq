@@ -32,10 +32,15 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
       if (!isAdmin && currentTasker.id) {
-        // Filter out tasks that the user has already bid on
+        // Filter out tasks that the user has already bid on or has rejected submissions for
         return tasks.filter((task: Task) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
-          return task.currentBids < maxBids && !task.bidders?.includes(currentTasker.id);
+          const hasRejectedSubmission = task.submissions?.some(s => 
+            s.bidderId === currentTasker.id && s.status === 'rejected'
+          );
+          return task.currentBids < maxBids && 
+                 !task.bidders?.includes(currentTasker.id) && 
+                 !hasRejectedSubmission;
         });
       }
 

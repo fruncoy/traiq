@@ -13,6 +13,14 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
     throw new Error("You have already bid on this task");
   }
 
+  // Check if user has a rejected submission for this task
+  const hasRejectedSubmission = task.submissions?.some((s: any) => 
+    s.bidderId === currentTasker.id && s.status === 'rejected'
+  );
+  if (hasRejectedSubmission) {
+    throw new Error("You cannot bid on this task as your previous submission was rejected");
+  }
+
   // Update task bidders and current bids count
   const updatedTask = {
     ...task,
@@ -30,7 +38,7 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
     if (t.id === currentTasker.id) {
       return {
         ...t,
-        bids: Math.max(0, t.bids - requiredBids), // Ensure bids don't go negative
+        bids: Math.max(0, t.bids - requiredBids),
         activeTasks: [...(t.activeTasks || []), task.id]
       };
     }
@@ -50,7 +58,7 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
   notifications.unshift({
     id: Date.now().toString(),
     title: 'Task Bid Successful',
-    message: `You have successfully bid on task ${task.code}. Required bids: ${requiredBids}`,
+    message: `You have successfully bid on task ${task.code} - ${task.title}`,
     type: 'success',
     read: false,
     date: new Date().toISOString(),

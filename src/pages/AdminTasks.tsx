@@ -130,9 +130,9 @@ const AdminTasks = () => {
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{task.description}</TableCell>
                         <TableCell>{task.category}</TableCell>
-                        <TableCell>{task.currentBids}/10</TableCell>
+                        <TableCell>{task.bidders?.length || 0}/10</TableCell>
                         <TableCell>
-                          {task.currentBids >= 10 ? 'Active' : 'Available'}
+                          {task.bidders?.length >= 10 ? 'Active' : 'Available'}
                         </TableCell>
                       </TableRow>
                     ))
