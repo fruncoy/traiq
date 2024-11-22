@@ -61,7 +61,6 @@ const MyTickets = () => {
           <EmptyState
             title="No tickets found"
             description="When you submit tickets, they will appear here"
-            image="/lovable-uploads/bcb7e799-455e-4fef-a9bc-26cba16a14f7.png"
           />
         ) : (
           <Table>

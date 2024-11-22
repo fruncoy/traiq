@@ -146,7 +146,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
           <EmptyState
             title="No tasks available"
             description="Check back later for new tasks to work on"
-            image="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d"
           />
         ) : (
           displayedTasks.map((task) => (

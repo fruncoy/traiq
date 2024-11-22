@@ -79,7 +79,6 @@ const AdminTickets = () => {
                 <EmptyState
                   title="No tickets yet"
                   description="When taskers submit tickets, they will appear here"
-                  image="https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
                 />
               ) : (
                 <Table>

@@ -5,9 +5,11 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ title, description }: EmptyStateProps) => {
   return (
-    <div className="text-center py-10">
-      <h3 className="mt-2 text-lg font-semibold text-gray-900">{title}</h3>
-      <p className="mt-1 text-sm text-gray-500">{description}</p>
+    <div className="text-center py-10 border rounded-lg bg-white">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <p className="text-sm text-gray-500">{description}</p>
+      </div>
     </div>
   );
 };
