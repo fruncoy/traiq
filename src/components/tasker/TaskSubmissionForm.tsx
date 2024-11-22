@@ -12,7 +12,6 @@ const TaskSubmissionForm = () => {
   const queryClient = useQueryClient();
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
-  // Get only tasks that haven't been submitted by this tasker
   const { data: activeTasks = [] } = useQuery({
     queryKey: ['user-active-tasks', currentTasker.id],
     queryFn: async () => {
@@ -23,7 +22,8 @@ const TaskSubmissionForm = () => {
       // Filter out tasks that have already been submitted by this tasker
       return allTasks.filter((task: Task) => {
         const hasSubmitted = submissions.some((s: any) => 
-          s.taskId === task.id && s.bidderId === currentTasker.id
+          s.taskId === task.id && 
+          s.bidderId === currentTasker.id
         );
         return !hasSubmitted;
       });

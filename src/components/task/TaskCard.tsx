@@ -38,8 +38,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
     }
   };
 
-  const requiredBids = task.category === 'genai' ? 10 : 5; // Correct bid requirements per category
-  const taskPayout = task.category === 'genai' ? 700 : 300;
+  const maxBidders = 10; // Fixed maximum bidders for all tasks
   const formattedDeadline = formatDeadline(task.deadline);
 
   return (
@@ -51,11 +50,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               <h3 className="text-xl font-semibold text-gray-900">{task.title}</h3>
               <p className="text-gray-600 text-sm mt-1">{task.description}</p>
             </div>
-            {!isAdmin && task.currentBids < requiredBids && (
+            {!isAdmin && task.bidders?.length < maxBidders && (
               <Button 
                 className="bg-[#1E40AF] hover:bg-blue-700 text-white"
                 onClick={handleBidClick}
-                disabled={isPending || task.currentBids >= requiredBids}
+                disabled={isPending || task.bidders?.length >= maxBidders}
               >
                 {isPending ? "Bidding..." : "Bid Now"}
               </Button>
@@ -70,10 +69,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             <div className="flex items-center gap-2">
               <Users size={16} className="text-[#1E40AF]" />
               <div className="flex flex-col">
-                <span>Total Bidders: {task.currentBids}/{requiredBids}</span>
-                <span className="text-xs text-[#1E40AF]">
-                  Required Bids: {requiredBids}
-                </span>
+                <span>Total Bidders: {task.bidders?.length || 0}/{maxBidders}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -83,7 +79,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             {!hidePayouts && (
               <div className="flex items-center gap-2 text-green-600">
                 <DollarSign size={16} />
-                <span>Payout: KES {taskPayout}</span>
+                <span>Payout: KES {task.taskerPayout}</span>
               </div>
             )}
           </div>
