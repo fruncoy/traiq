@@ -144,6 +144,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         tasks={tasks}
         limit={limit}
         currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
         ITEMS_PER_PAGE={ITEMS_PER_PAGE}
         handleBidClick={handleBidClick}
         isAdmin={isAdmin}
