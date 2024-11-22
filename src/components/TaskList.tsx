@@ -36,22 +36,25 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       if (!isAdmin && currentTasker.id) {
         // Filter out tasks that:
         // 1. User has already bid on
-        // 2. Has rejected submissions
-        // 3. Has approved submissions
-        // 4. Has pending submissions
+        // 2. Has submissions from this user (new filter)
+        // 3. Has rejected submissions
+        // 4. Has approved submissions
+        // 5. Has pending submissions
         return tasks.filter((task: Task) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
           const hasSubmission = task.submissions?.some(s => 
             s.bidderId === currentTasker.id
           );
+          const hasBid = task.bidders?.includes(currentTasker.id);
           return task.currentBids < maxBids && 
-                 !task.bidders?.includes(currentTasker.id) && 
+                 !hasBid && 
                  !hasSubmission;
         });
       }
 
       return tasks;
-    }
+    },
+    refetchInterval: 1000
   });
 
   const { data: userBids = 0 } = useQuery({

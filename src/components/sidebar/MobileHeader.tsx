@@ -1,7 +1,7 @@
-import { Menu, User, LogOut, BellDot, Bell } from "lucide-react";
+import { Menu, User, LogOut, BellDot, Bell, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface MobileHeaderProps {
   isMobileMenuOpen: boolean;
@@ -11,6 +11,7 @@ interface MobileHeaderProps {
 
 export const MobileHeader = ({ isMobileMenuOpen, setIsMobileMenuOpen, isAdmin = false }: MobileHeaderProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
@@ -46,6 +47,11 @@ export const MobileHeader = ({ isMobileMenuOpen, setIsMobileMenuOpen, isAdmin = 
     navigate(isAdmin ? "/admin/tickets" : "/tasker/notifications");
   };
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries();
+    toast.success("Data refreshed successfully");
+  };
+
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
       <div className="flex items-center justify-between h-16 px-4">
@@ -60,6 +66,13 @@ export const MobileHeader = ({ isMobileMenuOpen, setIsMobileMenuOpen, isAdmin = 
           <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
         </div>
         <div className="flex items-center space-x-4">
+          <button
+            onClick={handleRefresh}
+            className="p-2 hover:bg-gray-100 rounded-full"
+            aria-label="Refresh data"
+          >
+            <RefreshCw size={20} className="text-gray-600" />
+          </button>
           <button
             onClick={handleNotificationClick}
             className="p-2 hover:bg-gray-100 rounded-full relative"

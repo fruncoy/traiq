@@ -17,7 +17,8 @@ const TaskerDashboard = () => {
       const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
       const tasker = taskers.find((t: any) => t.id === currentTasker.id);
       return tasker?.bids || 0;
-    }
+    },
+    refetchInterval: 1000
   });
 
   const { data: tasks = [] } = useQuery({
@@ -25,7 +26,8 @@ const TaskerDashboard = () => {
     queryFn: async () => {
       const storedTasks = localStorage.getItem('tasks');
       return storedTasks ? JSON.parse(storedTasks) : [];
-    }
+    },
+    refetchInterval: 1000
   });
 
   const { data: userEarnings = 0 } = useQuery({
@@ -33,15 +35,25 @@ const TaskerDashboard = () => {
     queryFn: async () => {
       const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
       return earnings[currentTasker.id] || 0;
-    }
+    },
+    refetchInterval: 1000
   });
 
   const { data: totalEarned = 0 } = useQuery({
     queryKey: ['total-earned', currentTasker.id],
     queryFn: async () => {
-      const history = JSON.parse(localStorage.getItem('earningsHistory') || '{}');
-      return history[currentTasker.id] || 0;
-    }
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      return tasks.reduce((total: number, task: any) => {
+        const approvedSubmission = task.submissions?.find(
+          (s: any) => s.bidderId === currentTasker.id && s.status === 'approved'
+        );
+        if (approvedSubmission) {
+          return total + (task.category === 'genai' ? 700 : 300);
+        }
+        return total;
+      }, 0);
+    },
+    refetchInterval: 1000
   });
 
   const availableTasks = tasks.filter(t => !t.status || t.status === 'pending').length;
