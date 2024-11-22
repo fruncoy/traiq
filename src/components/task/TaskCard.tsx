@@ -41,6 +41,12 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
   const maxBidders = 10;
   const formattedDeadline = formatDeadline(task.deadline);
   const possiblePayout = task.category === 'genai' ? 700 : 300;
+  
+  // Get actual bidders from localStorage
+  const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+  const actualBidders = task.bidders?.filter(bidderId => 
+    taskers.some((t: any) => t.id === bidderId)
+  ) || [];
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -51,11 +57,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               <h3 className="text-xl font-semibold text-gray-900">{task.title}</h3>
               <p className="text-gray-600 text-sm mt-1">{task.description}</p>
             </div>
-            {!isAdmin && task.bidders?.length < maxBidders && (
+            {!isAdmin && actualBidders.length < maxBidders && (
               <Button 
                 className="bg-[#1E40AF] hover:bg-blue-700 text-white"
                 onClick={handleBidClick}
-                disabled={isPending || task.bidders?.length >= maxBidders}
+                disabled={isPending || actualBidders.length >= maxBidders}
               >
                 {isPending ? "Bidding..." : "Bid Now"}
               </Button>
@@ -70,7 +76,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             <div className="flex items-center gap-2">
               <Users size={16} className="text-[#1E40AF]" />
               <div className="flex flex-col">
-                <span>Total Bidders: {task.bidders?.length || 0}/{maxBidders}</span>
+                <span>Total Bidders: {actualBidders.length}/{maxBidders}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
