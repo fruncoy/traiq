@@ -191,3 +191,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       />
     </div>
   );
+};
+
+export default TaskList;
