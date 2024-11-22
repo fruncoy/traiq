@@ -33,7 +33,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
 
       if (!isAdmin && currentTasker.id) {
         return tasks.filter((task: Task) => {
-          const maxBids = 10; // Set maximum bids to 10 for all tasks
+          const maxBids = task.category === 'genai' ? 10 : 5; // Correct bid requirements per category
           return task.currentBids < maxBids && !task.bidders?.includes(currentTasker.id);
         });
       }

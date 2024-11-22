@@ -1,8 +1,13 @@
 export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) => {
-  const requiredBids = 5; // Keep bid cost at 5 for all categories
+  const requiredBids = task.category === 'genai' ? 10 : 5; // Genai tasks need 10 bids, Creai need 5
   
   if (userBids < requiredBids) {
     throw new Error("insufficient_bids");
+  }
+
+  // Check if user has already bid on this task
+  if (task.bidders?.includes(task.currentTasker?.id)) {
+    throw new Error("already_bid");
   }
 
   // Update task bidders and current bids count
