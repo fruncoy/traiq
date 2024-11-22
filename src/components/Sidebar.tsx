@@ -158,9 +158,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         </header>
 
         <main className="flex-1 overflow-auto p-6 bg-gray-50 mt-16 lg:mt-0">
-          <div className="lg:hidden mb-6">
-            <PageTitle />
-          </div>
           {children}
         </main>
       </div>
