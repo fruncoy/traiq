@@ -9,7 +9,212 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bid_transactions: {
+        Row: {
+          amount: number
+          id: string
+          tasker_id: string | null
+          transaction_date: string | null
+        }
+        Insert: {
+          amount: number
+          id?: string
+          tasker_id?: string | null
+          transaction_date?: string | null
+        }
+        Update: {
+          amount?: number
+          id?: string
+          tasker_id?: string | null
+          transaction_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bid_transactions_tasker_id_fkey"
+            columns: ["tasker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          bids: number | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_suspended: boolean | null
+          join_date: string | null
+          pending_payouts: number | null
+          tasks_completed: number | null
+          total_payouts: number | null
+          username: string | null
+        }
+        Insert: {
+          bids?: number | null
+          created_at?: string | null
+          email?: string | null
+          id: string
+          is_suspended?: boolean | null
+          join_date?: string | null
+          pending_payouts?: number | null
+          tasks_completed?: number | null
+          total_payouts?: number | null
+          username?: string | null
+        }
+        Update: {
+          bids?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_suspended?: boolean | null
+          join_date?: string | null
+          pending_payouts?: number | null
+          tasks_completed?: number | null
+          total_payouts?: number | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      task_bidders: {
+        Row: {
+          bid_date: string | null
+          bidder_id: string | null
+          id: string
+          task_id: string | null
+        }
+        Insert: {
+          bid_date?: string | null
+          bidder_id?: string | null
+          id?: string
+          task_id?: string | null
+        }
+        Update: {
+          bid_date?: string | null
+          bidder_id?: string | null
+          id?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_bidders_bidder_id_fkey"
+            columns: ["bidder_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_bidders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_submissions: {
+        Row: {
+          bidder_id: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          rejection_reason: string | null
+          status: string | null
+          submitted_at: string | null
+          task_id: string | null
+        }
+        Insert: {
+          bidder_id?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          rejection_reason?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          bidder_id?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          rejection_reason?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_submissions_bidder_id_fkey"
+            columns: ["bidder_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          bids_needed: number | null
+          category: string | null
+          code: string | null
+          created_at: string | null
+          current_bids: number | null
+          date_posted: string | null
+          deadline: string | null
+          description: string | null
+          id: string
+          max_bidders: number | null
+          payout: number | null
+          platform_fee: number | null
+          status: string | null
+          tasker_payout: number | null
+          title: string
+        }
+        Insert: {
+          bids_needed?: number | null
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          current_bids?: number | null
+          date_posted?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          max_bidders?: number | null
+          payout?: number | null
+          platform_fee?: number | null
+          status?: string | null
+          tasker_payout?: number | null
+          title: string
+        }
+        Update: {
+          bids_needed?: number | null
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          current_bids?: number | null
+          date_posted?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          max_bidders?: number | null
+          payout?: number | null
+          platform_fee?: number | null
+          status?: string | null
+          tasker_payout?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

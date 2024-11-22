@@ -2,9 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { initializeNotifications } from "./utils/notificationManager";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminTasks from "./pages/AdminTasks";
@@ -31,9 +32,29 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     initializeNotifications();
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  if (loading) {
+    return null; // or a loading spinner
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -41,7 +62,10 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/tasker-auth" element={<TaskerAuth />} />
+            <Route 
+              path="/tasker-auth" 
+              element={session ? <Navigate to="/tasker" /> : <TaskerAuth />} 
+            />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/tasks" element={<AdminTasks />} />
             <Route path="/admin/submitted-tasks" element={<AdminSubmittedTasks />} />
@@ -49,13 +73,34 @@ const App = () => {
             <Route path="/admin/taskers" element={<AdminTaskers />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/tickets" element={<AdminTickets />} />
-            <Route path="/tasker" element={<TaskerDashboard />} />
-            <Route path="/tasker/tasks" element={<TaskerDashboard />} />
-            <Route path="/tasker/buy-bids" element={<BuyBidsPage />} />
-            <Route path="/tasker/notifications" element={<NotificationsPage />} />
-            <Route path="/tasker/settings" element={<TaskerDashboard />} />
-            <Route path="/tasker/submit-task" element={<SubmitTaskPage />} />
-            <Route path="/tasker/bidded-tasks" element={<BiddedTasksPage />} />
+            <Route 
+              path="/tasker" 
+              element={session ? <TaskerDashboard /> : <Navigate to="/tasker-auth" />} 
+            />
+            <Route 
+              path="/tasker/tasks" 
+              element={session ? <TaskerDashboard /> : <Navigate to="/tasker-auth" />} 
+            />
+            <Route 
+              path="/tasker/buy-bids" 
+              element={session ? <BuyBidsPage /> : <Navigate to="/tasker-auth" />} 
+            />
+            <Route 
+              path="/tasker/notifications" 
+              element={session ? <NotificationsPage /> : <Navigate to="/tasker-auth" />} 
+            />
+            <Route 
+              path="/tasker/settings" 
+              element={session ? <TaskerDashboard /> : <Navigate to="/tasker-auth" />} 
+            />
+            <Route 
+              path="/tasker/submit-task" 
+              element={session ? <SubmitTaskPage /> : <Navigate to="/tasker-auth" />} 
+            />
+            <Route 
+              path="/tasker/bidded-tasks" 
+              element={session ? <BiddedTasksPage /> : <Navigate to="/tasker-auth" />} 
+            />
           </Routes>
         </BrowserRouter>
         <Sonner 

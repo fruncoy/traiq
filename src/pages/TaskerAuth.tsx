@@ -1,22 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
-interface Tasker {
-  id: string;
-  username: string;
-  email: string;
-  password: string;
-  bids: number;
-  tasksCompleted: number;
-  totalPayouts: number;
-  pendingPayouts: number;
-  joinDate: string;
-  isSuspended: boolean;
-}
+import { supabase } from "@/integrations/supabase/client";
 
 const TaskerAuth = () => {
   const navigate = useNavigate();
@@ -26,6 +14,25 @@ const TaskerAuth = () => {
     email: "",
     password: ""
   });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/tasker");
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/tasker");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -34,60 +41,37 @@ const TaskerAuth = () => {
     });
   };
 
-  const generateUniqueId = () => {
-    const timestamp = Date.now().toString(36);
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    return `TSK-${timestamp}-${randomStr}`;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-    
-    if (isLogin) {
-      const tasker = taskers.find((t: Tasker) => 
-        t.username === formData.username && t.password === formData.password
-      );
-      
-      if (tasker) {
-        // Clear any existing currentTasker data first
-        localStorage.removeItem('currentTasker');
-        localStorage.setItem('currentTasker', JSON.stringify(tasker));
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        
+        if (error) throw error;
         toast.success("Successfully logged in!");
-        navigate("/tasker");
       } else {
-        toast.error("Invalid credentials");
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              username: formData.username,
+            }
+          }
+        });
+        
+        if (error) throw error;
+        toast.success("Account created successfully! Please check your email for verification.");
       }
-    } else {
-      // Check if username already exists
-      if (taskers.some((t: Tasker) => t.username === formData.username)) {
-        toast.error("Username already exists");
-        return;
-      }
-
-      const newTasker: Tasker = {
-        id: generateUniqueId(),
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        bids: 0,
-        tasksCompleted: 0,
-        totalPayouts: 0,
-        pendingPayouts: 0,
-        joinDate: new Date().toISOString(),
-        isSuspended: false
-      };
-      
-      taskers.push(newTasker);
-      localStorage.setItem('taskers', JSON.stringify(taskers));
-      
-      // Clear any existing currentTasker data first
-      localStorage.removeItem('currentTasker');
-      localStorage.setItem('currentTasker', JSON.stringify(newTasker));
-      
-      toast.success("Account created successfully!");
-      navigate("/tasker");
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,28 +83,28 @@ const TaskerAuth = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Username</label>
-              <Input
-                type="text"
-                name="username"
-                required
-                value={formData.username}
-                onChange={handleChange}
-              />
-            </div>
             {!isLogin && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">Username</label>
                 <Input
-                  type="email"
-                  name="email"
+                  type="text"
+                  name="username"
                   required
-                  value={formData.email}
+                  value={formData.username}
                   onChange={handleChange}
                 />
               </div>
             )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Password</label>
               <Input
@@ -131,8 +115,12 @@ const TaskerAuth = () => {
                 onChange={handleChange}
               />
             </div>
-            <Button type="submit" className="w-full">
-              {isLogin ? "Login" : "Sign Up"}
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? "Processing..." : (isLogin ? "Login" : "Sign Up")}
             </Button>
             <p className="text-center text-sm">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
