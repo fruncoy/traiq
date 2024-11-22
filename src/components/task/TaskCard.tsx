@@ -38,6 +38,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
     }
   };
 
+  const requiredBids = task.category === 'genai' ? 10 : 5;
   const maxBidders = task.category === 'genai' ? 10 : 5;
   const formattedDeadline = formatDeadline(task.deadline);
   const taskerPayout = task.category === 'genai' ? 700 : 300;
@@ -77,6 +78,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               <Users size={16} className="text-[#1E40AF]" />
               <div className="flex flex-col">
                 <span>Total Bidders: {actualBidders.length}/{maxBidders}</span>
+                <span className="text-xs text-gray-500">Required Bids: {requiredBids}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -86,9 +88,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             {!hidePayouts && (
               <div className="flex items-center gap-2 text-green-600">
                 <DollarSign size={16} />
-                <span>
-                  {isAdmin ? `Payout: KES ${taskerPayout}` : `Payout: KES ${taskerPayout}`}
-                </span>
+                <span>Payout: KES {taskerPayout}</span>
               </div>
             )}
           </div>
