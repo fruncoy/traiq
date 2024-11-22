@@ -66,10 +66,9 @@ const AdminSubmittedTasks = () => {
         
         const updatedTaskers = taskers.map((t: any) => {
           if (t.id === bidderId) {
-            const newBalance = (t.balance || 0) + payout;
             return {
               ...t,
-              balance: newBalance,
+              balance: (t.balance || 0) + payout,
               completedTasks: (t.completedTasks || 0) + 1,
               totalEarnings: (t.totalEarnings || 0) + payout
             };
@@ -81,10 +80,13 @@ const AdminSubmittedTasks = () => {
         // Update current tasker if it's the same user
         const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
         if (currentTasker.id === bidderId) {
-          currentTasker.balance = (currentTasker.balance || 0) + payout;
-          currentTasker.completedTasks = (currentTasker.completedTasks || 0) + 1;
-          currentTasker.totalEarnings = (currentTasker.totalEarnings || 0) + payout;
-          localStorage.setItem('currentTasker', JSON.stringify(currentTasker));
+          const updatedCurrentTasker = {
+            ...currentTasker,
+            balance: (currentTasker.balance || 0) + payout,
+            completedTasks: (currentTasker.completedTasks || 0) + 1,
+            totalEarnings: (currentTasker.totalEarnings || 0) + payout
+          };
+          localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
         }
 
         // Update earnings in userEarnings
@@ -113,6 +115,7 @@ const AdminSubmittedTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['taskers'] });
       queryClient.invalidateQueries({ queryKey: ['user-earnings'] });
       queryClient.invalidateQueries({ queryKey: ['total-earned'] });
+      queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       toast.success("Submission status updated successfully");
     },
     onError: () => {

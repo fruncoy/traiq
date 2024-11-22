@@ -11,6 +11,7 @@ import { TaskListHeader } from "./task/TaskListHeader";
 import { TaskListFooter } from "./task/TaskListFooter";
 import { TaskBidDialog } from "./task/TaskBidDialog";
 import { EmptyState } from "./task/EmptyState";
+import { TaskListContent } from "./task/TaskListContent";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -33,15 +34,19 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
       if (!isAdmin && currentTasker.id) {
-        // Filter out tasks that the user has already bid on or has rejected submissions for
+        // Filter out tasks that:
+        // 1. User has already bid on
+        // 2. Has rejected submissions
+        // 3. Has approved submissions
+        // 4. Has pending submissions
         return tasks.filter((task: Task) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
-          const hasRejectedSubmission = task.submissions?.some(s => 
-            s.bidderId === currentTasker.id && s.status === 'rejected'
+          const hasSubmission = task.submissions?.some(s => 
+            s.bidderId === currentTasker.id
           );
           return task.currentBids < maxBids && 
                  !task.bidders?.includes(currentTasker.id) && 
-                 !hasRejectedSubmission;
+                 !hasSubmission;
         });
       }
 
@@ -128,11 +133,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     }
   };
 
-  const totalPages = Math.ceil(tasks.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const displayedTasks = limit ? tasks.slice(0, limit) : tasks.slice(startIndex, endIndex);
-
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -140,56 +140,21 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   return (
     <div className="space-y-4">
       <TaskListHeader showViewMore={showViewMore} userBids={userBids} />
-
-      <div className="grid gap-4">
-        {displayedTasks.length === 0 ? (
-          <EmptyState
-            title="No tasks available"
-            description="Check back later for new tasks to work on"
-          />
-        ) : (
-          displayedTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onBid={handleBidClick}
-              isAdmin={isAdmin}
-              userBids={userBids}
-              isPending={bidMutation.isPending}
-              hidePayouts={!isAdmin && (!task.submissions?.some(s => s.status === 'approved'))}
-            />
-          ))
-        )}
-      </div>
-
-      {!limit && totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="px-4 py-2">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
+      <TaskListContent 
+        tasks={tasks}
+        limit={limit}
+        currentPage={currentPage}
+        ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+        handleBidClick={handleBidClick}
+        isAdmin={isAdmin}
+        userBids={userBids}
+        bidMutation={bidMutation}
+      />
       <TaskListFooter 
         showViewMore={showViewMore} 
         isAdmin={isAdmin} 
         tasksExist={tasks.length > 0} 
       />
-
       <TaskBidDialog
         open={showConfirmDialog}
         onOpenChange={setShowConfirmDialog}
