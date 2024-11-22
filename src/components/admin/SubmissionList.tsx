@@ -81,68 +81,66 @@ export const SubmissionList = ({ tasks, selectedTaskerId, setSelectedTaskerId }:
   });
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Task</TableHead>
-            <TableHead>Tasker ID</TableHead>
-            <TableHead>File</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>History</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tasks.map((task) => (
-            task.submissions?.map((submission) => (
-              <TableRow key={`${task.id}-${submission.bidderId}`}>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{task.title}</p>
-                    <p className="text-sm text-gray-500">{task.code}</p>
-                  </div>
-                </TableCell>
-                <TableCell>{submission.bidderId}</TableCell>
-                <TableCell>{submission.fileName}</TableCell>
-                <TableCell>
-                  {new Date(submission.submittedAt || '').toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    submission.status === 'approved' 
-                      ? 'bg-green-100 text-green-800'
-                      : submission.status === 'rejected'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {submission.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <TaskSubmissionHistory taskerId={submission.bidderId} />
-                </TableCell>
-                <TableCell>
-                  {submission.status === 'pending' && (
-                    <SubmissionActions
-                      onAction={(action, reason) => 
-                        handleSubmissionAction({
-                          taskId: task.id,
-                          bidderId: submission.bidderId,
-                          action,
-                          reason
-                        })
-                      }
-                      isPending={false}
-                    />
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Task</TableHead>
+          <TableHead>Tasker ID</TableHead>
+          <TableHead>File</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>History</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {tasks.map((task) => (
+          task.submissions?.map((submission) => (
+            <TableRow key={`${task.id}-${submission.bidderId}`}>
+              <TableCell>
+                <div>
+                  <p className="font-medium">{task.title}</p>
+                  <p className="text-sm text-gray-500">{task.code}</p>
+                </div>
+              </TableCell>
+              <TableCell>{submission.bidderId}</TableCell>
+              <TableCell>{submission.fileName}</TableCell>
+              <TableCell>
+                {new Date(submission.submittedAt || '').toLocaleString()}
+              </TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  submission.status === 'approved' 
+                    ? 'bg-green-100 text-green-800'
+                    : submission.status === 'rejected'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {submission.status}
+                </span>
+              </TableCell>
+              <TableCell>
+                <TaskSubmissionHistory taskerId={submission.bidderId} />
+              </TableCell>
+              <TableCell>
+                {submission.status === 'pending' && (
+                  <SubmissionActions
+                    onAction={(action, reason) => 
+                      handleSubmissionAction({
+                        taskId: task.id,
+                        bidderId: submission.bidderId,
+                        action,
+                        reason
+                      })
+                    }
+                    isPending={false}
+                  />
+                )}
+              </TableCell>
+            </TableRow>
+          ))
+        ))}
+      </TableBody>
+    </Table>
   );
 };
