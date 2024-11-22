@@ -3,6 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const ProfileSection = () => {
   const [formData, setFormData] = useState({
@@ -11,16 +13,34 @@ const ProfileSection = () => {
     phone: "",
   });
 
+  // Fetch the current user's profile data
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      return profile;
+    }
+  });
+
+  // Update form data when profile is loaded
   useEffect(() => {
-    const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
-    if (currentTasker) {
+    if (profile) {
       setFormData({
-        username: currentTasker.username || "",
-        email: currentTasker.email || "",
-        phone: currentTasker.phone || "",
+        username: profile.username || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
       });
     }
-  }, []);
+  }, [profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -29,24 +49,28 @@ const ProfileSection = () => {
     });
   };
 
-  const handleSaveProfile = () => {
-    const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
-    const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-    
-    const taskerIndex = taskers.findIndex((t: any) => t.id === currentTasker.id);
-    
-    if (taskerIndex !== -1) {
-      const updatedTasker = {
-        ...taskers[taskerIndex],
-        ...formData
-      };
-      
-      taskers[taskerIndex] = updatedTasker;
-      localStorage.setItem('taskers', JSON.stringify(taskers));
-      localStorage.setItem('currentTasker', JSON.stringify(updatedTasker));
-      
-      toast.success("Profile updated successfully");
+  const handleSaveProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("No user found");
+      return;
     }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        username: formData.username,
+        email: formData.email,
+        phone: formData.phone
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      toast.error("Failed to update profile");
+      return;
+    }
+
+    toast.success("Profile updated successfully");
   };
 
   return (
