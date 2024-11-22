@@ -105,11 +105,11 @@ const MyTickets = () => {
                           View Details
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
+                      <DialogContent className="bg-white max-w-2xl">
                         <DialogHeader>
-                          <DialogTitle>{ticket.title}</DialogTitle>
+                          <DialogTitle className="text-gray-900">{ticket.title}</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-4 text-gray-900">
                           <div>
                             <h4 className="font-medium mb-2">Description</h4>
                             <p className="text-sm text-gray-600">{ticket.description}</p>
