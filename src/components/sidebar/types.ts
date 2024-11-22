@@ -6,3 +6,7 @@ export interface LinkItem {
   icon: ComponentType<any>;
   badge?: number;
 }
+
+export interface SidebarNavProps {
+  children: React.ReactNode;
+}
