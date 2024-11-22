@@ -8,18 +8,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Ticket, TicketResponse } from "@/types/ticket";
+import { EmptyState } from "@/components/task/EmptyState";
 
 const MyTickets = () => {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [response, setResponse] = useState("");
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
-  const { data: tickets = [] } = useQuery({
-    queryKey: ['tickets'],
+  const { data: tickets = [], isLoading } = useQuery({
+    queryKey: ['tasker-tickets', currentTasker.id],
     queryFn: async () => {
       const storedTickets = localStorage.getItem('tickets');
       const allTickets = storedTickets ? JSON.parse(storedTickets) : [];
-      return allTickets.filter((ticket: Ticket) => ticket.taskerId === 'current-user-id');
-    }
+      return allTickets.filter((ticket: Ticket) => ticket.taskerId === currentTasker.id);
+    },
+    refetchInterval: 1000 // Refresh every second to catch new tickets
   });
 
   const handleAddResponse = async () => {
@@ -35,7 +38,7 @@ const MyTickets = () => {
     const allTickets = JSON.parse(localStorage.getItem('tickets') || '[]');
     const updatedTickets = allTickets.map((ticket: Ticket) => 
       ticket.id === selectedTicket.id 
-        ? { ...ticket, responses: [...ticket.responses, newResponse] }
+        ? { ...ticket, responses: [...(ticket.responses || []), newResponse] }
         : ticket
     );
 
@@ -44,31 +47,35 @@ const MyTickets = () => {
     toast.success("Response added successfully");
   };
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>My Support Tickets</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tickets.length === 0 ? (
+        {tickets.length === 0 ? (
+          <EmptyState
+            title="No tickets found"
+            description="When you submit tickets, they will appear here"
+            image="/lovable-uploads/bcb7e799-455e-4fef-a9bc-26cba16a14f7.png"
+          />
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  No tickets found
-                </TableCell>
+                <TableHead>Title</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ) : (
-              tickets.map((ticket: Ticket) => (
+            </TableHeader>
+            <TableBody>
+              {tickets.map((ticket: Ticket) => (
                 <TableRow key={ticket.id}>
                   <TableCell>{ticket.title}</TableCell>
                   <TableCell>
@@ -155,10 +162,10 @@ const MyTickets = () => {
                     </Dialog>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );
