@@ -38,9 +38,9 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
     }
   };
 
-  const maxBidders = 10;
+  const maxBidders = task.category === 'genai' ? 10 : 5;
   const formattedDeadline = formatDeadline(task.deadline);
-  const possiblePayout = task.category === 'genai' ? 700 : 300;
+  const taskerPayout = task.category === 'genai' ? 700 : 300;
   
   // Get actual bidders from localStorage
   const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
@@ -87,7 +87,7 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
               <div className="flex items-center gap-2 text-green-600">
                 <DollarSign size={16} />
                 <span>
-                  {isAdmin ? `Possible Payout: KES ${possiblePayout}` : `Payout: KES ${task.taskerPayout}`}
+                  {isAdmin ? `Payout: KES ${taskerPayout}` : `Payout: KES ${taskerPayout}`}
                 </span>
               </div>
             )}
