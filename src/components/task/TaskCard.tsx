@@ -38,8 +38,9 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
     }
   };
 
-  const maxBidders = 10; // Fixed maximum bidders for all tasks
+  const maxBidders = 10;
   const formattedDeadline = formatDeadline(task.deadline);
+  const possiblePayout = task.category === 'genai' ? 700 : 300;
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -79,7 +80,9 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts = fal
             {!hidePayouts && (
               <div className="flex items-center gap-2 text-green-600">
                 <DollarSign size={16} />
-                <span>Payout: KES {task.taskerPayout}</span>
+                <span>
+                  {isAdmin ? `Possible Payout: KES ${possiblePayout}` : `Payout: KES ${task.taskerPayout}`}
+                </span>
               </div>
             )}
           </div>

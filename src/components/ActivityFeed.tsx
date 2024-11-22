@@ -24,10 +24,39 @@ const ActivityFeed = () => {
   const { data: activities = [] } = useQuery({
     queryKey: ['activities'],
     queryFn: async () => {
-      const storedActivities = localStorage.getItem('activities');
-      const activities = storedActivities ? JSON.parse(storedActivities) : [];
-      // Sort activities by timestamp in descending order (most recent first)
-      return activities.sort((a: Activity, b: Activity) => 
+      // Get all tasks to track submissions and bids
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const activities: Activity[] = [];
+
+      // Track bid activities
+      tasks.forEach((task: any) => {
+        if (task.bidders?.length) {
+          task.bidders.forEach((bidderId: string) => {
+            activities.push({
+              id: `bid-${task.id}-${bidderId}`,
+              type: 'bid',
+              message: `New bid on task ${task.code}`,
+              timestamp: task.datePosted
+            });
+          });
+        }
+
+        // Track submission activities
+        if (task.submissions?.length) {
+          task.submissions.forEach((submission: any) => {
+            activities.push({
+              id: `submission-${task.id}-${submission.bidderId}`,
+              type: submission.status === 'pending' ? 'submission' : 
+                    submission.status === 'approved' ? 'approval' : 'rejection',
+              message: `Task ${task.code} submission ${submission.status}`,
+              timestamp: submission.submittedAt
+            });
+          });
+        }
+      });
+
+      // Sort activities by timestamp in descending order
+      return activities.sort((a, b) => 
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
     },

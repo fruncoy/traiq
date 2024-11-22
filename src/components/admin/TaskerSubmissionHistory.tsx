@@ -35,7 +35,7 @@ export const TaskerSubmissionHistory = ({ submissions, taskerId }: TaskerSubmiss
             {isApproved ? (
               <CheckCircle className="w-3 h-3 text-white" />
             ) : (
-              <Circle className="w-3 h-3 text-white" />
+              <Circle className={`w-3 h-3 ${hasSubmission ? 'text-white' : 'text-gray-400'}`} />
             )}
           </div>
         );
