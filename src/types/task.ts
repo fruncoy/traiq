@@ -9,6 +9,9 @@ export interface TaskSubmission {
   submittedAt?: string;
   fileName?: string;
   rating?: number;
+  taskId: string;
+  taskCode: string;
+  taskTitle: string;
 }
 
 export interface Task {
