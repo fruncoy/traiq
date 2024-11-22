@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { getCurrentTasker, updateCurrentTasker } from "@/utils/auth";
 
 const ProfileSection = () => {
   const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ const ProfileSection = () => {
   });
 
   useEffect(() => {
-    const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+    const currentTasker = getCurrentTasker();
     if (currentTasker) {
       setFormData({
         username: currentTasker.username || "",
@@ -30,23 +31,16 @@ const ProfileSection = () => {
   };
 
   const handleSaveProfile = () => {
-    const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
-    const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+    const currentTasker = getCurrentTasker();
+    if (!currentTasker) return;
+
+    const updatedTasker = {
+      ...currentTasker,
+      ...formData
+    };
     
-    const taskerIndex = taskers.findIndex((t: any) => t.id === currentTasker.id);
-    
-    if (taskerIndex !== -1) {
-      const updatedTasker = {
-        ...taskers[taskerIndex],
-        ...formData
-      };
-      
-      taskers[taskerIndex] = updatedTasker;
-      localStorage.setItem('taskers', JSON.stringify(taskers));
-      localStorage.setItem('currentTasker', JSON.stringify(updatedTasker));
-      
-      toast.success("Profile updated successfully");
-    }
+    updateCurrentTasker(updatedTasker);
+    toast.success("Profile updated successfully");
   };
 
   return (

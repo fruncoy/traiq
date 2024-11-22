@@ -51,16 +51,14 @@ const TaskerAuth = () => {
       );
       
       if (tasker) {
-        // Clear any existing currentTasker data first
-        localStorage.removeItem('currentTasker');
-        localStorage.setItem('currentTasker', JSON.stringify(tasker));
+        // Use sessionStorage for current user
+        sessionStorage.setItem('currentTasker', JSON.stringify(tasker));
         toast.success("Successfully logged in!");
         navigate("/tasker");
       } else {
         toast.error("Invalid credentials");
       }
     } else {
-      // Check if username already exists
       if (taskers.some((t: Tasker) => t.username === formData.username)) {
         toast.error("Username already exists");
         return;
@@ -82,9 +80,8 @@ const TaskerAuth = () => {
       taskers.push(newTasker);
       localStorage.setItem('taskers', JSON.stringify(taskers));
       
-      // Clear any existing currentTasker data first
-      localStorage.removeItem('currentTasker');
-      localStorage.setItem('currentTasker', JSON.stringify(newTasker));
+      // Use sessionStorage for current user
+      sessionStorage.setItem('currentTasker', JSON.stringify(newTasker));
       
       toast.success("Account created successfully!");
       navigate("/tasker");
