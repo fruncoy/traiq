@@ -12,18 +12,17 @@ const AdminSubmittedTasks = () => {
     queryKey: ['tasks'],
     queryFn: async () => {
       const tasks = localStorage.getItem('tasks');
-      return tasks ? JSON.parse(tasks) : [];
+      const parsedTasks = tasks ? JSON.parse(tasks) : [];
+      // Return all tasks that have any submissions
+      return parsedTasks.filter((task: Task) => 
+        task.submissions && task.submissions.length > 0
+      );
     },
     refetchInterval: 1000
   });
 
-  // Get all tasks that have submissions
-  const tasksWithSubmissions = tasks.filter((task: Task) => 
-    task.submissions && task.submissions.length > 0
-  );
-
   // Calculate total submissions across all tasks
-  const totalSubmissions = tasksWithSubmissions.reduce((acc: number, task: Task) => 
+  const totalSubmissions = tasks.reduce((acc: number, task: Task) => 
     acc + (task.submissions?.length || 0), 0
   );
 
@@ -134,14 +133,14 @@ const AdminSubmittedTasks = () => {
           </div>
 
           <div className="space-y-6">
-            {tasksWithSubmissions.length === 0 ? (
+            {tasks.length === 0 ? (
               <Card>
                 <CardContent className="p-6">
                   <p className="text-center text-gray-500">No submissions yet</p>
                 </CardContent>
               </Card>
             ) : (
-              tasksWithSubmissions.map((task: Task) => (
+              tasks.map((task: Task) => (
                 <Card key={task.id} className="overflow-hidden">
                   <CardHeader className="bg-gray-50 border-b">
                     <CardTitle className="text-lg">
@@ -157,7 +156,7 @@ const AdminSubmittedTasks = () => {
                       onAction={(taskId, bidderId, action, reason) => 
                         handleSubmissionAction({ taskId, bidderId, action, reason })}
                       isPending={isPending}
-                      allSubmissions={tasksWithSubmissions.flatMap(t => t.submissions || [])}
+                      allSubmissions={tasks.flatMap(t => t.submissions || [])}
                     />
                   </CardContent>
                 </Card>

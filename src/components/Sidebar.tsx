@@ -13,10 +13,11 @@ import {
   CreditCard,
   Briefcase,
   TicketIcon,
-  User
+  User,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarNav } from "./sidebar/SidebarNav";
 import { MobileHeader } from "./sidebar/MobileHeader";
@@ -34,6 +35,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
@@ -94,6 +96,11 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     navigate("/tasker/settings");
   };
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries();
+    toast.success("Data refreshed successfully");
+  };
+
   const links: LinkItem[] = isAdmin ? [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
     { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
@@ -141,6 +148,13 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         <header className="h-16 border-b border-gray-200 hidden lg:flex items-center justify-between px-6">
           <PageTitle />
           <div className="flex items-center space-x-4">
+            <button
+              onClick={handleRefresh}
+              className="p-2 hover:bg-gray-100 rounded-full"
+              aria-label="Refresh data"
+            >
+              <RefreshCw size={20} className="text-gray-600" />
+            </button>
             {!isAdmin && (
               <button
                 onClick={() => navigate("/tasker/notifications")}
