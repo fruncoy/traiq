@@ -1,15 +1,11 @@
 import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { TaskSubmissionsTable } from "@/components/admin/TaskSubmissionsTable";
 
 const AdminSubmittedTasks = () => {
-  const [selectedTaskerId, setSelectedTaskerId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: tasks = [] } = useQuery({
@@ -21,16 +17,18 @@ const AdminSubmittedTasks = () => {
     refetchInterval: 1000
   });
 
-  const { data: taskerHistory = [] } = useQuery({
-    queryKey: ['tasker-history', selectedTaskerId],
+  const { data: allSubmissions = [] } = useQuery({
+    queryKey: ['all-submissions'],
     queryFn: async () => {
-      if (!selectedTaskerId) return [];
       const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      return allTasks
-        .filter((task: Task) => task.submissions?.some(s => s.bidderId === selectedTaskerId))
-        .slice(0, 5); // Get last 5 submissions
-    },
-    enabled: !!selectedTaskerId
+      return allTasks.flatMap((task: Task) => 
+        (task.submissions || []).map(s => ({
+          ...s,
+          taskCode: task.code,
+          taskTitle: task.title
+        }))
+      );
+    }
   });
 
   const tasksWithSubmissions = tasks.filter((task: Task) => 
@@ -53,6 +51,7 @@ const AdminSubmittedTasks = () => {
       
       if (!task) throw new Error("Task not found");
       
+      // Update task submissions
       const updatedTasks = tasks.map((t: Task) => {
         if (t.id === taskId) {
           const updatedSubmissions = t.submissions?.map(s => {
@@ -72,6 +71,21 @@ const AdminSubmittedTasks = () => {
       
       localStorage.setItem('tasks', JSON.stringify(updatedTasks));
       
+      // Update tasker's balance if approved
+      if (action === 'approved') {
+        const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
+        const updatedTaskers = taskers.map((t: any) => {
+          if (t.id === bidderId) {
+            return {
+              ...t,
+              balance: (t.balance || 0) + task.taskerPayout
+            };
+          }
+          return t;
+        });
+        localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
+      }
+
       // Add notification for the tasker
       const notifications = JSON.parse(localStorage.getItem(`notifications_${bidderId}`) || '[]');
       notifications.unshift({
@@ -89,6 +103,7 @@ const AdminSubmittedTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-submissions'] });
       toast.success("Submission status updated successfully");
     },
     onError: () => {
@@ -101,7 +116,9 @@ const AdminSubmittedTasks = () => {
       <Sidebar isAdmin>
         <div className="p-6">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-[#1E40AF]">Task Submissions ({totalSubmissions})</h2>
+            <h2 className="text-2xl font-bold text-[#1E40AF]">
+              Task Submissions ({totalSubmissions})
+            </h2>
           </div>
 
           <div className="space-y-6">
@@ -123,106 +140,12 @@ const AdminSubmittedTasks = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tasker ID</TableHead>
-                          <TableHead>File</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>History</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {task.submissions?.map((submission) => (
-                          <TableRow key={`${task.id}-${submission.bidderId}`}>
-                            <TableCell>{submission.bidderId}</TableCell>
-                            <TableCell>{submission.fileName}</TableCell>
-                            <TableCell>
-                              {new Date(submission.submittedAt || '').toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                submission.status === 'approved' 
-                                  ? 'bg-green-100 text-green-800'
-                                  : submission.status === 'rejected'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {submission.status}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => setSelectedTaskerId(submission.bidderId)}
-                                  >
-                                    View History
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Tasker Submission History</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    {taskerHistory.length === 0 ? (
-                                      <p className="text-gray-500">No previous submissions</p>
-                                    ) : (
-                                      taskerHistory.map((historyTask: Task) => (
-                                        <div key={historyTask.id} className="p-4 border rounded">
-                                          <p className="font-medium">{historyTask.title}</p>
-                                          <p className="text-sm text-gray-600">Code: {historyTask.code}</p>
-                                          <p className="text-sm text-gray-600">
-                                            Status: {
-                                              historyTask.submissions?.find(
-                                                s => s.bidderId === selectedTaskerId
-                                              )?.status || 'Unknown'
-                                            }
-                                          </p>
-                                        </div>
-                                      ))
-                                    )}
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                            </TableCell>
-                            <TableCell>
-                              {submission.status === 'pending' && (
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleSubmissionAction({
-                                      taskId: task.id,
-                                      bidderId: submission.bidderId,
-                                      action: 'approved'
-                                    })}
-                                    className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                                    disabled={isPending}
-                                  >
-                                    Approve
-                                  </button>
-                                  <button
-                                    onClick={() => handleSubmissionAction({
-                                      taskId: task.id,
-                                      bidderId: submission.bidderId,
-                                      action: 'rejected',
-                                      reason: 'Rejected by admin'
-                                    })}
-                                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                                    disabled={isPending}
-                                  >
-                                    Reject
-                                  </button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <TaskSubmissionsTable
+                      task={task}
+                      onAction={handleSubmissionAction}
+                      isPending={isPending}
+                      allSubmissions={allSubmissions}
+                    />
                   </CardContent>
                 </Card>
               ))
