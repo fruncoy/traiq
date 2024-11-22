@@ -11,9 +11,10 @@ interface TaskCardProps {
   isAdmin?: boolean;
   userBids: number;
   isPending: boolean;
+  hidePayouts?: boolean;
 }
 
-const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) => {
+const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts }: TaskCardProps) => {
   const handleBidClick = () => {
     if (!task?.title) return; // Prevent bidding on invalid tasks
     
@@ -96,12 +97,14 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending }: TaskCardProps) 
               <span className="capitalize text-gray-600">{task.category}</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <DollarSign size={20} className="text-green-500" />
-              <span className="text-green-600 font-medium">
-                Payout: KES {taskerPayout}
-              </span>
-            </div>
+            {!hidePayouts && (
+              <div className="flex items-center gap-2">
+                <DollarSign size={20} className="text-green-500" />
+                <span className="text-green-600 font-medium">
+                  Payout: KES {taskerPayout}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
