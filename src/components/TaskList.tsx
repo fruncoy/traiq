@@ -32,8 +32,9 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       let tasks = storedTasks ? JSON.parse(storedTasks) : [];
 
       if (!isAdmin && currentTasker.id) {
+        // Filter out tasks that the user has already bid on
         return tasks.filter((task: Task) => {
-          const maxBids = task.category === 'genai' ? 10 : 5; // Correct bid requirements per category
+          const maxBids = task.category === 'genai' ? 10 : 5;
           return task.currentBids < maxBids && !task.bidders?.includes(currentTasker.id);
         });
       }
@@ -61,7 +62,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       toast.success("Task bid placed successfully!", {
         position: "bottom-right",
         className: "bg-green-50",
-        description: `You have successfully bid on task ${task.code}`,
+        description: `You have successfully bid on task ${task.code}. The task is now in your bidded tasks.`,
         action: {
           label: "View Task",
           onClick: () => window.location.href = "/tasker/bidded-tasks"
@@ -87,30 +88,26 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       setShowConfirmDialog(false);
       const selectedTask = tasks.find(t => t.id === selectedTaskId);
       
-      if (error.message === "insufficient_bids") {
-        toast.error("You don't have enough bids for this task", {
-          position: "bottom-right",
-          description: `This task requires ${selectedTask?.category === 'genai' ? '10' : '5'} bids. Please purchase more bids to continue.`,
+      toast.error(error.message, {
+        position: "bottom-right",
+        description: error.message === "insufficient_bids" 
+          ? `This task requires ${selectedTask?.category === 'genai' ? '10' : '5'} bids. Please purchase more bids to continue.`
+          : error.message,
+        ...(error.message === "insufficient_bids" && {
           action: {
             label: "Buy Bids",
             onClick: () => window.location.href = "/tasker/buy-bids"
-          },
-          duration: 5000,
-          style: {
-            background: 'white',
-            border: '1px solid #fee2e2',
-            borderRadius: '8px',
-            padding: '12px',
-            color: '#991b1b'
           }
-        });
-      } else {
-        toast.error("Failed to place bid", {
-          position: "bottom-right",
-          description: error.message,
-          duration: 5000
-        });
-      }
+        }),
+        duration: 5000,
+        style: {
+          background: 'white',
+          border: '1px solid #fee2e2',
+          borderRadius: '8px',
+          padding: '12px',
+          color: '#991b1b'
+        }
+      });
     }
   });
 
@@ -194,6 +191,3 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       />
     </div>
   );
-};
-
-export default TaskList;

@@ -1,19 +1,22 @@
 export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) => {
-  const requiredBids = task.category === 'genai' ? 10 : 5; // Genai tasks need 10 bids, Creai need 5
+  const requiredBids = task.category === 'genai' ? 10 : 5;
+  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
   
+  // Validate bid requirements
   if (userBids < requiredBids) {
     throw new Error("insufficient_bids");
   }
 
   // Check if user has already bid on this task
-  if (task.bidders?.includes(task.currentTasker?.id)) {
-    throw new Error("already_bid");
+  const existingBids = tasks.find(t => t.id === task.id)?.bidders || [];
+  if (existingBids.includes(currentTasker.id)) {
+    throw new Error("You have already bid on this task");
   }
 
   // Update task bidders and current bids count
   const updatedTask = {
     ...task,
-    bidders: [...(task.bidders || []), task.currentTasker?.id],
+    bidders: [...(task.bidders || []), currentTasker.id],
     currentBids: (task.currentBids || 0) + 1
   };
 
@@ -24,10 +27,10 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
   // Update user bids
   const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
   const updatedTaskers = taskers.map((t: any) => {
-    if (t.id === task.currentTasker?.id) {
+    if (t.id === currentTasker.id) {
       return {
         ...t,
-        bids: t.bids - requiredBids,
+        bids: Math.max(0, t.bids - requiredBids), // Ensure bids don't go negative
         activeTasks: [...(t.activeTasks || []), task.id]
       };
     }
@@ -36,22 +39,24 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
   localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
 
   // Store task in user's active tasks
-  const userActiveTasks = JSON.parse(localStorage.getItem(`userActiveTasks_${task.currentTasker?.id}`) || '[]');
-  userActiveTasks.push(updatedTask);
-  localStorage.setItem(`userActiveTasks_${task.currentTasker?.id}`, JSON.stringify(userActiveTasks));
+  const userActiveTasks = JSON.parse(localStorage.getItem(`userActiveTasks_${currentTasker.id}`) || '[]');
+  if (!userActiveTasks.some((t: any) => t.id === task.id)) {
+    userActiveTasks.push(updatedTask);
+    localStorage.setItem(`userActiveTasks_${currentTasker.id}`, JSON.stringify(userActiveTasks));
+  }
 
   // Create notification
-  const notifications = JSON.parse(localStorage.getItem(`notifications_${task.currentTasker?.id}`) || '[]');
+  const notifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
   notifications.unshift({
     id: Date.now().toString(),
     title: 'Task Bid Successful',
-    message: `You have successfully bid on task ${task.code}`,
+    message: `You have successfully bid on task ${task.code}. Required bids: ${requiredBids}`,
     type: 'success',
     read: false,
     date: new Date().toISOString(),
-    taskerId: task.currentTasker?.id
+    taskerId: currentTasker.id
   });
-  localStorage.setItem(`notifications_${task.currentTasker?.id}`, JSON.stringify(notifications));
+  localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(notifications));
 
   return updatedTask;
 };
