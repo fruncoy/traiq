@@ -140,6 +140,24 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         <header className="h-16 border-b border-gray-200 hidden lg:flex items-center justify-between px-6">
           <PageTitle />
           <div className="flex items-center space-x-4">
+            {!isAdmin && (
+              <button
+                onClick={() => navigate("/tasker/notifications")}
+                className="p-2 hover:bg-gray-100 rounded-full relative"
+                aria-label="Notifications"
+              >
+                {hasUnreadNotifications ? (
+                  <BellDot size={20} className="text-gray-600" />
+                ) : (
+                  <Bell size={20} className="text-gray-600" />
+                )}
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               onClick={handleUserClick}
               className="p-2 hover:bg-gray-100 rounded-full"

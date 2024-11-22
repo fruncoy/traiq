@@ -1,4 +1,4 @@
-export type ActivityType = "submission" | "approval" | "rejection" | "pending" | "bid";
+export type ActivityType = 'submission' | 'approval' | 'rejection' | 'pending' | 'bid' | 'ticket' | 'bid_purchase';
 
 export interface Activity {
   id: string;
