@@ -42,11 +42,11 @@ const AdminSubmittedTasks = () => {
       const updatedTasks = tasks.map((t: Task) => {
         if (t.id === taskId) {
           const updatedSubmissions = t.submissions?.map(s => {
-            if (s.bidderId === bidderId) {
+            if (s.bidder_id === bidderId) {
               return { 
                 ...s, 
                 status: action,
-                ...(reason && { rejectionReason: reason })
+                ...(reason && { rejection_reason: reason })
               };
             }
             return s;
