@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import TaskCard from "./task/TaskCard";
-import { Task } from "@/types/task";
+import { Task, TaskCategory } from "@/types/task";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { useState } from "react";
 import { TaskListHeader } from "./task/TaskListHeader";
@@ -59,8 +59,16 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       
       if (error) throw error;
 
+      // Transform the data to match our Task interface
+      const transformedTasks = tasks.map((task: any) => ({
+        ...task,
+        category: task.category as TaskCategory,
+        bidders: task.task_bidders?.map((b: any) => b.bidder_id) || [],
+        submissions: task.task_submissions || []
+      }));
+
       if (!isAdmin && session?.user?.id) {
-        return tasks.filter((task: Task) => {
+        return transformedTasks.filter((task: Task) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
           const hasBid = task.task_bidders?.some(b => b.bidder_id === session.user.id);
           const hasSubmission = task.task_submissions?.some(s => 
@@ -72,7 +80,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
         });
       }
 
-      return tasks;
+      return transformedTasks;
     }
   });
 

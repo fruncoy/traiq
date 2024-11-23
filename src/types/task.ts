@@ -34,4 +34,7 @@ export interface Task {
   created_at: string | null;
   task_bidders?: TaskBidder[];
   task_submissions?: TaskSubmission[];
+  // Computed properties for backward compatibility
+  bidders?: string[];
+  submissions?: TaskSubmission[];
 }

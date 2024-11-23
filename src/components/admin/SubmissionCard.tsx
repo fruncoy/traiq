@@ -23,10 +23,10 @@ const SubmissionCard = ({
         <div className="space-y-2">
           <h3 className="font-semibold text-[#1E40AF]">{task.title}</h3>
           <p className="text-sm text-gray-600">{task.code}</p>
-          <p className="text-sm text-gray-600">Tasker ID: {submission.bidderId}</p>
-          <p className="text-sm text-gray-600">File: {submission.fileName}</p>
+          <p className="text-sm text-gray-600">Tasker ID: {submission.bidder_id}</p>
+          <p className="text-sm text-gray-600">File: {submission.file_name}</p>
           <p className="text-xs text-gray-500">
-            Submitted: {new Date(submission.submittedAt || '').toLocaleString()}
+            Submitted: {new Date(submission.submitted_at || '').toLocaleString()}
           </p>
         </div>
 
@@ -38,7 +38,7 @@ const SubmissionCard = ({
             >
               {submission.status}
             </Badge>
-            <TaskSubmissionHistory taskerId={submission.bidderId} />
+            <TaskSubmissionHistory taskerId={submission.bidder_id} />
           </div>
 
           {submission.status === 'pending' && (
