@@ -1,15 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import TaskCard from "./task/TaskCard";
-import { handleTaskBid } from "./task/TaskBidLogic";
 import { Task } from "@/types/task";
 import { LoadingSpinner } from "./ui/loading-spinner";
-import { Button } from "./ui/button";
 import { useState } from "react";
 import { TaskListHeader } from "./task/TaskListHeader";
 import { TaskListFooter } from "./task/TaskListFooter";
 import { TaskBidDialog } from "./task/TaskBidDialog";
-import { EmptyState } from "./task/EmptyState";
 import { TaskListContent } from "./task/TaskListContent";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -63,16 +60,10 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       if (error) throw error;
 
       if (!isAdmin && session?.user?.id) {
-        // Filter out tasks that:
-        // 1. User has already bid on
-        // 2. Has submissions from this user
-        // 3. Has rejected submissions
-        // 4. Has approved submissions
-        // 5. Has pending submissions
-        return tasks.filter((task: any) => {
+        return tasks.filter((task: Task) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
-          const hasBid = task.task_bidders?.some((b: any) => b.bidder_id === session.user.id);
-          const hasSubmission = task.task_submissions?.some((s: any) => 
+          const hasBid = task.task_bidders?.some(b => b.bidder_id === session.user.id);
+          const hasSubmission = task.task_submissions?.some(s => 
             s.bidder_id === session.user.id
           );
           return task.current_bids < maxBids && 
@@ -111,7 +102,7 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       // Update task current bids
       const { error: taskError } = await supabase
         .from('tasks')
-        .update({ current_bids: task.current_bids + 1 })
+        .update({ current_bids: (task.current_bids || 0) + 1 })
         .eq('id', taskId);
 
       if (taskError) throw taskError;
