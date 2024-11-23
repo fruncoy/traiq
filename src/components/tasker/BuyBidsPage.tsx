@@ -14,13 +14,12 @@ const BuyBidsPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  // Check authentication
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate('/auth');
+        navigate('/tasker-auth');
         throw new Error('Not authenticated');
       }
       return session;
@@ -31,16 +30,18 @@ const BuyBidsPage = () => {
     queryKey: ['user-bids', session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return 0;
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('bids')
         .eq('id', session.user.id)
-        .single();
-        
+        .maybeSingle();
+
       if (error) {
-        if (error.code === 'PGRST116') return 0;
-        throw error;
+        console.error('Error fetching user bids:', error);
+        return 0;
       }
+
       return profile?.bids || 0;
     },
     enabled: !!session?.user?.id
@@ -49,17 +50,17 @@ const BuyBidsPage = () => {
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
       if (!session?.user?.id) {
-        navigate('/auth');
+        navigate('/tasker-auth');
         throw new Error("Please sign in to purchase bids");
       }
 
       // Update user's bids in profiles table
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ 
+        .upsert({ 
+          id: session.user.id,
           bids: (currentBids || 0) + bids 
-        })
-        .eq('id', session.user.id);
+        });
 
       if (updateError) throw updateError;
 
@@ -86,7 +87,7 @@ const BuyBidsPage = () => {
 
   const handleBuyPackage = (pkg: BidPackage) => {
     if (!session) {
-      navigate('/auth');
+      navigate('/tasker-auth');
       return;
     }
     purchaseMutation.mutate({ bids: pkg.bids, amount: pkg.price });
@@ -94,7 +95,7 @@ const BuyBidsPage = () => {
 
   const handleBuyCustom = () => {
     if (!session) {
-      navigate('/auth');
+      navigate('/tasker-auth');
       return;
     }
     if (customBids < 2) {
