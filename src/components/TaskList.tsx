@@ -5,13 +5,13 @@ import { handleTaskBid } from "./task/TaskBidLogic";
 import { Task } from "@/types/task";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { Button } from "./ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { TaskListHeader } from "./task/TaskListHeader";
 import { TaskListFooter } from "./task/TaskListFooter";
 import { TaskBidDialog } from "./task/TaskBidDialog";
 import { EmptyState } from "./task/EmptyState";
 import { TaskListContent } from "./task/TaskListContent";
+import { supabase } from "@/integrations/supabase/client";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -25,52 +25,106 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
+  });
 
-  const { data: tasks = [], refetch, isLoading } = useQuery({
+  const { data: userBids = 0 } = useQuery({
+    queryKey: ['user-bids', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return 0;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('bids')
+        .eq('id', session.user.id)
+        .single();
+      return profile?.bids || 0;
+    },
+    enabled: !!session?.user?.id
+  });
+
+  const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const storedTasks = localStorage.getItem('tasks');
-      let tasks = storedTasks ? JSON.parse(storedTasks) : [];
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          task_bidders(bidder_id),
+          task_submissions(bidder_id, status)
+        `);
 
-      if (!isAdmin && currentTasker.id) {
+      const { data: tasks, error } = await query;
+      
+      if (error) throw error;
+
+      if (!isAdmin && session?.user?.id) {
         // Filter out tasks that:
         // 1. User has already bid on
-        // 2. Has submissions from this user (new filter)
+        // 2. Has submissions from this user
         // 3. Has rejected submissions
         // 4. Has approved submissions
         // 5. Has pending submissions
-        return tasks.filter((task: Task) => {
+        return tasks.filter((task: any) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
-          const hasSubmission = task.submissions?.some(s => 
-            s.bidderId === currentTasker.id
+          const hasBid = task.task_bidders?.some((b: any) => b.bidder_id === session.user.id);
+          const hasSubmission = task.task_submissions?.some((s: any) => 
+            s.bidder_id === session.user.id
           );
-          const hasBid = task.bidders?.includes(currentTasker.id);
-          return task.currentBids < maxBids && 
+          return task.current_bids < maxBids && 
                  !hasBid && 
                  !hasSubmission;
         });
       }
 
       return tasks;
-    },
-    refetchInterval: 1000
-  });
-
-  const { data: userBids = 0 } = useQuery({
-    queryKey: ['user-bids', currentTasker.id],
-    queryFn: async () => {
-      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-      const tasker = taskers.find((t: any) => t.id === currentTasker.id);
-      return tasker?.bids || 0;
     }
   });
 
   const bidMutation = useMutation({
     mutationFn: async (taskId: string) => {
+      if (!session?.user?.id) throw new Error("No user logged in");
+      
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error("Task not found");
-      return handleTaskBid(task, userBids, tasks);
+
+      const requiredBids = task.category === 'genai' ? 10 : 5;
+      
+      if (userBids < requiredBids) {
+        throw new Error("insufficient_bids");
+      }
+
+      // Insert bid record
+      const { error: bidError } = await supabase
+        .from('task_bidders')
+        .insert({
+          task_id: taskId,
+          bidder_id: session.user.id
+        });
+
+      if (bidError) throw bidError;
+
+      // Update task current bids
+      const { error: taskError } = await supabase
+        .from('tasks')
+        .update({ current_bids: task.current_bids + 1 })
+        .eq('id', taskId);
+
+      if (taskError) throw taskError;
+
+      // Update user's remaining bids
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ bids: userBids - requiredBids })
+        .eq('id', session.user.id);
+
+      if (profileError) throw profileError;
+
+      return task;
     },
     onSuccess: (task) => {
       toast.success("Task bid placed successfully!", {
@@ -95,7 +149,6 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      refetch();
       setShowConfirmDialog(false);
     },
     onError: (error: Error) => {

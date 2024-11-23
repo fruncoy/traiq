@@ -1,3 +1,4 @@
+import Sidebar from "../Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Sidebar from "../Sidebar";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BidPackage {
   id: string;
@@ -47,55 +48,63 @@ const BuyBidsPage = () => {
   const [customBids, setCustomBids] = useState<number>(2);
   const queryClient = useQueryClient();
   
-  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
-  
-  // Update to fetch current bids directly from taskers array
-  const { data: currentBids = 0 } = useQuery({
-    queryKey: ['user-bids', currentTasker.id],
+  const { data: session } = useQuery({
+    queryKey: ['session'],
     queryFn: async () => {
-      if (!currentTasker.id) return 0;
-      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-      const tasker = taskers.find((t: any) => t.id === currentTasker.id);
-      return tasker?.bids || 0;
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
+  });
+  
+  const { data: currentBids = 0 } = useQuery({
+    queryKey: ['user-bids', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return 0;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('bids')
+        .eq('id', session.user.id)
+        .single();
+      return profile?.bids || 0;
     },
-    refetchInterval: 1000
+    enabled: !!session?.user?.id
   });
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ bids, amount }: { bids: number; amount: number }) => {
-      if (!currentTasker.id) {
-        throw new Error("No tasker logged in");
+      if (!session?.user?.id) {
+        throw new Error("No user logged in");
       }
 
-      // Update taskers array first
-      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-      const updatedTaskers = taskers.map((t: any) => {
-        if (t.id === currentTasker.id) {
-          return { ...t, bids: (t.bids || 0) + bids };
-        }
-        return t;
-      });
-      localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
-      
-      // Then update current tasker
-      const updatedCurrentTasker = { 
-        ...currentTasker, 
-        bids: (currentTasker.bids || 0) + bids 
-      };
-      localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
-      
-      // Track total spent
-      const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
-      localStorage.setItem('totalSpent', (totalSpent + amount).toString());
+      // Update user's bids in profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          bids: (currentBids || 0) + bids 
+        })
+        .eq('id', session.user.id);
+
+      if (updateError) throw updateError;
+
+      // Record the transaction
+      const { error: transactionError } = await supabase
+        .from('bid_transactions')
+        .insert({
+          tasker_id: session.user.id,
+          amount: amount,
+          transaction_date: new Date().toISOString()
+        });
+
+      if (transactionError) throw transactionError;
       
       return { success: true, bids, amount };
     },
     onSuccess: (_, variables) => {
-      toast.success(`Successfully purchased ${variables.bids} bids`);
       queryClient.invalidateQueries({ queryKey: ['user-bids'] });
+      toast.success(`Successfully purchased ${variables.bids} bids`);
     },
-    onError: () => {
-      toast.error("Failed to process purchase");
+    onError: (error: Error) => {
+      toast.error("Failed to process purchase: " + error.message);
     }
   });
 
