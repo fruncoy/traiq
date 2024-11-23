@@ -34,11 +34,21 @@ const TaskList = ({ limit, showViewMore = false, isAdmin = false }: {
     queryKey: ['user-bids', session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return 0;
-      const { data: profile } = await supabase
+      
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('bids')
         .eq('id', session.user.id)
         .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist yet, return 0 bids
+          return 0;
+        }
+        throw error;
+      }
+
       return profile?.bids || 0;
     },
     enabled: !!session?.user?.id
