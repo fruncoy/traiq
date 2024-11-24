@@ -31,18 +31,22 @@ const BuyBidsPage = () => {
     queryFn: async () => {
       if (!session?.user?.id) return 0;
       
-      const { data: profile, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('bids')
-        .eq('id', session.user.id)
-        .single();
+        .eq('id', session.user.id);
 
       if (error) {
         console.error('Error fetching user bids:', error);
         return 0;
       }
 
-      return profile?.bids || 0;
+      // If no profile exists yet, return 0
+      if (!profiles || profiles.length === 0) {
+        return 0;
+      }
+
+      return profiles[0]?.bids || 0;
     },
     enabled: !!session?.user?.id
   });
@@ -55,13 +59,12 @@ const BuyBidsPage = () => {
       }
 
       // First ensure profile exists
-      const { data: profile, error: profileError } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id')
-        .eq('id', session.user.id)
-        .single();
+        .eq('id', session.user.id);
 
-      if (profileError || !profile) {
+      if (!profiles || profiles.length === 0) {
         // Create profile if it doesn't exist
         const { error: insertError } = await supabase
           .from('profiles')
