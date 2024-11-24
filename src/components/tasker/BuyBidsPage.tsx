@@ -54,7 +54,7 @@ const BuyBidsPage = () => {
         throw new Error("Please sign in to purchase bids");
       }
 
-      // Update user's bids in profiles table
+      // First update the user's bids
       const { error: updateError } = await supabase
         .from('profiles')
         .upsert({ 
@@ -62,9 +62,11 @@ const BuyBidsPage = () => {
           bids: (currentBids || 0) + bids 
         });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw new Error("Failed to update bids: " + updateError.message);
+      }
 
-      // Record the transaction
+      // Then record the transaction
       const { error: transactionError } = await supabase
         .from('bid_transactions')
         .insert({
@@ -72,7 +74,20 @@ const BuyBidsPage = () => {
           amount: amount
         });
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        // If transaction recording fails, we should revert the bid update
+        const { error: revertError } = await supabase
+          .from('profiles')
+          .upsert({ 
+            id: session.user.id,
+            bids: currentBids || 0
+          });
+
+        if (revertError) {
+          console.error('Failed to revert bids after transaction error:', revertError);
+        }
+        throw new Error("Failed to record transaction: " + transactionError.message);
+      }
       
       return { success: true, bids, amount };
     },
