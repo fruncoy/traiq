@@ -35,7 +35,7 @@ const BuyBidsPage = () => {
         .from('profiles')
         .select('bids')
         .eq('id', session.user.id)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Error fetching user bids:', error);
@@ -54,19 +54,7 @@ const BuyBidsPage = () => {
         throw new Error("Please sign in to purchase bids");
       }
 
-      // First update the user's bids
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .upsert({ 
-          id: session.user.id,
-          bids: (currentBids || 0) + bids 
-        });
-
-      if (updateError) {
-        throw new Error("Failed to update bids: " + updateError.message);
-      }
-
-      // Then record the transaction
+      // First record the transaction
       const { error: transactionError } = await supabase
         .from('bid_transactions')
         .insert({
@@ -75,18 +63,28 @@ const BuyBidsPage = () => {
         });
 
       if (transactionError) {
-        // If transaction recording fails, we should revert the bid update
+        throw new Error("Failed to record transaction: " + transactionError.message);
+      }
+
+      // Then update the user's bids
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ bids: (currentBids || 0) + bids })
+        .eq('id', session.user.id);
+
+      if (updateError) {
+        // If bid update fails, we should revert the transaction
         const { error: revertError } = await supabase
-          .from('profiles')
-          .upsert({ 
-            id: session.user.id,
-            bids: currentBids || 0
-          });
+          .from('bid_transactions')
+          .delete()
+          .eq('tasker_id', session.user.id)
+          .order('transaction_date', { ascending: false })
+          .limit(1);
 
         if (revertError) {
-          console.error('Failed to revert bids after transaction error:', revertError);
+          console.error('Failed to revert transaction after bid update error:', revertError);
         }
-        throw new Error("Failed to record transaction: " + transactionError.message);
+        throw new Error("Failed to update bids: " + updateError.message);
       }
       
       return { success: true, bids, amount };
