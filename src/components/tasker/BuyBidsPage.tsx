@@ -54,7 +54,29 @@ const BuyBidsPage = () => {
         throw new Error("Please sign in to purchase bids");
       }
 
-      // First record the transaction
+      // First ensure profile exists
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        // Create profile if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            bids: 0,
+            email: session.user.email
+          });
+
+        if (insertError) {
+          throw new Error("Failed to create profile: " + insertError.message);
+        }
+      }
+
+      // Then record the transaction
       const { error: transactionError } = await supabase
         .from('bid_transactions')
         .insert({
@@ -66,7 +88,7 @@ const BuyBidsPage = () => {
         throw new Error("Failed to record transaction: " + transactionError.message);
       }
 
-      // Then update the user's bids
+      // Finally update the user's bids
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ bids: (currentBids || 0) + bids })
