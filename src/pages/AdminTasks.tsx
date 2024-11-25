@@ -7,17 +7,26 @@ import { Task } from "@/types/task";
 import { Upload } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminTasks = () => {
   const queryClient = useQueryClient();
 
-  const { data: availableTasks = [] } = useQuery({
+  const { data: availableTasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const tasks = localStorage.getItem('tasks');
-      return tasks ? JSON.parse(tasks) : [];
-    },
-    refetchInterval: 5000 // Added to keep data fresh
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          task_bidders (bidder_id),
+          task_submissions (*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return tasks;
+    }
   });
 
   const uploadMutation = useMutation({
@@ -25,7 +34,7 @@ const AdminTasks = () => {
       const reader = new FileReader();
       
       return new Promise((resolve, reject) => {
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
           try {
             const data = new Uint8Array(e.target?.result as ArrayBuffer);
             const workbook = XLSX.read(data, { type: 'array' });
@@ -33,32 +42,27 @@ const AdminTasks = () => {
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
             const processedTasks = jsonData.map((row: any) => ({
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
               code: row.UniqueCode,
               title: row.Title,
               description: row.Description,
               category: row.Category?.toLowerCase() === 'genai' ? 'genai' : 'creai',
               payout: row.Category?.toLowerCase() === 'genai' ? 500 : 250,
-              taskerPayout: row.Category?.toLowerCase() === 'genai' ? 400 : 200,
-              platformFee: row.Category?.toLowerCase() === 'genai' ? 100 : 50,
-              bidsNeeded: row.Category?.toLowerCase() === 'genai' ? 10 : 5,
-              maxBidders: 10,
-              currentBids: 0,
-              datePosted: new Date().toISOString(),
+              tasker_payout: row.Category?.toLowerCase() === 'genai' ? 400 : 200,
+              platform_fee: row.Category?.toLowerCase() === 'genai' ? 100 : 50,
+              bids_needed: row.Category?.toLowerCase() === 'genai' ? 10 : 5,
+              max_bidders: 10,
+              current_bids: 0,
               deadline: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
-              status: "pending",
-              bidders: [],
-              selectedTaskers: [],
-              submissions: [],
-              rating: 0,
-              totalRatings: 0
+              status: "pending"
             }));
 
-            // Merge with existing tasks instead of replacing
-            const existingTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-            const updatedTasks = [...existingTasks, ...processedTasks];
-            localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-            return updatedTasks;
+            const { data, error } = await supabase
+              .from('tasks')
+              .insert(processedTasks)
+              .select();
+
+            if (error) throw error;
+            return data;
           } catch (error) {
             reject(error);
           }
@@ -70,7 +74,8 @@ const AdminTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success("Tasks uploaded successfully");
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Upload error:', error);
       toast.error("Failed to upload tasks");
     }
   });
@@ -81,6 +86,18 @@ const AdminTasks = () => {
       uploadMutation.mutate(file);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar isAdmin>
+          <div className="p-6">
+            <h2 className="text-2xl font-bold">Loading...</h2>
+          </div>
+        </Sidebar>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -128,15 +145,15 @@ const AdminTasks = () => {
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{task.description}</TableCell>
                         <TableCell className="capitalize">{task.category}</TableCell>
-                        <TableCell>{task.bidders?.length || 0}/10</TableCell>
-                        <TableCell>{task.submissions?.length || 0}</TableCell>
+                        <TableCell>{task.task_bidders?.length || 0}/10</TableCell>
+                        <TableCell>{task.task_submissions?.length || 0}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            task.bidders?.length >= 10 
+                            task.task_bidders?.length >= 10 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {task.bidders?.length >= 10 ? 'Active' : 'Available'}
+                            {task.task_bidders?.length >= 10 ? 'Active' : 'Available'}
                           </span>
                         </TableCell>
                       </TableRow>

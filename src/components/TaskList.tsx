@@ -38,16 +38,15 @@ const TaskList = ({
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      let query = supabase
+      const { data: tasks, error } = await supabase
         .from('tasks')
         .select(`
           *,
           task_bidders(bidder_id),
           task_submissions(bidder_id, status)
-        `);
+        `)
+        .order('created_at', { ascending: false });
 
-      const { data: tasks, error } = await query;
-      
       if (error) throw error;
 
       // Transform the data to match our Task interface
