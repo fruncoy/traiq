@@ -1,9 +1,12 @@
-export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) => {
+import { supabase } from "@/integrations/supabase/client";
+
+export const handleTaskBid = async (task: any, userBids: number) => {
   const requiredBids = task.category === 'genai' ? 10 : 5;
-  const MAX_BIDDERS = 10; // All tasks now have 10 max bidders
-  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
-  
-  if (!currentTasker.id) {
+  const MAX_BIDDERS = 10;
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     throw new Error("No tasker logged in");
   }
 
@@ -13,75 +16,72 @@ export const handleTaskBid = async (task: any, userBids: number, tasks: any[]) =
   }
 
   // Check if user has already bid on this task
-  const existingBids = tasks.find(t => t.id === task.id)?.bidders || [];
-  if (existingBids.includes(currentTasker.id)) {
+  const { data: existingBids } = await supabase
+    .from('task_bidders')
+    .select('*')
+    .eq('task_id', task.id)
+    .eq('bidder_id', user.id);
+
+  if (existingBids && existingBids.length > 0) {
     throw new Error("You have already bid on this task");
   }
 
   // Check if task has reached maximum bidders
-  if (existingBids.length >= MAX_BIDDERS) {
+  const { data: totalBidders } = await supabase
+    .from('task_bidders')
+    .select('*', { count: 'exact' })
+    .eq('task_id', task.id);
+
+  if (totalBidders && totalBidders.length >= MAX_BIDDERS) {
     throw new Error("This task has reached its maximum number of bidders");
   }
 
-  // Check if user has a rejected submission for this task
-  const hasRejectedSubmission = task.submissions?.some((s: any) => 
-    s.bidderId === currentTasker.id && s.status === 'rejected'
-  );
-  if (hasRejectedSubmission) {
+  // Check if user has a rejected submission
+  const { data: submissions } = await supabase
+    .from('task_submissions')
+    .select('*')
+    .eq('task_id', task.id)
+    .eq('bidder_id', user.id)
+    .eq('status', 'rejected');
+
+  if (submissions && submissions.length > 0) {
     throw new Error("You cannot bid on this task as your previous submission was rejected");
   }
 
-  // Update task bidders and current bids count
-  const updatedTask = {
-    ...task,
-    bidders: [...(task.bidders || []), currentTasker.id],
-    currentBids: (task.currentBids || 0) + 1
-  };
+  // Start a transaction to update everything
+  const { error: bidError } = await supabase
+    .from('task_bidders')
+    .insert({
+      task_id: task.id,
+      bidder_id: user.id
+    });
 
-  // Update tasks in localStorage
-  const updatedTasks = tasks.map(t => t.id === task.id ? updatedTask : t);
-  localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+  if (bidError) throw bidError;
+
+  // Update task current bids
+  const { error: taskError } = await supabase
+    .from('tasks')
+    .update({ current_bids: (task.current_bids || 0) + 1 })
+    .eq('id', task.id);
+
+  if (taskError) throw taskError;
 
   // Update user bids
-  const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-  const updatedTaskers = taskers.map((t: any) => {
-    if (t.id === currentTasker.id) {
-      return {
-        ...t,
-        bids: Math.max(0, t.bids - requiredBids),
-        activeTasks: [...(t.activeTasks || []), task.id]
-      };
-    }
-    return t;
-  });
-  localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ 
+      bids: Math.max(0, userBids - requiredBids)
+    })
+    .eq('id', user.id);
 
-  // Update current tasker's bids
-  const updatedCurrentTasker = {
-    ...currentTasker,
-    bids: Math.max(0, currentTasker.bids - requiredBids)
-  };
-  localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
+  if (profileError) throw profileError;
 
-  // Store task in user's active tasks
-  const userActiveTasks = JSON.parse(localStorage.getItem(`userActiveTasks_${currentTasker.id}`) || '[]');
-  if (!userActiveTasks.some((t: any) => t.id === task.id)) {
-    userActiveTasks.push(updatedTask);
-    localStorage.setItem(`userActiveTasks_${currentTasker.id}`, JSON.stringify(userActiveTasks));
-  }
-
-  // Create notification
-  const notifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
-  notifications.unshift({
-    id: Date.now().toString(),
-    title: 'Task Bid Successful',
-    message: `You have successfully bid on task ${task.code} - ${task.title}`,
-    type: 'success',
-    read: false,
-    date: new Date().toISOString(),
-    taskerId: currentTasker.id
-  });
-  localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(notifications));
+  // Return updated task
+  const { data: updatedTask } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', task.id)
+    .single();
 
   return updatedTask;
 };
