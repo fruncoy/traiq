@@ -38,19 +38,24 @@ const TaskList = ({
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const { data: tasks, error } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
         .select(`
           *,
-          task_bidders(bidder_id),
-          task_submissions(bidder_id, status)
+          task_bidders (
+            bidder_id
+          ),
+          task_submissions (
+            bidder_id,
+            status
+          )
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       // Transform the data to match our Task interface
-      const transformedTasks = tasks.map((task: any) => ({
+      const transformedTasks = data.map((task: any) => ({
         ...task,
         category: task.category as TaskCategory,
         bidders: task.task_bidders?.map((b: any) => b.bidder_id) || [],
@@ -71,7 +76,8 @@ const TaskList = ({
       }
 
       return transformedTasks;
-    }
+    },
+    refetchInterval: 5000 // Refresh every 5 seconds to see new tasks
   });
 
   const bidMutation = useTaskBidding(tasks, userBids);
