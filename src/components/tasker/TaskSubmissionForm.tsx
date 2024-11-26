@@ -5,76 +5,77 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
+import { supabase } from "@/integrations/supabase/client";
+import { format, isAfter, set } from "date-fns";
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
-  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+
+  const checkDeadline = () => {
+    const now = new Date();
+    const deadline = set(now, { hours: 16, minutes: 0, seconds: 0 }); // 4 PM
+    return isAfter(now, deadline);
+  };
 
   const { data: activeTasks = [] } = useQuery({
-    queryKey: ['user-active-tasks', currentTasker.id],
+    queryKey: ['user-active-tasks'],
     queryFn: async () => {
-      const tasks = localStorage.getItem(`userActiveTasks_${currentTasker.id}`);
-      const allTasks = tasks ? JSON.parse(tasks) : [];
-      const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-      
-      // Filter out tasks that have already been submitted by this tasker
-      return allTasks.filter((task: Task) => {
-        const hasSubmitted = submissions.some((s: any) => 
-          s.taskId === task.id && 
-          s.bidderId === currentTasker.id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('*, task_submissions(bidder_id, status)')
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      return tasks.filter((task: any) => {
+        const hasSubmitted = task.task_submissions.some(
+          (s: any) => s.bidder_id === user.id
         );
         return !hasSubmitted;
       });
     }
   });
 
-  const { mutate: submitTask, isPending } = useMutation({
-    mutationFn: async (task: Task) => {
-      if (!file) throw new Error("No file selected");
-      if (file.size > 10 * 1024 * 1024) throw new Error("File size exceeds 10MB limit");
+  const submitTaskMutation = useMutation({
+    mutationFn: async ({ task, file }: { task: Task, file: File }) => {
+      if (checkDeadline()) {
+        throw new Error("Submissions are closed for today. Please submit before 4 PM.");
+      }
 
-      const submission = {
-        id: `submission-${Date.now()}`,
-        taskId: task.id,
-        taskCode: task.code,
-        taskTitle: task.title,
-        bidderId: currentTasker.id,
-        status: 'pending',
-        submittedAt: new Date().toISOString(),
-        fileName: file.name
-      };
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
 
-      // Store submission
-      const submissions = JSON.parse(localStorage.getItem('taskSubmissions') || '[]');
-      submissions.push(submission);
-      localStorage.setItem('taskSubmissions', JSON.stringify(submissions));
+      // Upload file to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${task.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('task-submissions')
+        .upload(fileName, file);
 
-      // Update task submissions
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      const updatedTasks = tasks.map((t: Task) => {
-        if (t.id === task.id) {
-          return {
-            ...t,
-            submissions: [...(t.submissions || []), submission]
-          };
-        }
-        return t;
-      });
-      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+      if (uploadError) throw uploadError;
 
-      // Store submission for tasker
-      const taskerSubmissions = JSON.parse(localStorage.getItem(`taskSubmissions_${currentTasker.id}`) || '[]');
-      taskerSubmissions.push(submission);
-      localStorage.setItem(`taskSubmissions_${currentTasker.id}`, JSON.stringify(taskerSubmissions));
+      // Create submission record
+      const { error: submissionError } = await supabase
+        .from('task_submissions')
+        .insert({
+          task_id: task.id,
+          bidder_id: user.id,
+          file_name: file.name,
+          file_url: fileName,
+          status: 'pending'
+        });
 
-      return submission;
+      if (submissionError) throw submissionError;
     },
     onSuccess: () => {
       toast.success("Task submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
       setSelectedTask("");
       setFile(null);
     },
@@ -96,7 +97,7 @@ const TaskSubmissionForm = () => {
 
     const task = activeTasks.find((t: Task) => t.id === selectedTask);
     if (task) {
-      submitTask(task);
+      submitTaskMutation.mutate({ task, file });
     }
   };
 
@@ -136,14 +137,17 @@ const TaskSubmissionForm = () => {
           accept=".pdf,.doc,.docx,.txt"
           className="bg-white"
         />
+        <p className="text-sm text-gray-500">
+          Submissions close at 4 PM today. Current time: {format(new Date(), 'h:mm a')}
+        </p>
       </div>
 
       <Button 
         type="submit" 
-        disabled={!selectedTask || !file || isPending}
-        className="w-full"
+        disabled={!selectedTask || !file || submitTaskMutation.isPending}
+        className="w-full bg-primary hover:bg-primary/90"
       >
-        {isPending ? "Processing..." : "Submit Task"}
+        {submitTaskMutation.isPending ? "Processing..." : "Submit Task"}
       </Button>
     </form>
   );

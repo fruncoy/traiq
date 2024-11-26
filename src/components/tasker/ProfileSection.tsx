@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const ProfileSection = () => {
   const [formData, setFormData] = useState({
@@ -12,26 +12,60 @@ const ProfileSection = () => {
     email: "",
     phone: "",
   });
+  const queryClient = useQueryClient();
 
   // Fetch the current user's profile data
-  const { data: profile } = useQuery({
+  const { data: profile, isError } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
-      const { data: profile, error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
-      return profile;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Profile not found, create one
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([{ id: user.id, email: user.email }])
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          return newProfile;
+        }
+        throw error;
+      }
+      return data;
     }
   });
 
-  // Update form data when profile is loaded
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update profile");
+    }
+  });
+
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -49,29 +83,19 @@ const ProfileSection = () => {
     });
   };
 
-  const handleSaveProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("No user found");
-      return;
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        username: formData.username,
-        email: formData.email,
-        phone: formData.phone
-      })
-      .eq('id', user.id);
-
-    if (error) {
-      toast.error("Failed to update profile");
-      return;
-    }
-
-    toast.success("Profile updated successfully");
+  const handleSaveProfile = () => {
+    updateProfileMutation.mutate(formData);
   };
+
+  if (isError) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-red-500">Error loading profile. Please try again later.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -107,9 +131,10 @@ const ProfileSection = () => {
         </div>
         <Button 
           onClick={handleSaveProfile}
-          className="bg-white text-[#1E40AF] border border-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
+          disabled={updateProfileMutation.isPending}
+          className="w-full bg-primary hover:bg-primary/90"
         >
-          Save Changes
+          {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
         </Button>
       </CardContent>
     </Card>
