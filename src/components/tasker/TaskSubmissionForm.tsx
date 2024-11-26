@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Task } from "@/types/task";
+import { Task, TaskCategory } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isAfter, set } from "date-fns";
 
@@ -32,8 +32,14 @@ const TaskSubmissionForm = () => {
 
       if (error) throw error;
 
-      return tasks.filter((task: any) => {
-        const hasSubmitted = task.task_submissions.some(
+      // Convert category to TaskCategory type
+      const typedTasks = tasks.map((task: any) => ({
+        ...task,
+        category: task.category as TaskCategory
+      }));
+
+      return typedTasks.filter((task: Task) => {
+        const hasSubmitted = task.task_submissions?.some(
           (s: any) => s.bidder_id === user.id
         );
         return !hasSubmitted;

@@ -15,11 +15,27 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (!profile) {
+        // Create profile if it doesn't exist
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([{ id: user.id, email: user.email }])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        return newProfile;
+      }
 
       return profile;
     }
