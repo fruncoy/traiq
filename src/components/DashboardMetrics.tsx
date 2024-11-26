@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface MetricProps {
   label: string;
-  value: string | number;
+  value: string | number | ((profile: any) => string | number);
   change?: string;
   description?: string;
 }
@@ -41,13 +41,20 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
     }
   });
 
+  const renderMetricValue = (metric: MetricProps) => {
+    if (typeof metric.value === 'function') {
+      return currentUser ? metric.value(currentUser) : '-';
+    }
+    return metric.value;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {metrics.map((metric, index) => (
         <div key={index} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
           <p className="text-sm font-medium text-gray-600">{metric.label}</p>
           <p className="mt-2 text-3xl font-semibold text-gray-900">
-            {typeof metric.value === 'function' ? metric.value(currentUser) : metric.value}
+            {renderMetricValue(metric)}
           </p>
           {metric.description && (
             <p className="mt-1 text-sm text-gray-500">{metric.description}</p>
