@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Task } from "@/types/task";
+import { Task, TaskCategory } from "@/types/task";
 import { Upload } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ const AdminTasks = () => {
   const { data: availableTasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const { data: tasks, error } = await supabase
+      const { data: tasksData, error } = await supabase
         .from('tasks')
         .select(`
           *,
@@ -25,7 +25,7 @@ const AdminTasks = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return tasks;
+      return tasksData;
     }
   });
 
@@ -45,7 +45,7 @@ const AdminTasks = () => {
               code: row.UniqueCode,
               title: row.Title,
               description: row.Description,
-              category: row.Category?.toLowerCase() === 'genai' ? 'genai' : 'creai',
+              category: (row.Category?.toLowerCase() === 'genai' ? 'genai' : 'creai') as TaskCategory,
               payout: row.Category?.toLowerCase() === 'genai' ? 500 : 250,
               tasker_payout: row.Category?.toLowerCase() === 'genai' ? 400 : 200,
               platform_fee: row.Category?.toLowerCase() === 'genai' ? 100 : 50,
@@ -56,13 +56,13 @@ const AdminTasks = () => {
               status: "pending"
             }));
 
-            const { data, error } = await supabase
+            const { data: insertedData, error: insertError } = await supabase
               .from('tasks')
               .insert(processedTasks)
               .select();
 
-            if (error) throw error;
-            return data;
+            if (insertError) throw insertError;
+            return insertedData;
           } catch (error) {
             reject(error);
           }
@@ -140,7 +140,7 @@ const AdminTasks = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    availableTasks.map((task: Task) => (
+                    availableTasks.map((task: any) => (
                       <TableRow key={task.id}>
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{task.description}</TableCell>
