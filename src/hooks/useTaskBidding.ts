@@ -8,24 +8,48 @@ export const useTaskBidding = (tasks: Task[], userBids: number) => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session?.user?.id) throw new Error("No user logged in");
-      
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error("Task not found");
 
       const requiredBids = task.category === 'genai' ? 10 : 5;
-      
+      const MAX_BIDDERS = 10;
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No tasker logged in");
+
+      // Validate bid requirements
       if (userBids < requiredBids) {
         throw new Error("insufficient_bids");
       }
 
-      // Insert bid record
+      // Check if user has already bid on this task
+      const { data: existingBids } = await supabase
+        .from('task_bidders')
+        .select('*')
+        .eq('task_id', taskId)
+        .eq('bidder_id', user.id);
+
+      if (existingBids && existingBids.length > 0) {
+        throw new Error("You have already bid on this task");
+      }
+
+      // Check if task has reached maximum bidders
+      const { data: totalBidders } = await supabase
+        .from('task_bidders')
+        .select('*', { count: 'exact' })
+        .eq('task_id', taskId);
+
+      if (totalBidders && totalBidders.length >= MAX_BIDDERS) {
+        throw new Error("This task has reached its maximum number of bidders");
+      }
+
+      // Start a transaction to update everything
       const { error: bidError } = await supabase
         .from('task_bidders')
         .insert({
           task_id: taskId,
-          bidder_id: session.user.id
+          bidder_id: user.id
         });
 
       if (bidError) throw bidError;
@@ -38,61 +62,34 @@ export const useTaskBidding = (tasks: Task[], userBids: number) => {
 
       if (taskError) throw taskError;
 
-      // Update user's remaining bids
+      // Update user bids
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ bids: userBids - requiredBids })
-        .eq('id', session.user.id);
+        .update({ 
+          bids: Math.max(0, userBids - requiredBids)
+        })
+        .eq('id', user.id);
 
       if (profileError) throw profileError;
 
       return task;
     },
-    onSuccess: (task) => {
-      toast.success("Task bid placed successfully!", {
-        position: "bottom-right",
-        className: "bg-green-50",
-        description: `You have successfully bid on task ${task.code}. The task is now in your bidded tasks.`,
-        action: {
-          label: "View Task",
-          onClick: () => window.location.href = "/tasker/bidded-tasks"
-        },
-        duration: 5000,
-        style: {
-          background: 'white',
-          border: '1px solid #e2e8f0',
-          borderRadius: '8px',
-          padding: '12px',
-          color: '#1a202c'
-        }
-      });
-      queryClient.invalidateQueries({ queryKey: ['user-bids'] });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
-      queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['user-bids'] });
+      toast.success("Successfully bid on task!");
     },
     onError: (error: Error) => {
-      toast.error(error.message, {
-        position: "bottom-right",
-        description: error.message === "insufficient_bids" 
-          ? "You don't have enough bids for this task. Please purchase more bids to continue."
-          : error.message,
-        ...(error.message === "insufficient_bids" && {
+      if (error.message === "insufficient_bids") {
+        toast.error("You have insufficient bids. Please purchase more bids to continue.", {
           action: {
             label: "Buy Bids",
             onClick: () => window.location.href = "/tasker/buy-bids"
           }
-        }),
-        duration: 5000,
-        style: {
-          background: 'white',
-          border: '1px solid #fee2e2',
-          borderRadius: '8px',
-          padding: '12px',
-          color: '#991b1b'
-        }
-      });
+        });
+      } else {
+        toast.error(error.message);
+      }
     }
   });
 };

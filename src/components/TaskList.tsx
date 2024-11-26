@@ -36,7 +36,7 @@ const TaskList = ({
   const { data: userBids = 0 } = useUserBids(session?.user?.id);
 
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks', session?.user?.id, isAdmin], // Add user ID to query key
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tasks')
@@ -62,13 +62,19 @@ const TaskList = ({
         submissions: task.task_submissions || []
       }));
 
+      // Filter tasks for non-admin users
       if (!isAdmin && session?.user?.id) {
         return transformedTasks.filter((task: Task) => {
           const maxBids = task.category === 'genai' ? 10 : 5;
           const hasBid = task.task_bidders?.some(b => b.bidder_id === session.user.id);
           const hasSubmission = task.task_submissions?.some(s => 
-            s.bidder_id === session.user.id
+            s.bidder_id === session.user.id && s.status !== 'rejected'
           );
+          
+          // Show task if:
+          // 1. Task hasn't reached max bids
+          // 2. User hasn't bid on it
+          // 3. User hasn't submitted or has a rejected submission
           return task.current_bids < maxBids && 
                  !hasBid && 
                  !hasSubmission;
@@ -77,7 +83,7 @@ const TaskList = ({
 
       return transformedTasks;
     },
-    refetchInterval: 5000 // Refresh every 5 seconds to see new tasks
+    refetchInterval: 5000 // Refresh every 5 seconds
   });
 
   const bidMutation = useTaskBidding(tasks, userBids);
@@ -87,9 +93,10 @@ const TaskList = ({
     setShowConfirmDialog(true);
   };
 
-  const confirmBid = () => {
+  const confirmBid = async () => {
     if (selectedTaskId) {
-      bidMutation.mutate(selectedTaskId);
+      await bidMutation.mutateAsync(selectedTaskId);
+      setShowConfirmDialog(false);
     }
   };
 
