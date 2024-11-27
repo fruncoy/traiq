@@ -4,18 +4,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { supabase } from "@/integrations/supabase/client";
+import { TaskerSuspendButton } from "@/components/admin/TaskerSuspendButton";
+import { format } from "date-fns";
 
 const AdminTaskers = () => {
   const { data: taskers = [], isLoading } = useQuery({
     queryKey: ['admin-taskers'],
     queryFn: async () => {
-      // Fetch profiles with their related task submissions
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select(`
           *,
           task_submissions(
             status,
+            task_id
+          ),
+          task_bidders(
             task_id
           )
         `);
@@ -27,9 +31,12 @@ const AdminTaskers = () => {
           (s: any) => s.status === 'approved'
         ).length || 0;
 
+        const activeBids = profile.task_bidders?.length || 0;
+
         return {
           ...profile,
           completedTasks,
+          activeBids
         };
       });
     }
@@ -59,10 +66,12 @@ const AdminTaskers = () => {
                       <TableHead>Username</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Completed Tasks</TableHead>
+                      <TableHead>Active Bids</TableHead>
                       <TableHead>Available Bids</TableHead>
                       <TableHead>Total Payouts</TableHead>
                       <TableHead>Join Date</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -71,19 +80,26 @@ const AdminTaskers = () => {
                         <TableCell>{tasker.username || 'N/A'}</TableCell>
                         <TableCell>{tasker.email || 'N/A'}</TableCell>
                         <TableCell>{tasker.completedTasks}</TableCell>
+                        <TableCell>{tasker.activeBids}</TableCell>
                         <TableCell>{tasker.bids || 0}</TableCell>
                         <TableCell>KES {tasker.total_payouts || 0}</TableCell>
                         <TableCell>
-                          {new Date(tasker.join_date).toLocaleDateString()}
+                          {tasker.join_date ? format(new Date(tasker.join_date), 'MMM d, yyyy') : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            tasker.is_suspended 
+                            tasker.suspended_at 
                               ? 'bg-red-100 text-red-800' 
                               : 'bg-green-100 text-green-800'
                           }`}>
-                            {tasker.is_suspended ? 'Suspended' : 'Active'}
+                            {tasker.suspended_at ? 'Suspended' : 'Active'}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          <TaskerSuspendButton 
+                            taskerId={tasker.id} 
+                            isSuspended={!!tasker.suspended_at}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}

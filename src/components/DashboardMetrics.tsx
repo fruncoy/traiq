@@ -17,7 +17,11 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
 
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          task_submissions(status),
+          task_bidders(task_id)
+        `)
         .eq('id', user.id)
         .maybeSingle();
 
@@ -26,18 +30,25 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
       }
 
       if (!profile) {
-        // Create profile if it doesn't exist
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert([{ id: user.id, email: user.email }])
-          .select()
+          .select(`
+            *,
+            task_submissions(status),
+            task_bidders(task_id)
+          `)
           .single();
 
         if (createError) throw createError;
         return newProfile;
       }
 
-      return profile;
+      return {
+        ...profile,
+        completedTasks: profile.task_submissions?.filter(s => s.status === 'approved').length || 0,
+        activeBids: profile.task_bidders?.length || 0
+      };
     }
   });
 
