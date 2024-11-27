@@ -19,7 +19,7 @@ const AdminTasks = () => {
         .from('tasks')
         .select(`
           *,
-          task_bidders!inner (
+          task_bidders (
             bidder_id
           ),
           task_submissions (*)
@@ -158,11 +158,11 @@ const AdminTasks = () => {
                         <TableCell>{task.submissions.length}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            task.bidders.length >= 10 
+                            task.bidders.length >= (task.category === 'genai' ? 10 : 5)
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {task.bidders.length >= 10 ? 'Active' : 'Available'}
+                            {task.bidders.length >= (task.category === 'genai' ? 10 : 5) ? 'Active' : 'Available'}
                           </span>
                         </TableCell>
                       </TableRow>

@@ -61,15 +61,15 @@ const TaskList = ({
         submissions: task.task_submissions || []
       }));
 
-      // For non-admin users, only filter out tasks they've already bid on or submitted
       if (!isAdmin && session?.user?.id) {
         return transformedTasks.filter((task: Task) => {
           const hasBid = task.bidders.includes(session.user.id);
           const hasSubmission = task.submissions.some(s => 
             s.bidder_id === session.user.id && s.status !== 'rejected'
           );
+          const maxBidsReached = task.bidders.length >= (task.category === 'genai' ? 10 : 5);
           
-          return !hasBid && !hasSubmission;
+          return !hasBid && !hasSubmission && !maxBidsReached;
         });
       }
 
