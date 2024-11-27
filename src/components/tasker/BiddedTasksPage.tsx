@@ -2,12 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
-import { Task } from "@/types/task";
+import { Task, TaskSubmission } from "@/types/task";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "../ui/loading-spinner";
+
+interface TaskWithSubmission extends Task {
+  currentSubmission?: TaskSubmission;
+}
 
 const BiddedTasksPage = () => {
   const navigate = useNavigate();
@@ -34,10 +38,10 @@ const BiddedTasksPage = () => {
 
       return tasks.map((task: any) => ({
         ...task,
-        submission: task.task_submissions?.find(
+        currentSubmission: task.task_submissions?.find(
           (s: any) => s.bidder_id === user.id
         )
-      }));
+      })) as TaskWithSubmission[];
     }
   });
 
@@ -49,8 +53,8 @@ const BiddedTasksPage = () => {
     );
   }
 
-  const readyForSubmission = userTasks.filter((task: any) => !task.submission);
-  const submitted = userTasks.filter((task: any) => task.submission);
+  const readyForSubmission = userTasks.filter((task) => !task.currentSubmission);
+  const submitted = userTasks.filter((task) => task.currentSubmission);
 
   return (
     <Sidebar>
@@ -64,7 +68,7 @@ const BiddedTasksPage = () => {
               {readyForSubmission.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No tasks ready for submission</p>
               ) : (
-                readyForSubmission.map((task: Task) => (
+                readyForSubmission.map((task) => (
                   <Card key={task.id}>
                     <CardContent className="pt-6">
                       <div className="space-y-4">
@@ -102,7 +106,7 @@ const BiddedTasksPage = () => {
               {submitted.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No submitted tasks</p>
               ) : (
-                submitted.map((task: Task) => (
+                submitted.map((task) => (
                   <Card key={task.id}>
                     <CardContent className="pt-6">
                       <div className="space-y-4">
@@ -114,12 +118,12 @@ const BiddedTasksPage = () => {
                           </div>
                           <div>
                             <Badge 
-                              variant={task.submission?.status === 'approved' ? 'success' : 
-                                     task.submission?.status === 'rejected' ? 'destructive' : 
+                              variant={task.currentSubmission?.status === 'approved' ? 'success' : 
+                                     task.currentSubmission?.status === 'rejected' ? 'destructive' : 
                                      'secondary'}
                             >
-                              {task.submission?.status === 'approved' ? 'Approved' :
-                               task.submission?.status === 'rejected' ? 'Rejected' :
+                              {task.currentSubmission?.status === 'approved' ? 'Approved' :
+                               task.currentSubmission?.status === 'rejected' ? 'Rejected' :
                                'Pending Review'}
                             </Badge>
                           </div>
