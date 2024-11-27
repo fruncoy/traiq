@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Clock, Users, DollarSign } from "lucide-react";
 import { Task } from "@/types/task";
 import { toast } from "sonner";
-import { format, isValid, parseISO } from "date-fns";
+import { format, isValid, parseISO, differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
+import { useState, useEffect } from "react";
 
 interface TaskCardProps {
   task: Task;
@@ -15,8 +16,42 @@ interface TaskCardProps {
 }
 
 const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts }: TaskCardProps) => {
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      if (!task.deadline) return;
+      
+      const now = new Date();
+      const deadline = parseISO(task.deadline);
+      
+      if (!isValid(deadline)) return;
+      
+      const days = differenceInDays(deadline, now);
+      const hours = differenceInHours(deadline, now) % 24;
+      const minutes = differenceInMinutes(deadline, now) % 60;
+      
+      if (days < 0 || (days === 0 && hours < 0) || (days === 0 && hours === 0 && minutes < 0)) {
+        setTimeLeft("Expired");
+        return;
+      }
+      
+      let countdown = "";
+      if (days > 0) countdown += `${days}d `;
+      if (hours > 0) countdown += `${hours}h `;
+      countdown += `${minutes}m`;
+      
+      setTimeLeft(countdown);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, [task.deadline]);
+
   const handleBidClick = () => {
-    if (!task?.title) return; // Prevent bidding on invalid tasks
+    if (!task?.title) return;
     
     if (userBids <= 0) {
       toast.error("You have insufficient bids. Please purchase more bids to continue.", {
@@ -43,14 +78,14 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts }: Ta
   const MAX_BIDDERS = 10;
   const requiredBids = task.category === 'genai' ? 10 : 5;
   const taskerPayout = task.category === 'genai' ? 700 : 300;
-  const formattedDeadline = formatDeadline(task.deadline);
+  const formattedDeadline = formatDeadline(task.deadline || '');
   
   const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
   const actualBidders = task.bidders?.filter(bidderId => 
     taskers.some((t: any) => t.id === bidderId)
   ) || [];
 
-  if (!task?.title) return null; // Don't render invalid tasks
+  if (!task?.title) return null;
 
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -79,8 +114,11 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts }: Ta
             <div className="flex items-center gap-2">
               <Clock size={20} className="text-gray-500" />
               <div className="flex flex-col">
-                <span className="text-gray-700">Deadline:</span>
-                <span className="text-gray-600">{formattedDeadline}</span>
+                <span className="text-gray-700">Time Left:</span>
+                <span className={`font-medium ${timeLeft === "Expired" ? "text-red-600" : "text-blue-600"}`}>
+                  {timeLeft}
+                </span>
+                <span className="text-xs text-gray-500">Deadline: {formattedDeadline}</span>
               </div>
             </div>
             
