@@ -13,20 +13,30 @@ const AdminTasks = () => {
   const queryClient = useQueryClient();
 
   const { data: availableTasks = [], isLoading } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['admin-tasks'],
     queryFn: async () => {
       const { data: tasksData, error } = await supabase
         .from('tasks')
         .select(`
           *,
-          task_bidders (bidder_id),
+          task_bidders (
+            bidder_id
+          ),
           task_submissions (*)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return tasksData;
-    }
+
+      // Transform data to include bidder count and submission info
+      return tasksData.map((task: any) => ({
+        ...task,
+        category: task.category as TaskCategory,
+        bidders: task.task_bidders || [],
+        submissions: task.task_submissions || []
+      }));
+    },
+    refetchInterval: 5000
   });
 
   const uploadMutation = useMutation({
@@ -71,7 +81,7 @@ const AdminTasks = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
       toast.success("Tasks uploaded successfully");
     },
     onError: (error) => {
@@ -106,7 +116,7 @@ const AdminTasks = () => {
           <h2 className="text-2xl font-bold">Task Management</h2>
           <Card className="mt-6">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Available Tasks ({availableTasks.length})</CardTitle>
+              <CardTitle>All Tasks ({availableTasks.length})</CardTitle>
               <div className="relative">
                 <input
                   type="file"
@@ -145,15 +155,15 @@ const AdminTasks = () => {
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{task.description}</TableCell>
                         <TableCell className="capitalize">{task.category}</TableCell>
-                        <TableCell>{task.task_bidders?.length || 0}/10</TableCell>
-                        <TableCell>{task.task_submissions?.length || 0}</TableCell>
+                        <TableCell>{task.bidders.length}/10</TableCell>
+                        <TableCell>{task.submissions.length}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            task.task_bidders?.length >= 10 
+                            task.bidders.length >= 10 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {task.task_bidders?.length >= 10 ? 'Active' : 'Available'}
+                            {task.bidders.length >= 10 ? 'Active' : 'Available'}
                           </span>
                         </TableCell>
                       </TableRow>
