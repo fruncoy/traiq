@@ -118,9 +118,10 @@ const BiddedTasksPage = () => {
                           </div>
                           <div>
                             <Badge 
-                              variant={task.currentSubmission?.status === 'approved' ? 'success' : 
+                              variant={task.currentSubmission?.status === 'approved' ? 'default' : 
                                      task.currentSubmission?.status === 'rejected' ? 'destructive' : 
                                      'secondary'}
+                              className={task.currentSubmission?.status === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}
                             >
                               {task.currentSubmission?.status === 'approved' ? 'Approved' :
                                task.currentSubmission?.status === 'rejected' ? 'Rejected' :
