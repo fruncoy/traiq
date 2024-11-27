@@ -19,7 +19,7 @@ const AdminTasks = () => {
         .from('tasks')
         .select(`
           *,
-          task_bidders (
+          task_bidders!inner (
             bidder_id
           ),
           task_submissions (*)
@@ -28,7 +28,6 @@ const AdminTasks = () => {
 
       if (error) throw error;
 
-      // Transform data to include bidder count and submission info
       return tasksData.map((task: any) => ({
         ...task,
         category: task.category as TaskCategory,
@@ -150,7 +149,7 @@ const AdminTasks = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    availableTasks.map((task: any) => (
+                    availableTasks.map((task: Task) => (
                       <TableRow key={task.id}>
                         <TableCell>{task.title}</TableCell>
                         <TableCell>{task.description}</TableCell>

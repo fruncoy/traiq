@@ -54,7 +54,6 @@ const TaskList = ({
 
       if (error) throw error;
 
-      // Transform the data to match our Task interface
       const transformedTasks = data.map((task: any) => ({
         ...task,
         category: task.category as TaskCategory,
@@ -62,16 +61,15 @@ const TaskList = ({
         submissions: task.task_submissions || []
       }));
 
-      // For non-admin users, filter tasks based on bidding criteria
+      // For non-admin users, only filter out tasks they've already bid on or submitted
       if (!isAdmin && session?.user?.id) {
         return transformedTasks.filter((task: Task) => {
-          const maxBids = task.category === 'genai' ? 10 : 5;
-          const hasBid = task.task_bidders?.some(b => b.bidder_id === session.user.id);
-          const hasSubmission = task.task_submissions?.some(s => 
+          const hasBid = task.bidders.includes(session.user.id);
+          const hasSubmission = task.submissions.some(s => 
             s.bidder_id === session.user.id && s.status !== 'rejected'
           );
           
-          return task.current_bids < maxBids && !hasBid && !hasSubmission;
+          return !hasBid && !hasSubmission;
         });
       }
 
