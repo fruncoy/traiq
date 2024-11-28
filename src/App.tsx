@@ -1,9 +1,9 @@
+import React, { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { initializeNotifications } from "./utils/notificationManager";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
@@ -31,7 +31,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => {
+const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +53,7 @@ const App = () => {
   }, []);
 
   if (loading) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return (
