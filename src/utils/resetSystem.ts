@@ -2,24 +2,24 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const resetSystem = async () => {
   try {
-    // Reset all tables
+    // Only reset tasks and related tables
     await supabase.from('tasks').delete().neq('id', '');
     await supabase.from('task_bidders').delete().neq('id', '');
     await supabase.from('task_submissions').delete().neq('id', '');
-    await supabase.from('bid_transactions').delete().neq('id', '');
     
-    // Reset profiles to default values
-    await supabase.from('profiles').update({
-      bids: 0,
-      tasks_completed: 0,
-      total_payouts: 0,
-      pending_payouts: 0,
-      is_suspended: false,
-      suspended_at: null
-    }).neq('id', '');
+    // Do NOT reset these tables to preserve user data:
+    // - profiles (keeps user bids and earnings)
+    // - bid_transactions (keeps payment history)
     
-    // Clear local storage
-    localStorage.clear();
+    // Clear notifications older than 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    await supabase
+      .from('notifications')
+      .delete()
+      .lt('created_at', sevenDaysAgo.toISOString());
+      
   } catch (error) {
     console.error('Error resetting system:', error);
     throw error;

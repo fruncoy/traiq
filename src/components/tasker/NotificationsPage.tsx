@@ -2,32 +2,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const NotificationsPage = () => {
-  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
+  });
 
   const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications', currentTasker.id],
+    queryKey: ['notifications', session?.user?.id],
     queryFn: async () => {
-      const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
-      if (!stored) {
-        const defaultNotifications = [
-          {
-            id: '1',
-            title: 'Welcome to TRAIQ',
-            message: 'Start bidding on tasks to earn money!',
-            type: 'info',
-            date: new Date().toISOString(),
-            read: false,
-            taskerId: currentTasker.id
-          }
-        ];
-        localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(defaultNotifications));
-        return defaultNotifications;
-      }
-      return JSON.parse(stored);
+      if (!session?.user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
     },
-    refetchInterval: 5000
+    enabled: !!session?.user?.id,
+    refetchInterval: 30000 // Refresh every 30 seconds
   });
 
   return (
@@ -42,7 +44,7 @@ const NotificationsPage = () => {
               {notifications.length === 0 ? (
                 <p className="text-center text-gray-500 py-4">No notifications yet</p>
               ) : (
-                notifications.map((notification: any) => (
+                notifications.map((notification) => (
                   <div
                     key={notification.id}
                     className="p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors"
@@ -59,13 +61,17 @@ const NotificationsPage = () => {
                             ? 'bg-green-100 text-green-800' 
                             : notification.type === 'error'
                             ? 'bg-red-100 text-red-800'
+                            : notification.type === 'deadline_warning'
+                            ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-blue-100 text-blue-800'
                         }`}
                       >
                         {notification.type}
                       </Badge>
                     </div>
-                    <p className="text-xs text-gray-500">{new Date(notification.date).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">
+                      {format(new Date(notification.created_at), 'MMM d, yyyy h:mm a')}
+                    </p>
                   </div>
                 ))
               )}

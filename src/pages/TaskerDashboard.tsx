@@ -6,62 +6,80 @@ import BuyBidsSection from "../components/tasker/BuyBidsSection";
 import TaskerSettings from "../components/tasker/TaskerSettings";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const TaskerDashboard = () => {
   const location = useLocation();
-  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
-  const { data: userBids = 0 } = useQuery({
-    queryKey: ['user-bids', currentTasker.id],
+  const { data: session } = useQuery({
+    queryKey: ['session'],
     queryFn: async () => {
-      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-      const tasker = taskers.find((t: any) => t.id === currentTasker.id);
-      return tasker?.bids || 0;
-    },
-    refetchInterval: 1000
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
   });
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', session?.user?.id],
     queryFn: async () => {
-      const storedTasks = localStorage.getItem('tasks');
-      return storedTasks ? JSON.parse(storedTasks) : [];
+      if (!session?.user?.id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
     },
-    refetchInterval: 1000
+    enabled: !!session?.user?.id
   });
 
-  const { data: userEarnings = 0 } = useQuery({
-    queryKey: ['user-earnings', currentTasker.id],
+  const { data: availableTasks = 0 } = useQuery({
+    queryKey: ['available-tasks'],
     queryFn: async () => {
-      const earnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-      return earnings[currentTasker.id] || 0;
+      const { count, error } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      return count || 0;
     },
-    refetchInterval: 1000
+    refetchInterval: 30000 // Refresh every 30 seconds
   });
 
   const { data: totalEarned = 0 } = useQuery({
-    queryKey: ['total-earned', currentTasker.id],
+    queryKey: ['total-earned', session?.user?.id],
     queryFn: async () => {
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      return tasks.reduce((total: number, task: any) => {
-        const approvedSubmission = task.submissions?.find(
-          (s: any) => s.bidderId === currentTasker.id && s.status === 'approved'
-        );
-        if (approvedSubmission) {
-          return total + (task.category === 'genai' ? 700 : 300);
-        }
-        return total;
+      if (!session?.user?.id) return 0;
+      
+      const { data, error } = await supabase
+        .from('task_submissions')
+        .select(`
+          *,
+          tasks (
+            category,
+            tasker_payout
+          )
+        `)
+        .eq('bidder_id', session.user.id)
+        .eq('status', 'approved');
+
+      if (error) throw error;
+
+      return data.reduce((total, submission) => {
+        return total + (submission.tasks?.tasker_payout || 0);
       }, 0);
     },
-    refetchInterval: 1000
+    enabled: !!session?.user?.id,
+    refetchInterval: 30000
   });
-
-  const availableTasks = tasks.filter(t => !t.status || t.status === 'pending').length;
 
   const metrics = [
     { 
       label: "Available Bids", 
-      value: userBids.toString(),
+      value: userProfile?.bids || 0,
       description: "Use them wisely to secure tasks" 
     },
     { 
@@ -71,7 +89,7 @@ const TaskerDashboard = () => {
     },
     {
       label: "Available Balance",
-      value: `KES ${userEarnings}`,
+      value: `KES ${userProfile?.pending_payouts || 0}`,
       description: "Current withdrawable balance"
     },
     {
