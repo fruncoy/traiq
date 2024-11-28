@@ -14,6 +14,7 @@ export interface TaskSubmission {
 
 export interface TaskBidder {
   bidder_id: string;
+  bid_date?: string;
 }
 
 export interface Task {

@@ -58,12 +58,12 @@ const TaskSubmissionForm = () => {
 
       if (error) throw error;
 
-      return tasks.filter(task => {
+      return tasks.filter((task: any) => {
         const hasSubmitted = task.task_submissions?.some(
           (s: any) => s.bidder_id === user.id
         );
         return !hasSubmitted;
-      });
+      }) as Task[];
     }
   });
 
