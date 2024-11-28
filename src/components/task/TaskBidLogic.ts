@@ -1,6 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
+import { formatInTimeZone } from 'date-fns-tz';
+
+const checkBiddingAllowed = () => {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 4 is Thursday, 5 is Friday
+  const eatTime = formatInTimeZone(now, 'Africa/Nairobi', 'HH');
+  const hour = parseInt(eatTime);
+
+  if ((dayOfWeek === 4 && hour >= 16) || (dayOfWeek === 5 && hour < 8)) {
+    throw new Error("Bidding is not allowed between Thursday 4 PM and Friday 8 AM.");
+  }
+};
 
 export const handleTaskBid = async (task: any, userBids: number) => {
+  checkBiddingAllowed();
+
   const requiredBids = task.category === 'genai' ? 10 : 5;
   const MAX_BIDDERS = 10;
 
