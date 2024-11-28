@@ -19,10 +19,10 @@ const AdminTasks = () => {
         .from('tasks')
         .select(`
           *,
-          task_bidders (
+          task_bidders!left (
             bidder_id
           ),
-          task_submissions (*)
+          task_submissions!left (*)
         `)
         .order('created_at', { ascending: false });
 
