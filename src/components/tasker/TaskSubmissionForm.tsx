@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Task, TaskCategory } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isAfter, set } from "date-fns";
+import { zonedTimeToUtc } from 'date-fns-tz';
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
@@ -15,8 +16,9 @@ const TaskSubmissionForm = () => {
 
   const checkDeadline = () => {
     const now = new Date();
-    const deadline = set(now, { hours: 16, minutes: 0, seconds: 0 }); // 4 PM
-    return isAfter(now, deadline);
+    const eatTime = zonedTimeToUtc(now, 'Africa/Nairobi');
+    const deadline = set(eatTime, { hours: 16, minutes: 0, seconds: 0 }); // 4 PM EAT
+    return isAfter(eatTime, deadline);
   };
 
   const { data: activeTasks = [] } = useQuery({
@@ -27,18 +29,24 @@ const TaskSubmissionForm = () => {
 
       const { data: tasks, error } = await supabase
         .from('tasks')
-        .select('*, task_submissions(bidder_id, status)')
+        .select(`
+          *,
+          task_bidders!inner (
+            bidder_id,
+            bid_date
+          ),
+          task_submissions!left (
+            bidder_id,
+            status
+          )
+        `)
+        .eq('task_bidders.bidder_id', user.id)
         .eq('status', 'active');
 
       if (error) throw error;
 
-      // Convert category to TaskCategory type
-      const typedTasks = tasks.map((task: any) => ({
-        ...task,
-        category: task.category as TaskCategory
-      }));
-
-      return typedTasks.filter((task: Task) => {
+      // Filter tasks that haven't been submitted yet
+      return tasks.filter(task => {
         const hasSubmitted = task.task_submissions?.some(
           (s: any) => s.bidder_id === user.id
         );
@@ -50,7 +58,7 @@ const TaskSubmissionForm = () => {
   const submitTaskMutation = useMutation({
     mutationFn: async ({ task, file }: { task: Task, file: File }) => {
       if (checkDeadline()) {
-        throw new Error("Submissions are closed for today. Please submit before 4 PM.");
+        throw new Error("Submissions are closed for today. Please submit before 4 PM EAT.");
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -144,13 +152,13 @@ const TaskSubmissionForm = () => {
           className="bg-white"
         />
         <p className="text-sm text-gray-500">
-          Submissions close at 4 PM today. Current time: {format(new Date(), 'h:mm a')}
+          Submissions close at 4 PM EAT today. Current time: {format(new Date(), 'h:mm a')}
         </p>
       </div>
 
       <Button 
         type="submit" 
-        disabled={!selectedTask || !file || submitTaskMutation.isPending}
+        disabled={!selectedTask || !file || submitTaskMutation.isPending || checkDeadline()}
         className="w-full bg-primary hover:bg-primary/90"
       >
         {submitTaskMutation.isPending ? "Processing..." : "Submit Task"}
