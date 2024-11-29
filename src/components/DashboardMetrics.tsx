@@ -9,6 +9,20 @@ interface MetricProps {
 }
 
 const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
+  // Query to get total tasks count
+  const { data: tasksCount = 0 } = useQuery({
+    queryKey: ['total-tasks-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) throw error;
+      return count || 0;
+    }
+  });
+
+  // Query to get current user's profile and related data
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
     queryFn: async () => {
@@ -65,7 +79,49 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
     }
   });
 
+  // Query to get today's submissions count
+  const { data: todaySubmissions = 0 } = useQuery({
+    queryKey: ['today-submissions-count'],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { count, error } = await supabase
+        .from('task_submissions')
+        .select('*', { count: 'exact', head: true })
+        .gte('submitted_at', today.toISOString());
+
+      if (error) throw error;
+      return count || 0;
+    }
+  });
+
+  // Query to get pending submissions count
+  const { data: pendingSubmissions = 0 } = useQuery({
+    queryKey: ['pending-submissions-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('task_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      return count || 0;
+    }
+  });
+
   const renderMetricValue = (metric: MetricProps) => {
+    // Override the value for specific metrics with real-time data
+    if (metric.label === "Total Tasks") {
+      return tasksCount;
+    }
+    if (metric.label === "Today's Submissions") {
+      return todaySubmissions;
+    }
+    if (metric.label === "Pending Reviews") {
+      return pendingSubmissions;
+    }
+    
     if (typeof metric.value === 'function') {
       return currentUser ? metric.value(currentUser) : '-';
     }
