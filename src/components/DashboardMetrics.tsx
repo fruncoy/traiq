@@ -22,7 +22,6 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
           *,
           task_submissions!left (
             status,
-            payout,
             submitted_at
           ),
           task_bidders!left (
@@ -45,7 +44,6 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
             *,
             task_submissions!left (
               status,
-              payout,
               submitted_at
             ),
             task_bidders!left (
@@ -59,13 +57,8 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         return newProfile;
       }
 
-      const { data: submissions } = await supabase
-        .from('task_submissions')
-        .select('*')
-        .eq('bidder_id', user.id)
-        .eq('status', 'approved');
-
-      const totalEarned = submissions?.reduce((sum: number, sub: any) => sum + (sub.payout || 0), 0) || 0;
+      // Calculate total earnings from profile
+      const totalEarned = profile.total_payouts || 0;
 
       return {
         ...profile,
