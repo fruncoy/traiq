@@ -4,10 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Task } from "@/types/task";
+import { Task, TaskCategory } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isAfter, parseISO } from "date-fns";
 import { formatInTimeZone } from 'date-fns-tz';
+
+interface TaskWithBidders extends Omit<Task, 'category'> {
+  category: string;
+  task_bidders: { bidder_id: string; bid_date: string }[];
+}
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
@@ -39,14 +44,17 @@ const TaskSubmissionForm = () => {
 
       if (error) throw error;
 
-      return tasks.filter((task: any) => {
+      return tasks.filter((task: TaskWithBidders) => {
         const hasSubmitted = task.task_submissions?.some(
           (s: any) => s.bidder_id === user.id
         );
         return !hasSubmitted;
-      });
+      }).map((task: TaskWithBidders) => ({
+        ...task,
+        category: task.category as TaskCategory
+      }));
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   const submitTaskMutation = useMutation({
@@ -54,7 +62,6 @@ const TaskSubmissionForm = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
-      // Upload file to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${task.id}/${Date.now()}.${fileExt}`;
       
@@ -64,7 +71,6 @@ const TaskSubmissionForm = () => {
 
       if (uploadError) throw uploadError;
 
-      // Create submission record
       const { error: submissionError } = await supabase
         .from('task_submissions')
         .insert({
@@ -116,13 +122,11 @@ const TaskSubmissionForm = () => {
     const bidHour = parseInt(formatInTimeZone(bidTime, 'Africa/Nairobi', 'HH'));
     
     if (bidHour >= 17) {
-      // If bid was after 5 PM, deadline is next day 4 PM
       const deadline = new Date(bidTime);
       deadline.setDate(deadline.getDate() + 1);
       deadline.setHours(16, 0, 0, 0);
       return deadline;
     } else {
-      // Otherwise deadline is same day 4 PM
       const deadline = new Date(bidTime);
       deadline.setHours(16, 0, 0, 0);
       return deadline;

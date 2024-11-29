@@ -1,4 +1,4 @@
-export type TaskStatus = "pending" | "active" | "assigned" | "completed" | "rejected";
+export type TaskStatus = "pending" | "active" | "assigned" | "completed" | "rejected" | "expired";
 export type TaskCategory = "genai" | "creai";
 
 export interface TaskSubmission {
@@ -10,6 +10,7 @@ export interface TaskSubmission {
   submitted_at: string;
   file_name: string;
   file_url?: string;
+  payout?: number;
 }
 
 export interface TaskBidder {

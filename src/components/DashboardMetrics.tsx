@@ -20,7 +20,7 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         .from('profiles')
         .select(`
           *,
-          task_submissions(status),
+          task_submissions(status, payout),
           task_bidders(task_id)
         `)
         .eq('id', user.id)
@@ -36,7 +36,7 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
           .insert([{ id: user.id, email: user.email }])
           .select(`
             *,
-            task_submissions(status),
+            task_submissions(status, payout),
             task_bidders(task_id)
           `)
           .single();
@@ -51,7 +51,7 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         .eq('bidder_id', user.id)
         .eq('status', 'approved');
 
-      const totalEarned = submissions?.reduce((sum, sub) => sum + (sub.payout || 0), 0) || 0;
+      const totalEarned = submissions?.reduce((sum, sub: any) => sum + (sub.payout || 0), 0) || 0;
 
       return {
         ...profile,
