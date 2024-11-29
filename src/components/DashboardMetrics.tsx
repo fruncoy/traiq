@@ -20,8 +20,15 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         .from('profiles')
         .select(`
           *,
-          task_submissions(status, payout),
-          task_bidders(task_id)
+          task_submissions!left (
+            status,
+            payout,
+            submitted_at
+          ),
+          task_bidders!left (
+            task_id,
+            bid_date
+          )
         `)
         .eq('id', user.id)
         .maybeSingle();
@@ -36,8 +43,15 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
           .insert([{ id: user.id, email: user.email }])
           .select(`
             *,
-            task_submissions(status, payout),
-            task_bidders(task_id)
+            task_submissions!left (
+              status,
+              payout,
+              submitted_at
+            ),
+            task_bidders!left (
+              task_id,
+              bid_date
+            )
           `)
           .single();
 
@@ -51,11 +65,11 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         .eq('bidder_id', user.id)
         .eq('status', 'approved');
 
-      const totalEarned = submissions?.reduce((sum, sub: any) => sum + (sub.payout || 0), 0) || 0;
+      const totalEarned = submissions?.reduce((sum: number, sub: any) => sum + (sub.payout || 0), 0) || 0;
 
       return {
         ...profile,
-        completedTasks: profile.task_submissions?.filter(s => s.status === 'approved').length || 0,
+        completedTasks: profile.task_submissions?.filter((s: any) => s.status === 'approved').length || 0,
         activeBids: profile.task_bidders?.length || 0,
         totalEarned
       };

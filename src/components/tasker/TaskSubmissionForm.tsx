@@ -9,9 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, isAfter, parseISO } from "date-fns";
 import { formatInTimeZone } from 'date-fns-tz';
 
-interface TaskWithBidders extends Omit<Task, 'category'> {
-  category: string;
-  task_bidders: { bidder_id: string; bid_date: string }[];
+interface TaskWithSubmissions extends Task {
+  task_submissions: {
+    id: string;
+    bidder_id: string;
+    status: string;
+    submitted_at: string;
+  }[];
+  task_bidders: {
+    bidder_id: string;
+    bid_date: string;
+  }[];
 }
 
 const TaskSubmissionForm = () => {
@@ -34,8 +42,10 @@ const TaskSubmissionForm = () => {
             bid_date
           ),
           task_submissions!left (
+            id,
             bidder_id,
-            status
+            status,
+            submitted_at
           )
         `)
         .eq('task_bidders.bidder_id', user.id)
@@ -44,15 +54,15 @@ const TaskSubmissionForm = () => {
 
       if (error) throw error;
 
-      return tasks.filter((task: TaskWithBidders) => {
-        const hasSubmitted = task.task_submissions?.some(
-          (s: any) => s.bidder_id === user.id
-        );
-        return !hasSubmitted;
-      }).map((task: TaskWithBidders) => ({
-        ...task,
-        category: task.category as TaskCategory
-      }));
+      return tasks
+        .filter((task: TaskWithSubmissions) => {
+          const hasSubmitted = task.task_submissions?.some(s => s.bidder_id === user.id);
+          return !hasSubmitted;
+        })
+        .map((task: any) => ({
+          ...task,
+          category: task.category as TaskCategory
+        }));
     },
     refetchInterval: 30000
   });
@@ -105,13 +115,13 @@ const TaskSubmissionForm = () => {
       return;
     }
 
-    const task = activeTasks.find((t: Task) => t.id === selectedTask);
+    const task = activeTasks.find(t => t.id === selectedTask);
     if (task) {
       submitTaskMutation.mutate({ task, file });
     }
   };
 
-  const selectedTaskData = activeTasks.find((t: Task) => t.id === selectedTask);
+  const selectedTaskData = activeTasks.find(t => t.id === selectedTask);
   const taskBidder = selectedTaskData?.task_bidders?.find(b => b.bid_date);
   const now = new Date();
   const eatTime = formatInTimeZone(now, 'Africa/Nairobi', 'HH:mm');
