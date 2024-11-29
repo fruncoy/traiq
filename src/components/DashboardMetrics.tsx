@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfDay, endOfDay } from "date-fns";
 
 interface MetricProps {
   label: string;
@@ -57,14 +56,11 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         return newProfile;
       }
 
-      // Calculate total earnings from profile
-      const totalEarned = profile.total_payouts || 0;
-
       return {
         ...profile,
         completedTasks: profile.task_submissions?.filter((s: any) => s.status === 'approved').length || 0,
         activeBids: profile.task_bidders?.length || 0,
-        totalEarned
+        totalEarned: profile.total_payouts || 0
       };
     }
   });
