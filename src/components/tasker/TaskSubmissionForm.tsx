@@ -5,17 +5,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Task, TaskCategory } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
 import { formatInTimeZone } from 'date-fns-tz';
 import { TaskSelect } from "./TaskSelect";
 import { getDeadline, isSubmissionAllowed } from "@/utils/deadlineUtils";
 
-type TaskWithBidders = Task & {
+interface TaskWithBidders extends Task {
   task_bidders: {
     bidder_id: string;
     bid_date: string;
   }[];
-};
+}
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
@@ -28,7 +27,7 @@ const TaskSubmissionForm = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
-      const { data: tasks, error } = await supabase
+      const { data: tasksData, error } = await supabase
         .from('tasks')
         .select(`
           *,
@@ -36,12 +35,7 @@ const TaskSubmissionForm = () => {
             bidder_id,
             bid_date
           ),
-          task_submissions!left (
-            id,
-            bidder_id,
-            status,
-            submitted_at
-          )
+          task_submissions!left (*)
         `)
         .eq('task_bidders.bidder_id', user.id)
         .eq('status', 'active')
@@ -49,15 +43,17 @@ const TaskSubmissionForm = () => {
 
       if (error) throw error;
 
-      return tasks
-        .filter((task: TaskWithBidders) => {
-          const hasSubmitted = task.task_submissions?.some(s => s.bidder_id === user.id);
+      return tasksData
+        .filter((task: any) => {
+          const hasSubmitted = task.task_submissions?.some((s: any) => s.bidder_id === user.id);
           return !hasSubmitted;
         })
         .map((task: any) => ({
           ...task,
-          category: task.category as TaskCategory
-        }));
+          category: task.category as TaskCategory,
+          bidders: task.task_bidders || [],
+          submissions: task.task_submissions || []
+        })) as TaskWithBidders[];
     },
     refetchInterval: 30000
   });
@@ -140,7 +136,7 @@ const TaskSubmissionForm = () => {
         />
         {taskBidder?.bid_date && (
           <p className={`text-sm ${!isSubmissionAllowed(taskBidder.bid_date) ? 'text-red-500' : 'text-gray-500'}`}>
-            Deadline: {format(getDeadline(taskBidder.bid_date), 'MMM d, yyyy h:mm a')} EAT
+            Deadline: {getDeadline(taskBidder.bid_date).toLocaleString()} EAT
           </p>
         )}
       </div>
