@@ -6,33 +6,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isAfter, set, addDays } from "date-fns";
+import { format, isAfter, parseISO } from "date-fns";
 import { formatInTimeZone } from 'date-fns-tz';
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
-
-  const checkDeadline = (bidDate: string) => {
-    const now = new Date();
-    const eatTime = formatInTimeZone(now, 'Africa/Nairobi', 'yyyy-MM-dd HH:mm:ssXXX');
-    const bidDateTime = new Date(bidDate);
-    const submissionDeadline = set(addDays(bidDateTime, 1), { hours: 16, minutes: 0, seconds: 0 });
-    
-    // Check if it's between Thursday 4 PM and Friday 8 AM
-    const dayOfWeek = now.getDay(); // 4 is Thursday, 5 is Friday
-    const hour = now.getHours();
-    
-    if ((dayOfWeek === 4 && hour >= 16) || (dayOfWeek === 5 && hour < 8)) {
-      return { allowed: false, message: "Submissions are not allowed between Thursday 4 PM and Friday 8 AM." };
-    }
-    
-    return {
-      allowed: !isAfter(new Date(eatTime), submissionDeadline),
-      message: `Submission deadline: ${format(submissionDeadline, 'MMM d, yyyy h:mm a')} EAT`
-    };
-  };
 
   const { data: activeTasks = [] } = useQuery({
     queryKey: ['user-active-tasks'],
@@ -54,7 +34,8 @@ const TaskSubmissionForm = () => {
           )
         `)
         .eq('task_bidders.bidder_id', user.id)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .neq('status', 'expired');
 
       if (error) throw error;
 
@@ -63,20 +44,13 @@ const TaskSubmissionForm = () => {
           (s: any) => s.bidder_id === user.id
         );
         return !hasSubmitted;
-      }) as Task[];
-    }
+      });
+    },
+    refetchInterval: 30000 // Refresh every 30 seconds
   });
 
   const submitTaskMutation = useMutation({
     mutationFn: async ({ task, file }: { task: Task, file: File }) => {
-      const taskBidder = task.task_bidders?.find(b => b.bid_date);
-      if (!taskBidder?.bid_date) throw new Error("Bid date not found");
-      
-      const deadlineCheck = checkDeadline(taskBidder.bid_date);
-      if (!deadlineCheck.allowed) {
-        throw new Error(deadlineCheck.message);
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
@@ -133,7 +107,33 @@ const TaskSubmissionForm = () => {
 
   const selectedTaskData = activeTasks.find((t: Task) => t.id === selectedTask);
   const taskBidder = selectedTaskData?.task_bidders?.find(b => b.bid_date);
-  const deadlineInfo = taskBidder ? checkDeadline(taskBidder.bid_date) : null;
+  const now = new Date();
+  const eatTime = formatInTimeZone(now, 'Africa/Nairobi', 'HH:mm');
+  const [hours] = eatTime.split(':').map(Number);
+  
+  const getDeadline = (bidDate: string) => {
+    const bidTime = parseISO(bidDate);
+    const bidHour = parseInt(formatInTimeZone(bidTime, 'Africa/Nairobi', 'HH'));
+    
+    if (bidHour >= 17) {
+      // If bid was after 5 PM, deadline is next day 4 PM
+      const deadline = new Date(bidTime);
+      deadline.setDate(deadline.getDate() + 1);
+      deadline.setHours(16, 0, 0, 0);
+      return deadline;
+    } else {
+      // Otherwise deadline is same day 4 PM
+      const deadline = new Date(bidTime);
+      deadline.setHours(16, 0, 0, 0);
+      return deadline;
+    }
+  };
+
+  const isSubmissionAllowed = () => {
+    if (!taskBidder?.bid_date) return false;
+    const deadline = getDeadline(taskBidder.bid_date);
+    return !isAfter(now, deadline);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -171,16 +171,16 @@ const TaskSubmissionForm = () => {
           accept=".pdf,.doc,.docx,.txt"
           className="bg-white"
         />
-        {deadlineInfo && (
-          <p className={`text-sm ${!deadlineInfo.allowed ? 'text-red-500' : 'text-gray-500'}`}>
-            {deadlineInfo.message}
+        {taskBidder?.bid_date && (
+          <p className={`text-sm ${!isSubmissionAllowed() ? 'text-red-500' : 'text-gray-500'}`}>
+            Deadline: {format(getDeadline(taskBidder.bid_date), 'MMM d, yyyy h:mm a')} EAT
           </p>
         )}
       </div>
 
       <Button 
         type="submit" 
-        disabled={!selectedTask || !file || submitTaskMutation.isPending || (deadlineInfo && !deadlineInfo.allowed)}
+        disabled={!selectedTask || !file || submitTaskMutation.isPending || !isSubmissionAllowed()}
         className="w-full bg-primary hover:bg-primary/90"
       >
         {submitTaskMutation.isPending ? "Processing..." : "Submit Task"}

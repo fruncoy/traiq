@@ -264,6 +264,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_submission_deadline: {
+        Args: {
+          bid_time: string
+        }
+        Returns: string
+      }
       expire_tasks: {
         Args: Record<PropertyKey, never>
         Returns: undefined

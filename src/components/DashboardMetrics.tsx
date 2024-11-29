@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { startOfDay, endOfDay } from "date-fns";
 
 interface MetricProps {
   label: string;
@@ -44,10 +45,19 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         return newProfile;
       }
 
+      const { data: submissions } = await supabase
+        .from('task_submissions')
+        .select('*')
+        .eq('bidder_id', user.id)
+        .eq('status', 'approved');
+
+      const totalEarned = submissions?.reduce((sum, sub) => sum + (sub.payout || 0), 0) || 0;
+
       return {
         ...profile,
         completedTasks: profile.task_submissions?.filter(s => s.status === 'approved').length || 0,
-        activeBids: profile.task_bidders?.length || 0
+        activeBids: profile.task_bidders?.length || 0,
+        totalEarned
       };
     }
   });
