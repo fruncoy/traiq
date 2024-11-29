@@ -4,74 +4,45 @@ import DashboardMetrics from "../components/DashboardMetrics";
 import ActivityFeed from "../components/ActivityFeed";
 import QuickActions from "../components/QuickActions";
 import { useQuery } from "@tanstack/react-query";
-import { startOfDay, endOfDay } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const today = new Date();
-  const startOfToday = startOfDay(today);
-  const endOfToday = endOfDay(today);
 
+  // Query to get total revenue from bid transactions
   const { data: totalRevenue = 0 } = useQuery({
-    queryKey: ['total-revenue'],
+    queryKey: ['admin-total-revenue'],
     queryFn: async () => {
-      return parseFloat(localStorage.getItem('totalSpent') || '0');
-    }
-  });
+      const { data, error } = await supabase
+        .from('bid_transactions')
+        .select('amount')
+        .throwOnError();
 
-  const { data: allTasks = [] } = useQuery({
-    queryKey: ['all-tasks'],
-    queryFn: async () => {
-      const tasks = localStorage.getItem('tasks');
-      return tasks ? JSON.parse(tasks) : [];
-    }
-  });
-
-  const { data: todaySubmissions = [] } = useQuery({
-    queryKey: ['today-submissions'],
-    queryFn: async () => {
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      return tasks.filter((task: any) => {
-        const submissions = task.submissions || [];
-        return submissions.some((sub: any) => {
-          const subDate = new Date(sub.submittedAt);
-          return subDate >= startOfToday && subDate <= endOfToday;
-        });
-      });
-    }
-  });
-
-  const { data: pendingSubmissions = [] } = useQuery({
-    queryKey: ['pending-submissions'],
-    queryFn: async () => {
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      return tasks.filter((task: any) => {
-        const submissions = task.submissions || [];
-        return submissions.some((sub: any) => sub.status === 'pending');
-      });
+      if (error) throw error;
+      return data?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
     }
   });
 
   const metrics = [
     { 
       label: "Total Tasks", 
-      value: allTasks.length.toString(), 
+      value: "0", // This will be overridden by DashboardMetrics component
       description: "Total tasks in the system" 
     },
     { 
       label: "Today's Submissions", 
-      value: todaySubmissions.length.toString(), 
+      value: "0", // This will be overridden by DashboardMetrics component
       description: "Task submissions for today" 
     },
     { 
       label: "Pending Reviews", 
-      value: pendingSubmissions.length.toString(), 
+      value: "0", // This will be overridden by DashboardMetrics component
       description: "Tasks awaiting review" 
     },
     { 
       label: "Total Revenue", 
       value: `KES ${totalRevenue}`, 
-      description: "Platform revenue" 
+      description: "Platform revenue from bid purchases" 
     }
   ];
 
