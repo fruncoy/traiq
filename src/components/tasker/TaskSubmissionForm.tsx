@@ -4,18 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Task, TaskCategory } from "@/types/task";
+import { Task, TaskCategory, TaskSubmission } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isAfter, parseISO } from "date-fns";
 import { formatInTimeZone } from 'date-fns-tz';
 
 interface TaskWithSubmissions extends Task {
-  task_submissions: {
-    id: string;
-    bidder_id: string;
-    status: string;
-    submitted_at: string;
-  }[];
+  task_submissions: Pick<TaskSubmission, 'id' | 'bidder_id' | 'status' | 'submitted_at'>[];
   task_bidders: {
     bidder_id: string;
     bid_date: string;
