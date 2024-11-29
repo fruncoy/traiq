@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Task, TaskCategory, TaskSubmission } from "@/types/task";
+import { Task, TaskCategory } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isAfter, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { formatInTimeZone } from 'date-fns-tz';
+import { TaskSelect } from "./TaskSelect";
+import { getDeadline, isSubmissionAllowed } from "@/utils/deadlineUtils";
 
-interface TaskWithSubmissions extends Task {
-  task_submissions: Pick<TaskSubmission, 'id' | 'bidder_id' | 'status' | 'submitted_at'>[];
+type TaskWithBidders = Task & {
   task_bidders: {
     bidder_id: string;
     bid_date: string;
   }[];
-}
+};
 
 const TaskSubmissionForm = () => {
   const [selectedTask, setSelectedTask] = useState("");
@@ -50,7 +50,7 @@ const TaskSubmissionForm = () => {
       if (error) throw error;
 
       return tasks
-        .filter((task: TaskWithSubmissions) => {
+        .filter((task: TaskWithBidders) => {
           const hasSubmitted = task.task_submissions?.some(s => s.bidder_id === user.id);
           return !hasSubmitted;
         })
@@ -121,56 +121,14 @@ const TaskSubmissionForm = () => {
   const now = new Date();
   const eatTime = formatInTimeZone(now, 'Africa/Nairobi', 'HH:mm');
   const [hours] = eatTime.split(':').map(Number);
-  
-  const getDeadline = (bidDate: string) => {
-    const bidTime = parseISO(bidDate);
-    const bidHour = parseInt(formatInTimeZone(bidTime, 'Africa/Nairobi', 'HH'));
-    
-    if (bidHour >= 17) {
-      const deadline = new Date(bidTime);
-      deadline.setDate(deadline.getDate() + 1);
-      deadline.setHours(16, 0, 0, 0);
-      return deadline;
-    } else {
-      const deadline = new Date(bidTime);
-      deadline.setHours(16, 0, 0, 0);
-      return deadline;
-    }
-  };
-
-  const isSubmissionAllowed = () => {
-    if (!taskBidder?.bid_date) return false;
-    const deadline = getDeadline(taskBidder.bid_date);
-    return !isAfter(now, deadline);
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Select Task</label>
-        <Select value={selectedTask} onValueChange={setSelectedTask}>
-          <SelectTrigger className="w-full bg-white">
-            <SelectValue placeholder="Select a task to submit" />
-          </SelectTrigger>
-          <SelectContent position="popper" className="w-full max-h-[300px] overflow-y-auto bg-white">
-            {activeTasks.length === 0 ? (
-              <SelectItem value="none" disabled>No active tasks</SelectItem>
-            ) : (
-              activeTasks.map((task: Task) => (
-                <SelectItem 
-                  key={task.id} 
-                  value={task.id}
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium">{task.title}</span>
-                    <span className="text-sm text-gray-500">{task.code}</span>
-                  </div>
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
-      </div>
+      <TaskSelect 
+        tasks={activeTasks}
+        selectedTask={selectedTask}
+        onSelect={setSelectedTask}
+      />
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Upload File (Max 10MB)</label>
@@ -181,7 +139,7 @@ const TaskSubmissionForm = () => {
           className="bg-white"
         />
         {taskBidder?.bid_date && (
-          <p className={`text-sm ${!isSubmissionAllowed() ? 'text-red-500' : 'text-gray-500'}`}>
+          <p className={`text-sm ${!isSubmissionAllowed(taskBidder.bid_date) ? 'text-red-500' : 'text-gray-500'}`}>
             Deadline: {format(getDeadline(taskBidder.bid_date), 'MMM d, yyyy h:mm a')} EAT
           </p>
         )}
@@ -189,7 +147,7 @@ const TaskSubmissionForm = () => {
 
       <Button 
         type="submit" 
-        disabled={!selectedTask || !file || submitTaskMutation.isPending || !isSubmissionAllowed()}
+        disabled={!selectedTask || !file || submitTaskMutation.isPending || !isSubmissionAllowed(taskBidder?.bid_date)}
         className="w-full bg-primary hover:bg-primary/90"
       >
         {submitTaskMutation.isPending ? "Processing..." : "Submit Task"}
