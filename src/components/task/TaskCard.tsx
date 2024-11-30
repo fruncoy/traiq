@@ -5,6 +5,7 @@ import { Task } from "@/types/task";
 import { toast } from "sonner";
 import { format, isValid, parseISO, differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface TaskCardProps {
   task: Task;
@@ -17,6 +18,7 @@ interface TaskCardProps {
 
 const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts }: TaskCardProps) => {
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -65,6 +67,10 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts }: Ta
     onBid(task.id);
   };
 
+  const handleSubmitWork = () => {
+    navigate(`/tasker/submit/${task.id}`);
+  };
+
   const formatDeadline = (dateString: string) => {
     try {
       const date = parseISO(dateString);
@@ -99,13 +105,20 @@ const TaskCard = ({ task, onBid, isAdmin, userBids, isPending, hidePayouts }: Ta
               </h3>
               <p className="text-gray-600 mt-2">{task.description}</p>
             </div>
-            {!isAdmin && actualBidders.length < MAX_BIDDERS && (
+            {!isAdmin && actualBidders.length < MAX_BIDDERS ? (
               <Button 
                 className="bg-[#1E40AF] hover:bg-blue-700 text-white"
                 onClick={handleBidClick}
                 disabled={isPending || actualBidders.length >= MAX_BIDDERS}
               >
                 {isPending ? "Bidding..." : "Bid Now"}
+              </Button>
+            ) : (
+              <Button
+                className="bg-[#1E40AF] hover:bg-blue-700 text-white"
+                onClick={handleSubmitWork}
+              >
+                Submit Work
               </Button>
             )}
           </div>

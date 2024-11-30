@@ -7,9 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { TaskSelect } from "./TaskSelect";
 import { isSubmissionAllowed } from "@/utils/deadlineUtils";
 import { FileUploadSection } from "./FileUploadSection";
+import { useParams } from "react-router-dom";
 
 const TaskSubmissionForm = () => {
-  const [selectedTask, setSelectedTask] = useState("");
+  const { taskId } = useParams(); // Get taskId from URL if present
+  const [selectedTask, setSelectedTask] = useState(taskId || "");
   const [file, setFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
 
@@ -27,23 +29,27 @@ const TaskSubmissionForm = () => {
             bidder_id,
             bid_date
           ),
-          task_submissions!left (*)
+          task_submissions (
+            bidder_id,
+            status
+          )
         `)
         .eq('task_bidders.bidder_id', user.id)
-        .eq('status', 'active');
+        .eq('status', 'pending');
 
       if (error) throw error;
 
-      return tasksData
-        .filter((task: any) => {
-          const hasSubmitted = task.task_submissions?.some((s: any) => s.bidder_id === user.id);
-          return !hasSubmitted;
-        })
-        .map((task: any) => ({
-          ...task,
-          bidders: task.task_bidders || [],
-          submissions: task.task_submissions || []
-        }));
+      // Filter out tasks that already have submissions
+      return tasksData.filter((task: any) => {
+        const hasSubmission = task.task_submissions?.some(
+          (s: any) => s.bidder_id === user.id && s.status !== 'rejected'
+        );
+        return !hasSubmission;
+      }).map((task: any) => ({
+        ...task,
+        bidders: task.task_bidders || [],
+        submissions: task.task_submissions || []
+      }));
     }
   });
 
