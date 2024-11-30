@@ -28,8 +28,10 @@ const BiddedTasksPage = () => {
           *,
           task_bidders!inner(bidder_id),
           task_submissions(
+            id,
             status,
-            bidder_id
+            bidder_id,
+            submitted_at
           )
         `)
         .eq('task_bidders.bidder_id', user.id);
@@ -53,8 +55,12 @@ const BiddedTasksPage = () => {
     );
   }
 
-  const readyForSubmission = userTasks.filter((task) => !task.currentSubmission);
-  const submitted = userTasks.filter((task) => task.currentSubmission);
+  const readyForSubmission = userTasks.filter((task) => !task.currentSubmission || task.currentSubmission.status === 'rejected');
+  const submitted = userTasks.filter((task) => task.currentSubmission && task.currentSubmission.status !== 'rejected');
+
+  const handleSubmitWork = (taskId: string) => {
+    navigate(`/tasker/submit/${taskId}`);
+  };
 
   return (
     <Sidebar>
@@ -84,8 +90,8 @@ const BiddedTasksPage = () => {
                             </Badge>
                             <div>
                               <Button 
-                                size="sm"
-                                onClick={() => navigate(`/tasker/submit/${task.id}`)}
+                                onClick={() => handleSubmitWork(task.id)}
+                                className="bg-[#1E40AF] hover:bg-blue-700 text-white"
                               >
                                 Submit Work
                               </Button>

@@ -7,10 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { TaskSelect } from "./TaskSelect";
 import { isSubmissionAllowed } from "@/utils/deadlineUtils";
 import { FileUploadSection } from "./FileUploadSection";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const TaskSubmissionForm = () => {
-  const { taskId } = useParams(); // Get taskId from URL if present
+  const { taskId } = useParams();
+  const navigate = useNavigate();
   const [selectedTask, setSelectedTask] = useState(taskId || "");
   const [file, setFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
@@ -25,11 +26,11 @@ const TaskSubmissionForm = () => {
         .from('tasks')
         .select(`
           *,
-          task_bidders!inner (
+          task_bidders!inner(
             bidder_id,
             bid_date
           ),
-          task_submissions (
+          task_submissions(
             bidder_id,
             status
           )
@@ -39,12 +40,12 @@ const TaskSubmissionForm = () => {
 
       if (error) throw error;
 
-      // Filter out tasks that already have submissions
+      // Filter out tasks that already have approved or pending submissions
       return tasksData.filter((task: any) => {
-        const hasSubmission = task.task_submissions?.some(
+        const hasApprovedOrPendingSubmission = task.task_submissions?.some(
           (s: any) => s.bidder_id === user.id && s.status !== 'rejected'
         );
-        return !hasSubmission;
+        return !hasApprovedOrPendingSubmission;
       }).map((task: any) => ({
         ...task,
         bidders: task.task_bidders || [],
@@ -82,8 +83,7 @@ const TaskSubmissionForm = () => {
     onSuccess: () => {
       toast.success("Task submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
-      setSelectedTask("");
-      setFile(null);
+      navigate('/tasker/bidded-tasks');
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to submit task");
