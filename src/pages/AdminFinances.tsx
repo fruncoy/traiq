@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { startOfWeek, endOfWeek, format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminFinances = () => {
   const today = new Date();
@@ -13,9 +14,14 @@ const AdminFinances = () => {
   const { data: totalRevenue = 0 } = useQuery({
     queryKey: ['total-revenue'],
     queryFn: async () => {
-      const totalSpent = parseFloat(localStorage.getItem('totalSpent') || '0');
-      console.log("Total revenue from bids:", totalSpent);
-      return totalSpent;
+      const { data, error } = await supabase
+        .from('bid_transactions')
+        .select('amount')
+        .gte('transaction_date', weekStart.toISOString())
+        .lte('transaction_date', weekEnd.toISOString());
+
+      if (error) throw error;
+      return data?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
     }
   });
 
@@ -23,41 +29,52 @@ const AdminFinances = () => {
   const { data: approvedPayouts = 0 } = useQuery({
     queryKey: ['approved-payouts'],
     queryFn: async () => {
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      const totalPayouts = tasks.reduce((total: number, task: any) => {
-        const approvedSubmissions = task.submissions?.filter((s: any) => s.status === 'approved') || [];
-        const payoutPerTask = task.category === 'genai' ? 700 : 300;
-        return total + (approvedSubmissions.length * payoutPerTask);
-      }, 0);
-      console.log("Total approved payouts:", totalPayouts);
-      return totalPayouts;
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('total_payouts');
+
+      if (error) throw error;
+      return profiles?.reduce((sum, profile) => sum + Number(profile.total_payouts || 0), 0) || 0;
     }
   });
 
   // Calculate profit (Total Revenue - Approved Payouts)
   const profit = totalRevenue - approvedPayouts;
-  console.log("Calculated profit:", profit);
 
   const { data: recentPayouts = [] } = useQuery({
     queryKey: ['recent-payouts'],
     queryFn: async () => {
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      const payouts = tasks
-        .flatMap((task: any) => 
-          (task.submissions || [])
-            .filter((s: any) => s.status === 'approved')
-            .map((s: any) => ({
-              id: `${task.id}-${s.bidderId}`,
-              taskCode: task.code,
-              amount: task.category === 'genai' ? 700 : 300,
-              status: 'Approved',
-              date: s.submittedAt
-            }))
-        )
-        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 10);
-      
-      return payouts;
+      const { data, error } = await supabase
+        .from('task_submissions')
+        .select(`
+          id,
+          task_id,
+          bidder_id,
+          status,
+          submitted_at,
+          tasks (
+            code,
+            category
+          ),
+          profiles (
+            username,
+            email
+          )
+        `)
+        .eq('status', 'approved')
+        .order('submitted_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      return data.map(submission => ({
+        id: submission.id,
+        taskCode: submission.tasks?.code,
+        tasker: submission.profiles?.username || submission.profiles?.email,
+        amount: submission.tasks?.category === 'genai' ? 700 : 300,
+        status: 'Approved',
+        date: submission.submitted_at
+      }));
     }
   });
 
@@ -115,15 +132,17 @@ const AdminFinances = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Task Code</TableHead>
+                    <TableHead>Tasker</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentPayouts.map((payout: any) => (
+                  {recentPayouts.map((payout) => (
                     <TableRow key={payout.id}>
                       <TableCell>{payout.taskCode}</TableCell>
+                      <TableCell>{payout.tasker}</TableCell>
                       <TableCell>KES {payout.amount}</TableCell>
                       <TableCell>{payout.status}</TableCell>
                       <TableCell>{format(new Date(payout.date), 'MMM d, yyyy')}</TableCell>
