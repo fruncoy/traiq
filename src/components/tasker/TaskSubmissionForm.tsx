@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Task } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskSelect } from "./TaskSelect";
 import { isSubmissionAllowed } from "@/utils/deadlineUtils";
@@ -35,12 +34,10 @@ const TaskSubmissionForm = () => {
             status
           )
         `)
-        .eq('task_bidders.bidder_id', user.id)
-        .eq('status', 'pending');
+        .eq('task_bidders.bidder_id', user.id);
 
       if (error) throw error;
 
-      // Filter out tasks that already have approved or pending submissions
       return tasksData.filter((task: any) => {
         const hasApprovedOrPendingSubmission = task.task_submissions?.some(
           (s: any) => s.bidder_id === user.id && s.status !== 'rejected'
@@ -55,7 +52,7 @@ const TaskSubmissionForm = () => {
   });
 
   const submitTaskMutation = useMutation({
-    mutationFn: async ({ task, file }: { task: Task, file: File }) => {
+    mutationFn: async ({ task, file }: { task: any, file: File }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 

@@ -2,16 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "../Sidebar";
-import { Task, TaskSubmission } from "@/types/task";
+import { Task } from "@/types/task";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "../ui/loading-spinner";
-
-interface TaskWithSubmission extends Task {
-  currentSubmission?: TaskSubmission;
-}
 
 const BiddedTasksPage = () => {
   const navigate = useNavigate();
@@ -22,7 +18,7 @@ const BiddedTasksPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data: tasks, error } = await supabase
+      const { data: tasksData, error } = await supabase
         .from('tasks')
         .select(`
           *,
@@ -38,12 +34,12 @@ const BiddedTasksPage = () => {
 
       if (error) throw error;
 
-      return tasks.map((task: any) => ({
+      return tasksData.map((task: any) => ({
         ...task,
         currentSubmission: task.task_submissions?.find(
           (s: any) => s.bidder_id === user.id
         )
-      })) as TaskWithSubmission[];
+      }));
     }
   });
 
