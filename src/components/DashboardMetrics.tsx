@@ -70,14 +70,7 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
         return newProfile;
       }
 
-      return {
-        ...profile,
-        completedTasks: profile.task_submissions?.filter((s: any) => s.status === 'approved').length || 0,
-        activeBids: profile.task_bidders?.length || 0,
-        totalEarned: profile.total_payouts || 0,
-        pendingPayouts: profile.pending_payouts || 0,
-        availableBids: profile.bids || 0
-      };
+      return profile;
     }
   });
 
@@ -123,13 +116,13 @@ const DashboardMetrics = ({ metrics }: { metrics: MetricProps[] }) => {
       return pendingSubmissions;
     }
     if (metric.label === "Available Bids") {
-      return currentUser?.availableBids || 0;
+      return currentUser?.bids || 0;
     }
     if (metric.label === "Pending Payouts") {
-      return `KES ${currentUser?.pendingPayouts || 0}`;
+      return `KES ${currentUser?.pending_payouts || 0}`;
     }
     if (metric.label === "Total Earned") {
-      return `KES ${currentUser?.totalEarned || 0}`;
+      return `KES ${currentUser?.total_payouts || 0}`;
     }
     
     if (typeof metric.value === 'function') {
