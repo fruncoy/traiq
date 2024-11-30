@@ -124,7 +124,7 @@ const TaskSubmissionForm = () => {
 
       <Button 
         type="submit" 
-        disabled={!selectedTask || !file || submitTaskMutation.isPending || (deadline && !isSubmissionAllowed(deadline))}
+        disabled={!selectedTask || !file || submitTaskMutation.isPending || (deadline && !isSubmissionAllowed(deadline.toISOString()))}
         className="w-full bg-primary hover:bg-primary/90"
       >
         {submitTaskMutation.isPending ? "Processing..." : "Submit Task"}

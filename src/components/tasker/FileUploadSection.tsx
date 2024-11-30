@@ -1,4 +1,6 @@
 import { useDropzone } from 'react-dropzone';
+import { toast } from "sonner";
+import { isSubmissionAllowed } from "@/utils/deadlineUtils";
 
 interface FileUploadSectionProps {
   file: File | null;
@@ -53,7 +55,7 @@ export const FileUploadSection = ({ file, onFileChange, isDeadlineApproaching, d
         </div>
       </div>
       {deadline && (
-        <p className={`text-sm ${!isSubmissionAllowed(deadline) ? 'text-red-500' : 
+        <p className={`text-sm ${!isSubmissionAllowed(deadline.toISOString()) ? 'text-red-500' : 
           isDeadlineApproaching ? 'text-orange-500' : 'text-gray-500'}`}>
           Deadline: {deadline.toLocaleString()} EAT
         </p>
