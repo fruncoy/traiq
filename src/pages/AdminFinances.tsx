@@ -25,22 +25,36 @@ const AdminFinances = () => {
     }
   });
 
-  // Calculate approved payouts
+  // Calculate approved payouts from task submissions
   const { data: approvedPayouts = 0 } = useQuery({
     queryKey: ['approved-payouts'],
     queryFn: async () => {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('total_payouts');
+      const { data: submissions, error } = await supabase
+        .from('task_submissions')
+        .select(`
+          *,
+          tasks (
+            category,
+            tasker_payout
+          )
+        `)
+        .eq('status', 'approved')
+        .gte('submitted_at', weekStart.toISOString())
+        .lte('submitted_at', weekEnd.toISOString());
 
       if (error) throw error;
-      return profiles?.reduce((sum, profile) => sum + Number(profile.total_payouts || 0), 0) || 0;
+      
+      return submissions?.reduce((sum, submission) => {
+        const payout = submission.tasks?.tasker_payout || 0;
+        return sum + Number(payout);
+      }, 0) || 0;
     }
   });
 
   // Calculate profit (Total Revenue - Approved Payouts)
   const profit = totalRevenue - approvedPayouts;
 
+  // Get recent payouts with task and tasker details
   const { data: recentPayouts = [] } = useQuery({
     queryKey: ['recent-payouts'],
     queryFn: async () => {
@@ -48,13 +62,11 @@ const AdminFinances = () => {
         .from('task_submissions')
         .select(`
           id,
-          task_id,
-          bidder_id,
-          status,
           submitted_at,
           tasks (
             code,
-            category
+            category,
+            tasker_payout
           ),
           profiles (
             username,
@@ -71,7 +83,7 @@ const AdminFinances = () => {
         id: submission.id,
         taskCode: submission.tasks?.code,
         tasker: submission.profiles?.username || submission.profiles?.email,
-        amount: submission.tasks?.category === 'genai' ? 700 : 300,
+        amount: submission.tasks?.tasker_payout || 0,
         status: 'Approved',
         date: submission.submitted_at
       }));
