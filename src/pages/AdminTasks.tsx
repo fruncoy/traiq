@@ -38,6 +38,40 @@ const AdminTasks = () => {
     refetchInterval: 5000
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('status', 'archived');
+
+      if (tasksError) throw tasksError;
+
+      const { error: submissionsError } = await supabase
+        .from('task_submissions')
+        .delete()
+        .eq('status', 'approved');
+
+      if (submissionsError) throw submissionsError;
+
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
+      toast.success("Successfully deleted archived tasks and approved submissions");
+    },
+    onError: (error) => {
+      console.error('Delete error:', error);
+      toast.error("Failed to delete tasks and submissions");
+    }
+  });
+
+  const handleDeleteArchived = () => {
+    if (window.confirm("Are you sure you want to delete all archived tasks and their approved submissions? This action cannot be undone.")) {
+      deleteMutation.mutate();
+    }
+  };
+
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const reader = new FileReader();
@@ -116,17 +150,26 @@ const AdminTasks = () => {
           <Card className="mt-6">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>All Tasks ({availableTasks.length})</CardTitle>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <Button className="flex items-center gap-2">
-                  <Upload size={16} />
-                  Upload Tasks
+              <div className="flex gap-4">
+                <Button 
+                  variant="destructive"
+                  onClick={handleDeleteArchived}
+                  disabled={deleteMutation.isPending}
+                >
+                  Delete Archived Tasks
                 </Button>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <Button className="flex items-center gap-2">
+                    <Upload size={16} />
+                    Upload Tasks
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>

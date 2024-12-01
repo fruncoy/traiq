@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
 import TaskerDashboard from "./pages/TaskerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminTasks from "./pages/AdminTasks";
@@ -15,6 +17,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tasker" element={<TaskerDashboard />} />
         <Route path="/tasker/tasks" element={<TaskerDashboard />} />
         <Route path="/tasker/bidding" element={<TaskerDashboard />} />
