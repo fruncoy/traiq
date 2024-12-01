@@ -8,17 +8,41 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "../ui/loading-spinner";
+import { toast } from "sonner";
 
 const BiddedTasksPage = () => {
   const navigate = useNavigate();
 
-  const { data: userTasks = [], isLoading } = useQuery({
-    queryKey: ['user-bidded-tasks'],
+  const { data: session } = useQuery({
+    queryKey: ['session'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
+  });
 
-      const { data: tasksData, error } = await supabase
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session?.user?.id
+  });
+
+  const { data: userTasks = [], isLoading } = useQuery({
+    queryKey: ['user-bidded-tasks', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
         .from('tasks')
         .select(`
           *,
@@ -30,17 +54,18 @@ const BiddedTasksPage = () => {
             submitted_at
           )
         `)
-        .eq('task_bidders.bidder_id', user.id);
+        .eq('task_bidders.bidder_id', session.user.id);
 
       if (error) throw error;
 
-      return tasksData.map((task: any) => ({
+      return data.map((task: any) => ({
         ...task,
         currentSubmission: task.task_submissions?.find(
-          (s: any) => s.bidder_id === user.id
+          (s: any) => s.bidder_id === session.user.id
         )
       }));
-    }
+    },
+    enabled: !!session?.user?.id
   });
 
   if (isLoading) {
@@ -51,10 +76,27 @@ const BiddedTasksPage = () => {
     );
   }
 
+  if (userProfile?.suspended_at) {
+    return (
+      <Sidebar>
+        <div className="p-6">
+          <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong className="font-bold">Account Suspended! </strong>
+            <span className="block sm:inline">Your account has been suspended. Please contact support for assistance.</span>
+          </div>
+        </div>
+      </Sidebar>
+    );
+  }
+
   const readyForSubmission = userTasks.filter((task) => !task.currentSubmission || task.currentSubmission.status === 'rejected');
   const submitted = userTasks.filter((task) => task.currentSubmission && task.currentSubmission.status !== 'rejected');
 
   const handleSubmitWork = (taskId: string) => {
+    if (!session?.user?.id) {
+      toast.error("Please login to submit work");
+      return;
+    }
     navigate(`/tasker/submit/${taskId}`);
   };
 

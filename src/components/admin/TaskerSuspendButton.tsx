@@ -19,14 +19,16 @@ export const TaskerSuspendButton = ({ taskerId, isSuspended }: TaskerSuspendButt
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          suspended_at: isSuspended ? null : new Date().toISOString() 
+          suspended_at: isSuspended ? null : new Date().toISOString(),
+          is_suspended: !isSuspended
         })
         .eq('id', taskerId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['taskers'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-taskers'] });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       toast.success(`Tasker ${isSuspended ? 'unsuspended' : 'suspended'} successfully`);
     },
     onError: (error) => {
