@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import TaskerDashboard from "./pages/TaskerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -17,7 +16,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tasker" element={<TaskerDashboard />} />
         <Route path="/tasker/tasks" element={<TaskerDashboard />} />
