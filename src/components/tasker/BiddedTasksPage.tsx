@@ -54,7 +54,8 @@ const BiddedTasksPage = () => {
             submitted_at
           )
         `)
-        .eq('task_bidders.bidder_id', session.user.id);
+        .eq('task_bidders.bidder_id', session.user.id)
+        .not('status', 'in', '("expired","archived")');
 
       if (error) throw error;
 

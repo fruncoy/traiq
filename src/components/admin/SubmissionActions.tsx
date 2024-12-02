@@ -29,9 +29,9 @@ export const SubmissionActions = ({ onAction, isPending }: SubmissionActionsProp
         <SelectTrigger className="w-[200px]">
           <SelectValue placeholder="Select reason to reject" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white">
           {rejectionReasons.map((reason) => (
-            <SelectItem key={reason} value={reason}>
+            <SelectItem key={reason} value={reason} className="hover:bg-gray-100">
               {reason}
             </SelectItem>
           ))}

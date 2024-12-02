@@ -8,6 +8,7 @@ import { Upload } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AdminTasks = () => {
   const queryClient = useQueryClient();
@@ -30,7 +31,6 @@ const AdminTasks = () => {
             submitted_at
           )
         `)
-        .not('status', 'eq', 'archived')  // Don't show archived tasks
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -44,6 +44,31 @@ const AdminTasks = () => {
     },
     refetchInterval: 5000
   });
+
+  const activeTasks = availableTasks.filter(task => task.status !== 'archived');
+  const archivedTasks = availableTasks.filter(task => task.status === 'archived');
+
+  const resetSystemMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('manual_system_reset');
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      toast.success("System has been reset successfully");
+    },
+    onError: (error) => {
+      console.error('Reset error:', error);
+      toast.error("Failed to reset system");
+    }
+  });
+
+  const handleSystemReset = () => {
+    if (window.confirm("Are you sure you want to reset the entire system? This action cannot be undone.")) {
+      resetSystemMutation.mutate();
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -149,81 +174,115 @@ const AdminTasks = () => {
     );
   }
 
+  const TaskTable = ({ tasks }: { tasks: Task[] }) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Title</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>Category</TableHead>
+          <TableHead>Total Bidders</TableHead>
+          <TableHead>Submissions</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {tasks.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={6} className="text-center py-4">
+              No tasks available
+            </TableCell>
+          </TableRow>
+        ) : (
+          tasks.map((task: Task) => (
+            <TableRow key={task.id}>
+              <TableCell>{task.title}</TableCell>
+              <TableCell>{task.description}</TableCell>
+              <TableCell className="capitalize">{task.category}</TableCell>
+              <TableCell>{task.bidders.length}/10</TableCell>
+              <TableCell>{task.submissions.length}</TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  task.status === 'archived' 
+                    ? 'bg-red-100 text-red-800'
+                    : task.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-green-100 text-green-800'
+                }`}>
+                  {task.status}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar isAdmin>
         <div className="p-6">
-          <h2 className="text-2xl font-bold">Task Management</h2>
-          <Card className="mt-6">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>All Tasks ({availableTasks.length})</CardTitle>
-              <div className="flex gap-4">
-                <Button 
-                  variant="destructive"
-                  onClick={handleDeleteArchived}
-                  disabled={deleteMutation.isPending}
-                >
-                  Delete Archived Tasks
-                </Button>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".xlsx,.xls"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <Button className="flex items-center gap-2">
-                    <Upload size={16} />
-                    Upload Tasks
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Task Management</h2>
+            <Button 
+              variant="destructive"
+              onClick={handleSystemReset}
+              disabled={resetSystemMutation.isPending}
+            >
+              Reset System
+            </Button>
+          </div>
+          
+          <Tabs defaultValue="active" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="active">Active Tasks</TabsTrigger>
+              <TabsTrigger value="archived">Archived Tasks</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="active">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Active Tasks ({activeTasks.length})</CardTitle>
+                  <div className="flex gap-4">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <Button className="flex items-center gap-2">
+                        <Upload size={16} />
+                        Upload Tasks
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <TaskTable tasks={activeTasks} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="archived">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Archived Tasks ({archivedTasks.length})</CardTitle>
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDeleteArchived}
+                    disabled={deleteMutation.isPending}
+                  >
+                    Delete Archived Tasks
                   </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Total Bidders</TableHead>
-                    <TableHead>Submissions</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {availableTasks.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
-                        No tasks available. Upload tasks to get started.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    availableTasks.map((task: Task) => (
-                      <TableRow key={task.id}>
-                        <TableCell>{task.title}</TableCell>
-                        <TableCell>{task.description}</TableCell>
-                        <TableCell className="capitalize">{task.category}</TableCell>
-                        <TableCell>{task.bidders.length}/10</TableCell>
-                        <TableCell>{task.submissions.length}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            task.status === 'archived' 
-                              ? 'bg-red-100 text-red-800'
-                              : task.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-green-100 text-green-800'
-                          }`}>
-                            {task.status}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                </CardHeader>
+                <CardContent>
+                  <TaskTable tasks={archivedTasks} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </Sidebar>
     </div>

@@ -50,7 +50,7 @@ const TaskList = ({
             status
           )
         `)
-        .not('status', 'eq', 'archived')  // Don't show archived tasks
+        .not('status', 'eq', 'archived')  // Don't show archived tasks for regular users
         .order('created_at', { ascending: false });
 
       const { data, error } = await query;
@@ -71,8 +71,9 @@ const TaskList = ({
             s.bidder_id === session.user.id && s.status !== 'rejected'
           );
           const maxBidsReached = task.bidders.length >= (task.category === 'genai' ? 10 : 5);
+          const isExpired = task.status === 'expired' || task.status === 'archived';
           
-          return !hasBid && !hasSubmission && !maxBidsReached && task.status === 'pending';
+          return !hasBid && !hasSubmission && !maxBidsReached && !isExpired && task.status === 'pending';
         });
       }
 

@@ -274,6 +274,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      manual_system_reset: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       notify_pending_submissions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
