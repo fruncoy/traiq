@@ -1,100 +1,16 @@
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Task, TaskSubmission, SubmissionStatus } from "@/types/task";
+import { Task } from "@/types/task";
 import { SubmissionRow } from "./submission/SubmissionRow";
-import { toast } from "sonner";
+import { useSubmissionMutation } from "./submission/useSubmissionMutation";
+import { useSubmissionsQuery } from "./submission/useSubmissionsQuery";
 
 interface TaskSubmissionsTableProps {
   task: Task;
-  onAction: (taskId: string, bidderId: string, action: SubmissionStatus, reason?: string) => void;
-  isPending: boolean;
 }
 
-export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissionsTableProps) => {
-  const queryClient = useQueryClient();
-
-  const { data: submissions = [] } = useQuery({
-    queryKey: ['task-submissions', task.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('task_submissions')
-        .select(`
-          *,
-          profiles (
-            username,
-            email
-          )
-        `)
-        .eq('task_id', task.id);
-
-      if (error) throw error;
-      return data as TaskSubmission[];
-    }
-  });
-
-  const updateSubmissionMutation = useMutation({
-    mutationFn: async ({ 
-      taskId, 
-      bidderId, 
-      action, 
-      reason 
-    }: { 
-      taskId: string; 
-      bidderId: string; 
-      action: SubmissionStatus; 
-      reason?: string 
-    }) => {
-      const { error } = await supabase
-        .from('task_submissions')
-        .update({ 
-          status: action,
-          ...(reason && { rejection_reason: reason })
-        })
-        .eq('task_id', taskId)
-        .eq('bidder_id', bidderId);
-
-      if (error) throw error;
-
-      // If approved, update the tasker's stats using RPC
-      if (action === 'approved') {
-        const { error: rpcError } = await supabase.rpc('update_tasker_stats', {
-          p_tasker_id: bidderId,
-          p_task_id: taskId
-        });
-        if (rpcError) throw rpcError;
-      }
-
-      // Create notification for the tasker
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: bidderId,
-          title: `Submission ${action}`,
-          message: `Your submission for task ${task.code} has been ${action}${reason ? ` (Reason: ${reason})` : ''}`,
-          type: 'task_review'
-        });
-
-      if (notificationError) throw notificationError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
-      toast.success("Submission status updated successfully");
-    },
-    onError: (error) => {
-      console.error('Update error:', error);
-      toast.error("Failed to update submission status");
-    }
-  });
-
-  const handleAction = (bidderId: string, action: SubmissionStatus, reason?: string) => {
-    updateSubmissionMutation.mutate({ 
-      taskId: task.id, 
-      bidderId, 
-      action, 
-      reason 
-    });
-  };
+export const TaskSubmissionsTable = ({ task }: TaskSubmissionsTableProps) => {
+  const { data: submissions = [] } = useSubmissionsQuery(task.id);
+  const submissionMutation = useSubmissionMutation();
 
   return (
     <Table>
@@ -114,8 +30,15 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
           <SubmissionRow
             key={`${submission.task_id}-${submission.bidder_id}`}
             submission={submission}
-            onAction={(action, reason) => handleAction(submission.bidder_id, action, reason)}
-            isPending={isPending || updateSubmissionMutation.isPending}
+            onAction={(action, reason) => 
+              submissionMutation.mutate({ 
+                taskId: task.id, 
+                bidderId: submission.bidder_id, 
+                action, 
+                reason 
+              })
+            }
+            isPending={submissionMutation.isPending}
           />
         ))}
       </TableBody>
