@@ -156,7 +156,6 @@ const AdminSubmittedTasks = () => {
                       onAction={(taskId, bidderId, action, reason) => 
                         handleSubmissionAction({ taskId, bidderId, action, reason })}
                       isPending={isPending}
-                      allSubmissions={tasks.flatMap(t => t.submissions || [])}
                     />
                   </CardContent>
                 </Card>
