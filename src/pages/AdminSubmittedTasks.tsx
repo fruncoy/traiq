@@ -4,26 +4,37 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
 import { TaskSubmissionsTable } from "@/components/admin/TaskSubmissionsTable";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminSubmittedTasks = () => {
   const queryClient = useQueryClient();
 
+  // Fetch tasks with submissions
   const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks-with-submissions'],
     queryFn: async () => {
-      const tasks = localStorage.getItem('tasks');
-      const parsedTasks = tasks ? JSON.parse(tasks) : [];
-      // Return all tasks that have any submissions
-      return parsedTasks.filter((task: Task) => 
-        task.submissions && task.submissions.length > 0
-      );
-    },
-    refetchInterval: 1000
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          task_submissions (
+            *,
+            profiles:bidder_id (
+              username,
+              email
+            )
+          )
+        `)
+        .not('task_submissions', 'is', null);
+
+      if (error) throw error;
+      return tasks;
+    }
   });
 
   // Calculate total submissions across all tasks
-  const totalSubmissions = tasks.reduce((acc: number, task: Task) => 
-    acc + (task.submissions?.length || 0), 0
+  const totalSubmissions = tasks.reduce((acc: number, task: any) => 
+    acc + (task.task_submissions?.length || 0), 0
   );
 
   const { mutate: handleSubmissionAction, isPending } = useMutation({
@@ -33,88 +44,29 @@ const AdminSubmittedTasks = () => {
       action: 'approved' | 'rejected'; 
       reason?: string;
     }) => {
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      const task = tasks.find((t: Task) => t.id === taskId);
-      
-      if (!task) throw new Error("Task not found");
-      
-      // Update task submissions
-      const updatedTasks = tasks.map((t: Task) => {
-        if (t.id === taskId) {
-          const updatedSubmissions = t.submissions?.map(s => {
-            if (s.bidder_id === bidderId) {
-              return { 
-                ...s, 
-                status: action,
-                ...(reason && { rejection_reason: reason })
-              };
-            }
-            return s;
-          });
-          return { ...t, submissions: updatedSubmissions };
-        }
-        return t;
-      });
-      
-      localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-      
-      // Update tasker's balance if approved
+      const { error } = await supabase
+        .from('task_submissions')
+        .update({ 
+          status: action,
+          ...(reason && { rejection_reason: reason })
+        })
+        .eq('task_id', taskId)
+        .eq('bidder_id', bidderId);
+
+      if (error) throw error;
+
+      // If approved, update tasker's stats
       if (action === 'approved') {
-        const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-        const payout = task.category === 'genai' ? 700 : 300;
-        
-        const updatedTaskers = taskers.map((t: any) => {
-          if (t.id === bidderId) {
-            return {
-              ...t,
-              balance: (t.balance || 0) + payout,
-              completedTasks: (t.completedTasks || 0) + 1,
-              totalEarnings: (t.totalEarnings || 0) + payout
-            };
-          }
-          return t;
+        const { error: statsError } = await supabase.rpc('update_tasker_stats', {
+          p_tasker_id: bidderId,
+          p_task_id: taskId
         });
-        localStorage.setItem('taskers', JSON.stringify(updatedTaskers));
 
-        // Update current tasker if it's the same user
-        const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
-        if (currentTasker.id === bidderId) {
-          const updatedCurrentTasker = {
-            ...currentTasker,
-            balance: (currentTasker.balance || 0) + payout,
-            completedTasks: (currentTasker.completedTasks || 0) + 1,
-            totalEarnings: (currentTasker.totalEarnings || 0) + payout
-          };
-          localStorage.setItem('currentTasker', JSON.stringify(updatedCurrentTasker));
-        }
-
-        // Update earnings in userEarnings
-        const userEarnings = JSON.parse(localStorage.getItem('userEarnings') || '{}');
-        userEarnings[bidderId] = (userEarnings[bidderId] || 0) + payout;
-        localStorage.setItem('userEarnings', JSON.stringify(userEarnings));
+        if (statsError) throw statsError;
       }
-
-      // Add notification for the tasker
-      const notifications = JSON.parse(localStorage.getItem(`notifications_${bidderId}`) || '[]');
-      notifications.unshift({
-        id: Date.now().toString(),
-        title: `Submission ${action}`,
-        message: `Task ${task.code} submission has been ${action}`,
-        type: action === 'approved' ? 'success' : 'error',
-        read: false,
-        date: new Date().toISOString(),
-        taskerId: bidderId
-      });
-      localStorage.setItem(`notifications_${bidderId}`, JSON.stringify(notifications));
-      
-      return updatedTasks;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['taskers'] });
-      queryClient.invalidateQueries({ queryKey: ['user-earnings'] });
-      queryClient.invalidateQueries({ queryKey: ['total-earned'] });
-      queryClient.invalidateQueries({ queryKey: ['user-active-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks-with-submissions'] });
       toast.success("Submission status updated successfully");
     },
     onError: () => {
@@ -146,7 +98,7 @@ const AdminSubmittedTasks = () => {
                     <CardTitle className="text-lg">
                       Task: {task.title} (Code: {task.code})
                       <span className="ml-2 text-sm font-normal text-gray-600">
-                        {task.submissions?.length} submission{task.submissions?.length !== 1 ? 's' : ''}
+                        {task.task_submissions?.length} submission{task.task_submissions?.length !== 1 ? 's' : ''}
                       </span>
                     </CardTitle>
                   </CardHeader>

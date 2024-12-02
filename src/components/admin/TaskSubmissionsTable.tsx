@@ -36,17 +36,21 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
     }
   });
 
-  // Fetch all submissions for history
-  const { data: allSubmissions = [] } = useQuery({
-    queryKey: ['all-submissions'],
+  // Fetch tasker's submission history when needed
+  const { data: taskerHistory = [] } = useQuery({
+    queryKey: ['tasker-submissions', selectedTaskerId],
     queryFn: async () => {
+      if (!selectedTaskerId) return [];
+      
       const { data, error } = await supabase
         .from('task_submissions')
-        .select('*');
+        .select('*')
+        .eq('bidder_id', selectedTaskerId);
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!selectedTaskerId
   });
 
   return (
@@ -111,7 +115,7 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
                     <DialogTitle>Tasker Submission History</DialogTitle>
                   </DialogHeader>
                   <TaskerSubmissionHistory 
-                    submissions={allSubmissions} 
+                    submissions={taskerHistory} 
                     taskerId={submission.bidder_id} 
                   />
                 </DialogContent>
