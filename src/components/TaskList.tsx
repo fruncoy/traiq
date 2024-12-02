@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Task, TaskCategory } from "@/types/task";
+import { Task, TaskCategory, TaskBidder, TaskSubmission } from "@/types/task";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { TaskListHeader } from "./task/TaskListHeader";
 import { TaskListFooter } from "./task/TaskListFooter";
@@ -43,15 +43,15 @@ const TaskList = ({
         .select(`
           *,
           task_bidders (
-            bidder_id
+            bidder_id,
+            bid_date
           ),
           task_submissions (
             bidder_id,
             status
           )
         `)
-        .not('status', 'eq', 'archived')  // Don't show archived tasks for regular users
-        .order('created_at', { ascending: false });
+        .not('status', 'eq', 'archived');
 
       const { data, error } = await query;
 
@@ -60,13 +60,16 @@ const TaskList = ({
       const transformedTasks = data.map((task: any) => ({
         ...task,
         category: task.category as TaskCategory,
-        bidders: task.task_bidders?.map((b: any) => b.bidder_id) || [],
+        bidders: task.task_bidders?.map((b: any) => ({
+          bidder_id: b.bidder_id,
+          bid_date: b.bid_date
+        })) || [],
         submissions: task.task_submissions || []
       }));
 
       if (!isAdmin && session?.user?.id) {
         return transformedTasks.filter((task: Task) => {
-          const hasBid = task.bidders.includes(session.user.id);
+          const hasBid = task.bidders.some(b => b.bidder_id === session.user.id);
           const hasSubmission = task.submissions.some(s => 
             s.bidder_id === session.user.id && s.status !== 'rejected'
           );
