@@ -38,7 +38,7 @@ const TaskList = ({
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks', session?.user?.id, isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query = supabase
         .from('tasks')
         .select(`
           *,
@@ -50,7 +50,10 @@ const TaskList = ({
             status
           )
         `)
+        .not('status', 'eq', 'archived')  // Don't show archived tasks
         .order('created_at', { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -69,7 +72,7 @@ const TaskList = ({
           );
           const maxBidsReached = task.bidders.length >= (task.category === 'genai' ? 10 : 5);
           
-          return !hasBid && !hasSubmission && !maxBidsReached;
+          return !hasBid && !hasSubmission && !maxBidsReached && task.status === 'pending';
         });
       }
 

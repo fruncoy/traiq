@@ -22,8 +22,15 @@ const AdminTasks = () => {
           task_bidders!left (
             bidder_id
           ),
-          task_submissions!left (*)
+          task_submissions!left (
+            id,
+            status,
+            bidder_id,
+            file_url,
+            submitted_at
+          )
         `)
+        .not('status', 'eq', 'archived')  // Don't show archived tasks
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -201,11 +208,13 @@ const AdminTasks = () => {
                         <TableCell>{task.submissions.length}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            task.bidders.length >= (task.category === 'genai' ? 10 : 5)
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
+                            task.status === 'archived' 
+                              ? 'bg-red-100 text-red-800'
+                              : task.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
                           }`}>
-                            {task.bidders.length >= (task.category === 'genai' ? 10 : 5) ? 'Active' : 'Available'}
+                            {task.status}
                           </span>
                         </TableCell>
                       </TableRow>
