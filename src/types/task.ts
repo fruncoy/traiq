@@ -1,11 +1,12 @@
 export type TaskStatus = "pending" | "active" | "assigned" | "completed" | "rejected" | "expired" | "archived";
 export type TaskCategory = "genai" | "creai";
+export type SubmissionStatus = "pending" | "approved" | "rejected";
 
 export interface TaskSubmission {
   id: string;
   task_id: string;
   bidder_id: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: SubmissionStatus;
   rejection_reason?: string;
   submitted_at: string;
   file_name: string;
