@@ -1,10 +1,10 @@
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Task } from "@/types/task";
+import { Task, TaskSubmission, SubmissionStatus } from "@/types/task";
 import { SubmissionRow } from "./submission/SubmissionRow";
 import { useSubmissionMutation } from "./submission/useSubmissionMutation";
 import { useSubmissionsQuery } from "./submission/useSubmissionsQuery";
 
-interface TaskSubmissionsTableProps {
+export interface TaskSubmissionsTableProps {
   task: Task;
 }
 
@@ -30,7 +30,7 @@ export const TaskSubmissionsTable = ({ task }: TaskSubmissionsTableProps) => {
           <SubmissionRow
             key={`${submission.task_id}-${submission.bidder_id}`}
             submission={submission}
-            onAction={(action, reason) => 
+            onAction={(action: SubmissionStatus, reason?: string) => 
               submissionMutation.mutate({ 
                 taskId: task.id, 
                 bidderId: submission.bidder_id, 

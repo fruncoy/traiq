@@ -24,12 +24,20 @@ const AdminSubmittedTasks = () => {
         .not('task_submissions', 'is', null);
 
       if (error) throw error;
-      return tasksData as (Task & { task_submissions: TaskSubmission[] })[];
+      
+      // Transform the data to match our Task type
+      const transformedTasks = tasksData.map((task: any) => ({
+        ...task,
+        bidders: task.task_bidders || [],
+        submissions: task.task_submissions || []
+      }));
+      
+      return transformedTasks as Task[];
     }
   });
 
-  const totalSubmissions = tasks.reduce((acc: number, task: Task & { task_submissions: TaskSubmission[] }) => 
-    acc + (task.task_submissions?.length || 0), 0
+  const totalSubmissions = tasks.reduce((acc: number, task: Task) => 
+    acc + (task.submissions?.length || 0), 0
   );
 
   return (
@@ -56,18 +64,12 @@ const AdminSubmittedTasks = () => {
                     <CardTitle className="text-lg">
                       Task: {task.title} (Code: {task.code})
                       <span className="ml-2 text-sm font-normal text-gray-600">
-                        {task.task_submissions?.length} submission{task.task_submissions?.length !== 1 ? 's' : ''}
+                        {task.submissions?.length} submission{task.submissions?.length !== 1 ? 's' : ''}
                       </span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <TaskSubmissionsTable
-                      task={task}
-                      onAction={(taskId, bidderId, action, reason) => {
-                        // The action is handled directly in the TaskSubmissionsTable component
-                      }}
-                      isPending={false}
-                    />
+                    <TaskSubmissionsTable task={task} />
                   </CardContent>
                 </Card>
               ))

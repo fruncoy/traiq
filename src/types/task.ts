@@ -39,6 +39,8 @@ export interface Task {
   max_bidders: number | null;
   status: TaskStatus | null;
   created_at: string | null;
+  bidders: TaskBidder[];
+  submissions: TaskSubmission[];
   task_bidders?: TaskBidder[];
   task_submissions?: TaskSubmission[];
 }
