@@ -12,6 +12,10 @@ export interface TaskSubmission {
   file_name: string;
   file_url?: string;
   payout?: number;
+  profiles?: {
+    username: string;
+    email: string;
+  };
 }
 
 export interface TaskBidder {
@@ -37,7 +41,4 @@ export interface Task {
   created_at: string | null;
   task_bidders?: TaskBidder[];
   task_submissions?: TaskSubmission[];
-  // Computed properties for backward compatibility
-  bidders?: string[];
-  submissions?: TaskSubmission[];
 }

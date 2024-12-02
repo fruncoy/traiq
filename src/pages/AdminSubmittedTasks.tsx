@@ -1,24 +1,21 @@
 import Sidebar from "../components/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Task } from "@/types/task";
+import { useQuery } from "@tanstack/react-query";
+import { Task, TaskSubmission } from "@/types/task";
 import { TaskSubmissionsTable } from "@/components/admin/TaskSubmissionsTable";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminSubmittedTasks = () => {
-  const queryClient = useQueryClient();
-
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks-with-submissions'],
     queryFn: async () => {
-      const { data: tasks, error } = await supabase
+      const { data: tasksData, error } = await supabase
         .from('tasks')
         .select(`
           *,
           task_submissions (
             *,
-            profiles:bidder_id (
+            profiles (
               username,
               email
             )
@@ -27,38 +24,11 @@ const AdminSubmittedTasks = () => {
         .not('task_submissions', 'is', null);
 
       if (error) throw error;
-      return tasks;
+      return tasksData as (Task & { task_submissions: TaskSubmission[] })[];
     }
   });
 
-  const { mutate: handleSubmissionAction, isPending } = useMutation({
-    mutationFn: async ({ taskId, bidderId, action, reason }: { 
-      taskId: string; 
-      bidderId: string; 
-      action: 'approved' | 'rejected'; 
-      reason?: string;
-    }) => {
-      const { error } = await supabase
-        .from('task_submissions')
-        .update({ 
-          status: action,
-          ...(reason && { rejection_reason: reason })
-        })
-        .eq('task_id', taskId)
-        .eq('bidder_id', bidderId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks-with-submissions'] });
-      toast.success("Submission status updated successfully");
-    },
-    onError: () => {
-      toast.error("Failed to update submission status");
-    }
-  });
-
-  const totalSubmissions = tasks.reduce((acc: number, task: any) => 
+  const totalSubmissions = tasks.reduce((acc: number, task: Task & { task_submissions: TaskSubmission[] }) => 
     acc + (task.task_submissions?.length || 0), 0
   );
 
@@ -80,7 +50,7 @@ const AdminSubmittedTasks = () => {
                 </CardContent>
               </Card>
             ) : (
-              tasks.map((task: Task) => (
+              tasks.map((task) => (
                 <Card key={task.id} className="overflow-hidden">
                   <CardHeader className="bg-gray-50 border-b">
                     <CardTitle className="text-lg">
@@ -93,9 +63,10 @@ const AdminSubmittedTasks = () => {
                   <CardContent className="p-0">
                     <TaskSubmissionsTable
                       task={task}
-                      onAction={(taskId, bidderId, action, reason) => 
-                        handleSubmissionAction({ taskId, bidderId, action, reason })}
-                      isPending={isPending}
+                      onAction={(taskId, bidderId, action, reason) => {
+                        // The action is handled directly in the TaskSubmissionsTable component
+                      }}
+                      isPending={false}
                     />
                   </CardContent>
                 </Card>

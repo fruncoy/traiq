@@ -1,13 +1,13 @@
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Task, TaskSubmission } from "@/types/task";
+import { Task, TaskSubmission, SubmissionStatus } from "@/types/task";
 import { SubmissionRow } from "./submission/SubmissionRow";
 import { toast } from "sonner";
 
 interface TaskSubmissionsTableProps {
   task: Task;
-  onAction: (taskId: string, bidderId: string, action: 'approved' | 'rejected', reason?: string) => void;
+  onAction: (taskId: string, bidderId: string, action: SubmissionStatus, reason?: string) => void;
   isPending: boolean;
 }
 
@@ -21,7 +21,7 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
         .from('task_submissions')
         .select(`
           *,
-          profiles:bidder_id (
+          profiles (
             username,
             email
           )
@@ -29,12 +29,7 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
         .eq('task_id', task.id);
 
       if (error) throw error;
-      return data as (TaskSubmission & {
-        profiles?: {
-          username: string;
-          email: string;
-        };
-      })[];
+      return data as TaskSubmission[];
     }
   });
 
@@ -47,7 +42,7 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
     }: { 
       taskId: string; 
       bidderId: string; 
-      action: 'approved' | 'rejected'; 
+      action: SubmissionStatus; 
       reason?: string 
     }) => {
       const { error } = await supabase
@@ -61,13 +56,13 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
 
       if (error) throw error;
 
-      // If approved, update the tasker's stats
+      // If approved, update the tasker's stats using RPC
       if (action === 'approved') {
-        const { error: profileError } = await supabase.rpc('update_tasker_stats', {
+        const { error: rpcError } = await supabase.rpc('update_tasker_stats', {
           p_tasker_id: bidderId,
           p_task_id: taskId
         });
-        if (profileError) throw profileError;
+        if (rpcError) throw rpcError;
       }
 
       // Create notification for the tasker
@@ -92,7 +87,7 @@ export const TaskSubmissionsTable = ({ task, onAction, isPending }: TaskSubmissi
     }
   });
 
-  const handleAction = (bidderId: string, action: 'approved' | 'rejected', reason?: string) => {
+  const handleAction = (bidderId: string, action: SubmissionStatus, reason?: string) => {
     updateSubmissionMutation.mutate({ 
       taskId: task.id, 
       bidderId, 

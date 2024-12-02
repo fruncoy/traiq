@@ -282,6 +282,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      update_tasker_stats: {
+        Args: {
+          p_tasker_id: string
+          p_task_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
