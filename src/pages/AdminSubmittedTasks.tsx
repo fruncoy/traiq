@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 const AdminSubmittedTasks = () => {
   const queryClient = useQueryClient();
 
-  // Fetch tasks with submissions
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks-with-submissions'],
     queryFn: async () => {
@@ -32,11 +31,6 @@ const AdminSubmittedTasks = () => {
     }
   });
 
-  // Calculate total submissions across all tasks
-  const totalSubmissions = tasks.reduce((acc: number, task: any) => 
-    acc + (task.task_submissions?.length || 0), 0
-  );
-
   const { mutate: handleSubmissionAction, isPending } = useMutation({
     mutationFn: async ({ taskId, bidderId, action, reason }: { 
       taskId: string; 
@@ -54,16 +48,6 @@ const AdminSubmittedTasks = () => {
         .eq('bidder_id', bidderId);
 
       if (error) throw error;
-
-      // If approved, update tasker's stats
-      if (action === 'approved') {
-        const { error: statsError } = await supabase.rpc('update_tasker_stats', {
-          p_tasker_id: bidderId,
-          p_task_id: taskId
-        });
-
-        if (statsError) throw statsError;
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks-with-submissions'] });
@@ -73,6 +57,10 @@ const AdminSubmittedTasks = () => {
       toast.error("Failed to update submission status");
     }
   });
+
+  const totalSubmissions = tasks.reduce((acc: number, task: any) => 
+    acc + (task.task_submissions?.length || 0), 0
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
