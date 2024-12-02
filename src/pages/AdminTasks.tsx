@@ -72,13 +72,7 @@ const AdminTasks = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error: tasksError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('status', 'archived');
-
-      if (tasksError) throw tasksError;
-
+      // First delete submissions for archived tasks
       const { error: submissionsError } = await supabase
         .from('task_submissions')
         .delete()
@@ -86,11 +80,19 @@ const AdminTasks = () => {
 
       if (submissionsError) throw submissionsError;
 
+      // Then delete the archived tasks
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('status', 'archived');
+
+      if (tasksError) throw tasksError;
+
       return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
-      toast.success("Successfully deleted archived tasks and approved submissions");
+      toast.success("Successfully deleted archived tasks and their submissions");
     },
     onError: (error) => {
       console.error('Delete error:', error);
