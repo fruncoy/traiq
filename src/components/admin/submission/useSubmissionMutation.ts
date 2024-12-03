@@ -23,7 +23,7 @@ export const useSubmissionMutation = () => {
         .from('task_submissions')
         .update({ 
           status: action,
-          ...(reason && { rejection_reason: reason })
+          rejection_reason: reason 
         })
         .eq('task_id', taskId)
         .eq('bidder_id', bidderId);
@@ -52,12 +52,12 @@ export const useSubmissionMutation = () => {
       if (notificationError) throw notificationError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task-submissions'] });
-      toast.success("Submission status updated successfully");
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      toast.success('Submission updated successfully');
     },
     onError: (error) => {
-      console.error('Update error:', error);
-      toast.error("Failed to update submission status");
+      console.error('Submission update error:', error);
+      toast.error('Failed to update submission');
     }
   });
 };
