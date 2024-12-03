@@ -82,6 +82,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_admin: boolean | null
           is_suspended: boolean | null
           join_date: string | null
           pending_payouts: number | null
@@ -96,6 +97,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id: string
+          is_admin?: boolean | null
           is_suspended?: boolean | null
           join_date?: string | null
           pending_payouts?: number | null
@@ -110,6 +112,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_admin?: boolean | null
           is_suspended?: boolean | null
           join_date?: string | null
           pending_payouts?: number | null

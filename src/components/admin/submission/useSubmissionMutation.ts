@@ -19,7 +19,7 @@ export const useSubmissionMutation = () => {
       reason?: string 
     }) => {
       // Update submission status
-      const { error } = await supabase
+      const { error: submissionError } = await supabase
         .from('task_submissions')
         .update({ 
           status: action,
@@ -28,22 +28,22 @@ export const useSubmissionMutation = () => {
         .eq('task_id', taskId)
         .eq('bidder_id', bidderId);
 
-      if (error) throw error;
+      if (submissionError) throw submissionError;
 
       // Update tasker stats if approved
       if (action === 'approved') {
-        const { error: rpcError } = await supabase.rpc('update_tasker_stats', {
+        const { error: statsError } = await supabase.rpc('update_tasker_stats', {
           p_tasker_id: bidderId,
           p_task_id: taskId
         });
-        if (rpcError) throw rpcError;
+        if (statsError) throw statsError;
       }
 
-      // Create notification with correct user_id
+      // Create notification
       const { error: notificationError } = await supabase
         .from('notifications')
         .insert({
-          user_id: bidderId, // Set this to the bidder's ID
+          user_id: bidderId,
           title: `Submission ${action}`,
           message: `Your submission has been ${action}${reason ? ` (Reason: ${reason})` : ''}`,
           type: 'task_review'

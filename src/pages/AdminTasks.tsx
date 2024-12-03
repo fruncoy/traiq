@@ -72,15 +72,6 @@ const AdminTasks = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      // First delete submissions for archived tasks
-      const { error: submissionsError } = await supabase
-        .from('task_submissions')
-        .delete()
-        .eq('status', 'approved');
-
-      if (submissionsError) throw submissionsError;
-
-      // Then delete the archived tasks
       const { error: tasksError } = await supabase
         .from('tasks')
         .delete()
@@ -92,16 +83,16 @@ const AdminTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
-      toast.success("Successfully deleted archived tasks and their submissions");
+      toast.success("Successfully deleted archived tasks");
     },
     onError: (error) => {
       console.error('Delete error:', error);
-      toast.error("Failed to delete tasks and submissions");
+      toast.error("Failed to delete tasks");
     }
   });
 
   const handleDeleteArchived = () => {
-    if (window.confirm("Are you sure you want to delete all archived tasks and their approved submissions? This action cannot be undone.")) {
+    if (window.confirm("Are you sure you want to delete all archived tasks? This action cannot be undone.")) {
       deleteMutation.mutate();
     }
   };
@@ -133,13 +124,12 @@ const AdminTasks = () => {
               status: "pending"
             }));
 
-            const { data: insertedData, error: insertError } = await supabase
+            const { error: insertError } = await supabase
               .from('tasks')
-              .insert(processedTasks)
-              .select();
+              .insert(processedTasks);
 
             if (insertError) throw insertError;
-            return insertedData;
+            return true;
           } catch (error) {
             reject(error);
           }
@@ -175,51 +165,6 @@ const AdminTasks = () => {
       </div>
     );
   }
-
-  const TaskTable = ({ tasks }: { tasks: Task[] }) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Title</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Total Bidders</TableHead>
-          <TableHead>Submissions</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {tasks.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={6} className="text-center py-4">
-              No tasks available
-            </TableCell>
-          </TableRow>
-        ) : (
-          tasks.map((task: Task) => (
-            <TableRow key={task.id}>
-              <TableCell>{task.title}</TableCell>
-              <TableCell>{task.description}</TableCell>
-              <TableCell className="capitalize">{task.category}</TableCell>
-              <TableCell>{task.bidders.length}/10</TableCell>
-              <TableCell>{task.submissions.length}</TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  task.status === 'archived' 
-                    ? 'bg-red-100 text-red-800'
-                    : task.status === 'pending'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-green-100 text-green-800'
-                }`}>
-                  {task.status}
-                </span>
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -262,7 +207,48 @@ const AdminTasks = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <TaskTable tasks={activeTasks} />
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Total Bidders</TableHead>
+                        <TableHead>Submissions</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activeTasks.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-4">
+                            No tasks available
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        activeTasks.map((task: Task) => (
+                          <TableRow key={task.id}>
+                            <TableCell>{task.title}</TableCell>
+                            <TableCell>{task.description}</TableCell>
+                            <TableCell className="capitalize">{task.category}</TableCell>
+                            <TableCell>{task.bidders.length}/10</TableCell>
+                            <TableCell>{task.submissions.length}</TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                task.status === 'archived' 
+                                  ? 'bg-red-100 text-red-800'
+                                  : task.status === 'pending'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                              }`}>
+                                {task.status}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -280,7 +266,42 @@ const AdminTasks = () => {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <TaskTable tasks={archivedTasks} />
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Total Bidders</TableHead>
+                        <TableHead>Submissions</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {archivedTasks.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-4">
+                            No archived tasks
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        archivedTasks.map((task: Task) => (
+                          <TableRow key={task.id}>
+                            <TableCell>{task.title}</TableCell>
+                            <TableCell>{task.description}</TableCell>
+                            <TableCell className="capitalize">{task.category}</TableCell>
+                            <TableCell>{task.bidders.length}/10</TableCell>
+                            <TableCell>{task.submissions.length}</TableCell>
+                            <TableCell>
+                              <span className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                                {task.status}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>
