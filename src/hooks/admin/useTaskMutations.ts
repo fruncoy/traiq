@@ -24,22 +24,42 @@ export const useTaskMutations = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error: tasksError } = await supabase
+    mutationFn: async (taskIds: string[]) => {
+      const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('status', 'archived');
+        .in('id', taskIds);
 
-      if (tasksError) throw tasksError;
+      if (error) throw error;
       return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
-      toast.success("Successfully deleted archived tasks");
+      toast.success("Successfully deleted tasks");
     },
     onError: (error) => {
       console.error('Delete error:', error);
       toast.error("Failed to delete tasks");
+    }
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ taskIds, newStatus }: { taskIds: string[], newStatus: 'active' | 'inactive' }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: newStatus })
+        .in('id', taskIds);
+
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: (_, { newStatus }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
+      toast.success(`Successfully ${newStatus === 'active' ? 'activated' : 'deactivated'} tasks`);
+    },
+    onError: (error) => {
+      console.error('Status update error:', error);
+      toast.error("Failed to update task status");
     }
   });
 
@@ -96,6 +116,7 @@ export const useTaskMutations = () => {
   return {
     resetSystemMutation,
     deleteMutation,
+    toggleStatusMutation,
     uploadMutation
   };
 };

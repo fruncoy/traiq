@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskList } from "@/components/admin/task/TaskList";
 import { TaskUpload } from "@/components/admin/task/TaskUpload";
 import { useTaskMutations } from "@/hooks/admin/useTaskMutations";
+import { toast } from "sonner";
 
 const AdminTasks = () => {
-  const { resetSystemMutation, deleteMutation, uploadMutation } = useTaskMutations();
+  const { resetSystemMutation, deleteMutation, toggleStatusMutation, uploadMutation } = useTaskMutations();
 
   const { data: availableTasks = [], isLoading } = useQuery({
     queryKey: ['admin-tasks'],
@@ -43,8 +44,8 @@ const AdminTasks = () => {
     refetchInterval: 5000
   });
 
-  const activeTasks = availableTasks.filter(task => task.status !== 'archived');
-  const archivedTasks = availableTasks.filter(task => task.status === 'archived');
+  const activeTasks = availableTasks.filter(task => task.status !== 'inactive' && task.status !== 'expired');
+  const inactiveTasks = availableTasks.filter(task => task.status === 'inactive' || task.status === 'expired');
 
   const handleSystemReset = () => {
     if (window.confirm("Are you sure you want to reset the entire system? This action cannot be undone.")) {
@@ -52,10 +53,14 @@ const AdminTasks = () => {
     }
   };
 
-  const handleDeleteArchived = () => {
-    if (window.confirm("Are you sure you want to delete all archived tasks? This action cannot be undone.")) {
-      deleteMutation.mutate();
+  const handleDeleteTasks = (taskIds: string[]) => {
+    if (window.confirm(`Are you sure you want to delete ${taskIds.length} task(s)? This action cannot be undone.`)) {
+      deleteMutation.mutate(taskIds);
     }
+  };
+
+  const handleToggleStatus = (taskIds: string[], newStatus: 'active' | 'inactive') => {
+    toggleStatusMutation.mutate({ taskIds, newStatus });
   };
 
   if (isLoading) {
@@ -87,8 +92,8 @@ const AdminTasks = () => {
           
           <Tabs defaultValue="active" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="active">Active Tasks</TabsTrigger>
-              <TabsTrigger value="archived">Archived Tasks</TabsTrigger>
+              <TabsTrigger value="active">Active Tasks ({activeTasks.length})</TabsTrigger>
+              <TabsTrigger value="inactive">Inactive Tasks ({inactiveTasks.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="active">
@@ -96,25 +101,23 @@ const AdminTasks = () => {
                 tasks={activeTasks} 
                 title="Active Tasks" 
                 count={activeTasks.length}
+                onDelete={handleDeleteTasks}
+                onToggleStatus={(taskIds) => handleToggleStatus(taskIds, 'inactive')}
+                actionLabel="Deactivate Selected"
               >
                 <TaskUpload uploadMutation={uploadMutation} />
               </TaskList>
             </TabsContent>
 
-            <TabsContent value="archived">
+            <TabsContent value="inactive">
               <TaskList 
-                tasks={archivedTasks} 
-                title="Archived Tasks" 
-                count={archivedTasks.length}
-              >
-                <Button 
-                  variant="destructive"
-                  onClick={handleDeleteArchived}
-                  disabled={deleteMutation.isPending}
-                >
-                  Delete Archived Tasks
-                </Button>
-              </TaskList>
+                tasks={inactiveTasks} 
+                title="Inactive Tasks" 
+                count={inactiveTasks.length}
+                onDelete={handleDeleteTasks}
+                onToggleStatus={(taskIds) => handleToggleStatus(taskIds, 'active')}
+                actionLabel="Activate Selected"
+              />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,4 +1,4 @@
-export type TaskStatus = "pending" | "active" | "assigned" | "completed" | "rejected" | "expired" | "archived";
+export type TaskStatus = "pending" | "active" | "inactive" | "expired";
 export type TaskCategory = "genai" | "creai";
 export type SubmissionStatus = "pending" | "approved" | "rejected";
 
