@@ -51,7 +51,7 @@ const TaskList = ({
             status
           )
         `)
-        .not('status', 'eq', 'archived');
+        .not('status', 'eq', 'inactive');
 
       const { data, error } = await query;
 
@@ -74,7 +74,7 @@ const TaskList = ({
             s.bidder_id === session.user.id && s.status !== 'rejected'
           );
           const maxBidsReached = task.bidders.length >= (task.category === 'genai' ? 10 : 5);
-          const isExpired = task.status === 'expired' || task.status === 'archived';
+          const isExpired = task.status === 'expired';
           
           return !hasBid && !hasSubmission && !maxBidsReached && !isExpired && task.status === 'pending';
         });
