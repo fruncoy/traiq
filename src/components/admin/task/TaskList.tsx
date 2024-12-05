@@ -11,8 +11,7 @@ interface TaskListProps {
   title: string;
   count: number;
   onDelete: (taskIds: string[]) => void;
-  onToggleStatus: (taskIds: string[]) => void;
-  actionLabel: string;
+  onToggleStatus: (taskIds: string[], newStatus: 'active' | 'inactive') => void;
   children?: React.ReactNode;
 }
 
@@ -22,7 +21,6 @@ export const TaskList = ({
   count, 
   onDelete, 
   onToggleStatus,
-  actionLabel,
   children 
 }: TaskListProps) => {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
@@ -36,6 +34,8 @@ export const TaskList = ({
       checked ? [...prev, taskId] : prev.filter(id => id !== taskId)
     );
   };
+
+  const isInactive = tasks.length > 0 && tasks[0].status === 'inactive';
 
   return (
     <Card>
@@ -52,9 +52,9 @@ export const TaskList = ({
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => onToggleStatus(selectedTasks)}
+                onClick={() => onToggleStatus(selectedTasks, isInactive ? 'active' : 'inactive')}
               >
-                {actionLabel}
+                {isInactive ? 'Activate' : 'Deactivate'} Selected
               </Button>
             </>
           )}
@@ -67,7 +67,7 @@ export const TaskList = ({
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox 
-                  checked={selectedTasks.length === tasks.length}
+                  checked={selectedTasks.length === tasks.length && tasks.length > 0}
                   onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                 />
               </TableHead>

@@ -102,8 +102,7 @@ const AdminTasks = () => {
                 title="Active Tasks" 
                 count={activeTasks.length}
                 onDelete={handleDeleteTasks}
-                onToggleStatus={(taskIds) => handleToggleStatus(taskIds, 'inactive')}
-                actionLabel="Deactivate Selected"
+                onToggleStatus={handleToggleStatus}
               >
                 <TaskUpload uploadMutation={uploadMutation} />
               </TaskList>
@@ -115,8 +114,7 @@ const AdminTasks = () => {
                 title="Inactive Tasks" 
                 count={inactiveTasks.length}
                 onDelete={handleDeleteTasks}
-                onToggleStatus={(taskIds) => handleToggleStatus(taskIds, 'active')}
-                actionLabel="Activate Selected"
+                onToggleStatus={handleToggleStatus}
               />
             </TabsContent>
           </Tabs>
