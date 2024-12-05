@@ -34,7 +34,8 @@ const TaskSubmissionForm = () => {
             status
           )
         `)
-        .eq('task_bidders.bidder_id', user.id);
+        .eq('task_bidders.bidder_id', user.id)
+        .eq('status', 'pending');
 
       if (error) throw error;
 
@@ -48,7 +49,8 @@ const TaskSubmissionForm = () => {
         bidders: task.task_bidders || [],
         submissions: task.task_submissions || []
       }));
-    }
+    },
+    refetchInterval: 5000 // Refresh every 5 seconds
   });
 
   const submitTaskMutation = useMutation({
@@ -76,6 +78,18 @@ const TaskSubmissionForm = () => {
         });
 
       if (submissionError) throw submissionError;
+
+      // Create notification for submission
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          title: 'Task Submitted',
+          message: `Your submission for task ${task.code} has been received and is pending review.`,
+          type: 'task_submission'
+        });
+
+      if (notificationError) throw notificationError;
     },
     onSuccess: () => {
       toast.success("Task submitted successfully!");

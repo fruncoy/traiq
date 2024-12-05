@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckCircle, XCircle, AlertCircle, Ticket, CreditCard } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 const getActivityIcon = (type: ActivityType) => {
   switch (type) {
@@ -25,57 +26,65 @@ const getActivityIcon = (type: ActivityType) => {
 };
 
 const ActivityFeed = ({ isAdmin = false }) => {
-  const { data: activities = [] } = useQuery({
-    queryKey: ['activities'],
+  const { data: session } = useQuery({
+    queryKey: ['session'],
     queryFn: async () => {
-      const activities: Activity[] = [];
-      
-      // Get all tasks
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      const taskers = JSON.parse(localStorage.getItem('taskers') || '[]');
-      const tickets = JSON.parse(localStorage.getItem('tickets') || '[]');
-      
-      // Track bid activities
-      tasks.forEach((task: any) => {
-        if (task.bidders?.length) {
-          task.bidders.forEach((bidderId: string) => {
-            const tasker = taskers.find((t: any) => t.id === bidderId);
-            activities.push({
-              id: `bid-${task.id}-${bidderId}`,
-              type: 'bid',
-              message: `${tasker?.username || 'A tasker'} placed a bid on task ${task.code}`,
-              timestamp: task.datePosted
-            });
-          });
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
+  });
 
-        // Track submission activities
-        if (task.submissions?.length) {
-          task.submissions.forEach((submission: any) => {
-            const tasker = taskers.find((t: any) => t.id === submission.bidderId);
-            activities.push({
-              id: `submission-${task.id}-${submission.bidderId}`,
-              type: submission.status === 'pending' ? 'submission' : 
-                    submission.status === 'approved' ? 'approval' : 'rejection',
-              message: `${tasker?.username || 'A tasker'} ${
-                submission.status === 'pending' ? 'submitted' :
-                submission.status === 'approved' ? 'got approved for' :
-                'got rejected for'
-              } task ${task.code}`,
-              timestamp: submission.submittedAt
-            });
-          });
-        }
+  const { data: activities = [] } = useQuery({
+    queryKey: ['activities', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return [];
+
+      const { data: submissions, error: submissionsError } = await supabase
+        .from('task_submissions')
+        .select(`
+          *,
+          tasks (code),
+          profiles (username)
+        `)
+        .order('submitted_at', { ascending: false });
+
+      if (submissionsError) throw submissionsError;
+
+      const { data: bids, error: bidsError } = await supabase
+        .from('task_bidders')
+        .select(`
+          *,
+          tasks (code),
+          profiles (username)
+        `)
+        .order('bid_date', { ascending: false });
+
+      if (bidsError) throw bidsError;
+
+      const activities: Activity[] = [];
+
+      // Track bid activities
+      bids?.forEach((bid) => {
+        activities.push({
+          id: `bid-${bid.task_id}-${bid.bidder_id}`,
+          type: 'bid',
+          message: `${bid.profiles?.username || 'A tasker'} placed a bid on task ${bid.tasks?.code}`,
+          timestamp: bid.bid_date
+        });
       });
 
-      // Track ticket submissions
-      tickets.forEach((ticket: any) => {
-        const tasker = taskers.find((t: any) => t.id === ticket.taskerId);
+      // Track submission activities
+      submissions?.forEach((submission) => {
         activities.push({
-          id: `ticket-${ticket.id}`,
-          type: 'ticket',
-          message: `${tasker?.username || 'A tasker'} submitted a support ticket: ${ticket.title}`,
-          timestamp: ticket.createdAt
+          id: `submission-${submission.task_id}-${submission.bidder_id}`,
+          type: submission.status === 'pending' ? 'submission' : 
+                submission.status === 'approved' ? 'approval' : 'rejection',
+          message: `${submission.profiles?.username || 'A tasker'} ${
+            submission.status === 'pending' ? 'submitted' :
+            submission.status === 'approved' ? 'got approved for' :
+            'got rejected for'
+          } task ${submission.tasks?.code}`,
+          timestamp: submission.submitted_at
         });
       });
 
@@ -84,7 +93,7 @@ const ActivityFeed = ({ isAdmin = false }) => {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
     },
-    refetchInterval: 1000 // Refresh every second
+    refetchInterval: 5000 // Refresh every 5 seconds
   });
 
   return (

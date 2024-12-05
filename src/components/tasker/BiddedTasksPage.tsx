@@ -55,7 +55,7 @@ const BiddedTasksPage = () => {
           )
         `)
         .eq('task_bidders.bidder_id', session.user.id)
-        .not('status', 'in', '("expired","archived")');
+        .not('status', 'in', '("expired","inactive","archived")');
 
       if (error) throw error;
 
@@ -66,7 +66,8 @@ const BiddedTasksPage = () => {
         )
       }));
     },
-    enabled: !!session?.user?.id
+    enabled: !!session?.user?.id,
+    refetchInterval: 5000 // Refresh every 5 seconds to get latest notifications
   });
 
   if (isLoading) {
@@ -90,8 +91,13 @@ const BiddedTasksPage = () => {
     );
   }
 
-  const readyForSubmission = userTasks.filter((task) => !task.currentSubmission || task.currentSubmission.status === 'rejected');
-  const submitted = userTasks.filter((task) => task.currentSubmission && task.currentSubmission.status !== 'rejected');
+  const readyForSubmission = userTasks.filter((task) => 
+    (!task.currentSubmission || task.currentSubmission.status === 'rejected') && 
+    task.status === 'pending'
+  );
+  const submitted = userTasks.filter((task) => 
+    task.currentSubmission && task.currentSubmission.status !== 'rejected'
+  );
 
   const handleSubmitWork = (taskId: string) => {
     if (!session?.user?.id) {
@@ -172,6 +178,11 @@ const BiddedTasksPage = () => {
                                task.currentSubmission?.status === 'rejected' ? 'Rejected' :
                                'Pending Review'}
                             </Badge>
+                            {task.currentSubmission?.status === 'rejected' && (
+                              <p className="text-sm text-red-600 mt-2">
+                                Reason: {task.currentSubmission.rejection_reason || 'No reason provided'}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
