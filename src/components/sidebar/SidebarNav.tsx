@@ -2,11 +2,12 @@ import { useLocation } from "react-router-dom";
 import { SidebarLink } from "./SidebarLink";
 import { LinkItem } from "./types";
 
-interface SidebarNavProps {
+export interface SidebarNavProps {
   links: LinkItem[];
+  isAdmin?: boolean;
 }
 
-export const SidebarNav = ({ links }: SidebarNavProps) => {
+export const SidebarNav = ({ links, isAdmin }: SidebarNavProps) => {
   const location = useLocation();
   
   return (
