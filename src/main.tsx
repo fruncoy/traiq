@@ -11,7 +11,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      onError: (error: any) => {
+      // Using the correct type for error handling
+      onSettled: (_, error: Error | null) => {
         if (error?.message === 'Failed to fetch') {
           toast.error('Connection error. Please check your internet connection.')
         }
