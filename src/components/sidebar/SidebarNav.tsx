@@ -6,8 +6,12 @@ interface SidebarNavProps {
   links: LinkItem[];
 }
 
-export const SidebarNav = ({ links }: SidebarNavProps) => {
+export const SidebarNav = ({ links = [] }: SidebarNavProps) => {
   const location = useLocation();
+  
+  if (!links || links.length === 0) {
+    return null;
+  }
   
   return (
     <nav className="p-4 space-y-1">
