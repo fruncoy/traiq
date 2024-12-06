@@ -37,14 +37,6 @@ export const useSubmissionMutation = () => {
           p_task_id: taskId
         });
         if (statsError) throw statsError;
-
-        // Update task status to completed
-        const { error: taskError } = await supabase
-          .from('tasks')
-          .update({ status: 'completed' })
-          .eq('id', taskId);
-
-        if (taskError) throw taskError;
       }
 
       // Create notification
@@ -54,14 +46,13 @@ export const useSubmissionMutation = () => {
           user_id: bidderId,
           title: `Submission ${action}`,
           message: `Your submission has been ${action}${reason ? ` (Reason: ${reason})` : ''}`,
-          type: action === 'approved' ? 'success' : 'error'
+          type: 'task_review'
         });
 
       if (notificationError) throw notificationError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Submission updated successfully');
     },
     onError: (error) => {

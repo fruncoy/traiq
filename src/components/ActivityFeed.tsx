@@ -1,8 +1,7 @@
 import { Activity, ActivityType } from "@/types/activity";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, XCircle, AlertCircle, Ticket, CreditCard, RefreshCw } from "lucide-react";
+import { Clock, CheckCircle, XCircle, AlertCircle, Ticket, CreditCard } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,11 +34,7 @@ const ActivityFeed = ({ isAdmin = false }) => {
     }
   });
 
-  const { 
-    data: activities = [],
-    refetch,
-    isRefetching
-  } = useQuery({
+  const { data: activities = [] } = useQuery({
     queryKey: ['activities', session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return [];
@@ -68,6 +63,7 @@ const ActivityFeed = ({ isAdmin = false }) => {
 
       const activities: Activity[] = [];
 
+      // Track bid activities
       bids?.forEach((bid) => {
         activities.push({
           id: `bid-${bid.task_id}-${bid.bidder_id}`,
@@ -77,6 +73,7 @@ const ActivityFeed = ({ isAdmin = false }) => {
         });
       });
 
+      // Track submission activities
       submissions?.forEach((submission) => {
         activities.push({
           id: `submission-${submission.task_id}-${submission.bidder_id}`,
@@ -91,28 +88,20 @@ const ActivityFeed = ({ isAdmin = false }) => {
         });
       });
 
+      // Sort activities by timestamp in descending order
       return activities.sort((a, b) => 
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
     },
+    refetchInterval: 5000 // Refresh every 5 seconds
   });
 
   return (
     <Card className="col-span-1">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="text-lg font-semibold">
           {isAdmin ? "Recent Activity" : "Available Tasks"}
         </CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isRefetching}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
