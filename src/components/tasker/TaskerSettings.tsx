@@ -1,11 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProfileSection } from "./ProfileSection";
-import { SecuritySection } from "./SecuritySection";
-import { MyTickets } from "./MyTickets";
+import ProfileSection from "./ProfileSection";
+import SecuritySection from "./SecuritySection";
+import MyTickets from "./MyTickets";
 
 const TaskerSettings = () => {
   return (
-    <div className="h-full">
+    <div className="h-full fixed-layout">
       <Tabs defaultValue="profile" className="h-full space-y-6">
         <div className="space-between flex items-center">
           <TabsList>

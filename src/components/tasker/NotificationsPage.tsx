@@ -55,6 +55,12 @@ const NotificationsPage = () => {
     }
   });
 
+  const handleClearNotifications = () => {
+    if (window.confirm('Are you sure you want to clear all notifications?')) {
+      clearNotificationsMutation.mutate();
+    }
+  };
+
   return (
     <Sidebar>
       <div className="space-y-4">
@@ -63,7 +69,7 @@ const NotificationsPage = () => {
             <CardTitle>Notifications</CardTitle>
             <Button 
               variant="outline"
-              onClick={() => clearNotificationsMutation.mutate()}
+              onClick={handleClearNotifications}
               disabled={notifications.length === 0 || clearNotificationsMutation.isPending}
             >
               Clear All
