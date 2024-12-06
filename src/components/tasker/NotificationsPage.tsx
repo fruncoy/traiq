@@ -1,11 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Sidebar from "../Sidebar";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 
 const NotificationsPage = () => {
+  const queryClient = useQueryClient();
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
@@ -29,15 +33,47 @@ const NotificationsPage = () => {
       return data;
     },
     enabled: !!session?.user?.id,
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: async () => {
+      if (!session?.user?.id) return;
+      
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', session.user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast.success('Notifications cleared successfully');
+    },
+    onError: () => {
+      toast.error('Failed to clear notifications');
+    }
   });
 
   return (
     <Sidebar>
       <div className="space-y-4">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Notifications</CardTitle>
+            {notifications.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => clearMutation.mutate()}
+                disabled={clearMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear All
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -51,7 +87,12 @@ const NotificationsPage = () => {
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="font-semibold text-[#1E40AF]">{notification.title}</h3>
+                        <h3 className="font-semibold text-[#1E40AF] flex items-center gap-2">
+                          {notification.title}
+                          {!notification.read && (
+                            <span className="w-2 h-2 bg-red-500 rounded-full" />
+                          )}
+                        </h3>
                         <p className="text-sm text-gray-600">{notification.message}</p>
                       </div>
                       <Badge

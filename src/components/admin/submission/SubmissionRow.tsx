@@ -11,7 +11,7 @@ interface SubmissionRowProps {
       email: string;
     };
   };
-  onAction: (bidderId: string, action: 'approved' | 'rejected', reason?: string) => void;
+  onAction: (action: 'approved' | 'rejected', reason?: string) => void;
   isPending: boolean;
 }
 
@@ -44,7 +44,7 @@ export const SubmissionRow = ({ submission, onAction, isPending }: SubmissionRow
       <TableCell>
         {submission.status === 'pending' && (
           <SubmissionActions
-            onAction={(action) => onAction(submission.bidder_id, action)}
+            onAction={onAction}
             isPending={isPending}
           />
         )}
