@@ -16,6 +16,15 @@ export const TaskSubmissionsTable = ({ task }: TaskSubmissionsTableProps) => {
     return <div>Loading submissions...</div>;
   }
 
+  const handleAction = (bidderId: string, action: 'approved' | 'rejected', reason?: string) => {
+    submissionMutation.mutate({ 
+      taskId: task.id, 
+      bidderId, 
+      action: action as SubmissionStatus, 
+      reason 
+    });
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -34,14 +43,7 @@ export const TaskSubmissionsTable = ({ task }: TaskSubmissionsTableProps) => {
           <SubmissionRow
             key={`${submission.task_id}-${submission.bidder_id}`}
             submission={submission}
-            onAction={(action, reason) => 
-              submissionMutation.mutate({ 
-                taskId: task.id, 
-                bidderId: submission.bidder_id, 
-                action: action as SubmissionStatus, 
-                reason 
-              })
-            }
+            onAction={(action, reason) => handleAction(submission.bidder_id, action, reason)}
             isPending={submissionMutation.isPending}
           />
         ))}
