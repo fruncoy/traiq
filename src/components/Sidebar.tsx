@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -44,8 +44,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     queryFn: async () => {
       const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
       return stored ? JSON.parse(stored) : [];
-    },
-    refetchInterval: 1000
+    }
   });
 
   const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
@@ -56,8 +55,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       const tickets = stored ? JSON.parse(stored) : [];
       return tickets.filter((t: any) => t.status === 'pending');
     },
-    enabled: isAdmin,
-    refetchInterval: isAdmin ? 1000 : false
+    enabled: isAdmin
   });
 
   const { data: pendingSubmissions = [], isLoading: submissionsLoading } = useQuery({
@@ -69,11 +67,9 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         t.submissions?.some((s: any) => s.status === 'pending')
       );
     },
-    enabled: isAdmin,
-    refetchInterval: isAdmin ? 1000 : false
+    enabled: isAdmin
   });
 
-  // Mark notifications as read when visiting notifications page
   React.useEffect(() => {
     if (location.pathname === '/tasker/notifications' && currentTasker.id) {
       const storedNotifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
@@ -91,10 +87,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const handleLogout = () => {
     toast.success("Successfully logged out");
     navigate("/");
-  };
-
-  const handleUserClick = () => {
-    navigate("/tasker/settings");
   };
 
   const handleRefresh = () => {
@@ -137,16 +129,18 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         "lg:translate-x-0",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="hidden lg:block">
-          <SidebarHeader />
-        </div>
+        <SidebarHeader 
+          unreadCount={unreadCount}
+          isAdmin={isAdmin}
+          onLogout={handleLogout}
+        />
         <div className="mt-16 lg:mt-0">
           <SidebarNav links={links} />
         </div>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b border-gray-200 hidden lg:flex items-center justify-between px-6">
+        <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
           <PageTitle />
           <div className="flex items-center space-x-4">
             <button
@@ -175,7 +169,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
               </button>
             )}
             <button
-              onClick={handleUserClick}
+              onClick={() => navigate("/tasker/settings")}
               className="p-2 hover:bg-gray-100 rounded-full"
               aria-label="User settings"
             >
@@ -191,7 +185,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6 bg-gray-50 mt-16 lg:mt-0">
+        <main className="flex-1 overflow-auto p-6 bg-gray-50">
           {children}
         </main>
       </div>

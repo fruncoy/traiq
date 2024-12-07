@@ -25,7 +25,6 @@ const AdminSubmittedTasks = () => {
 
       if (error) throw error;
       
-      // Transform the data to match our Task type
       const transformedTasks = tasksData.map((task: any) => ({
         ...task,
         bidders: task.task_bidders || [],
