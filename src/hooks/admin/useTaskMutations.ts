@@ -15,6 +15,7 @@ export const useTaskMutations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
+      localStorage.clear(); // Clear local storage
       toast.success("System has been reset successfully");
     },
     onError: (error) => {
@@ -25,12 +26,16 @@ export const useTaskMutations = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (taskIds: string[]) => {
+      console.log('Deleting tasks:', taskIds);
       const { error } = await supabase
         .from('tasks')
         .delete()
         .in('id', taskIds);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
       return true;
     },
     onSuccess: () => {

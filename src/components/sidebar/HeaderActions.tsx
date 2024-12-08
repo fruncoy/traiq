@@ -4,18 +4,12 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface HeaderActionsProps {
-  unreadCount: number;
-  isAdmin: boolean;
   onLogout: () => void;
 }
 
 export const HeaderActions = ({ onLogout }: HeaderActionsProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const handleUserClick = () => {
-    navigate("/tasker/settings");
-  };
 
   const handleRefresh = () => {
     queryClient.invalidateQueries();
@@ -30,6 +24,13 @@ export const HeaderActions = ({ onLogout }: HeaderActionsProps) => {
         aria-label="Refresh data"
       >
         <RefreshCw size={20} className="text-gray-600" />
+      </button>
+      <button
+        onClick={() => navigate("/tasker/settings")}
+        className="p-2 hover:bg-gray-100 rounded-full"
+        aria-label="User settings"
+      >
+        <User size={20} className="text-gray-600" />
       </button>
       <button
         onClick={onLogout}

@@ -1,24 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  ClipboardList, 
-  DollarSign, 
-  Users, 
-  Settings, 
-  LogOut, 
-  BellDot,
-  Bell, 
-  Upload, 
-  CreditCard,
-  Briefcase,
-  TicketIcon,
-  User,
-  RefreshCw
-} from "lucide-react";
-import { toast } from "sonner";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { SidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarNav } from "./sidebar/SidebarNav";
 import { MobileHeader } from "./sidebar/MobileHeader";
@@ -26,6 +9,8 @@ import { PageTitle } from "./sidebar/PageTitle";
 import { LoadingSpinner } from "./ui/loading-spinner";
 import { LinkItem } from "./sidebar/types";
 import { cn } from "@/lib/utils";
+import { HeaderActions } from "./sidebar/HeaderActions";
+import { toast } from "sonner";
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -36,26 +21,35 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications', currentTasker.id],
     queryFn: async () => {
-      const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
-      return stored ? JSON.parse(stored) : [];
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', currentTasker.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     },
-    refetchOnWindowFocus: false, // Disable automatic refetching
-    refetchInterval: false // Disable periodic refetching
+    refetchOnWindowFocus: false,
+    refetchInterval: false
   });
 
   const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
     queryKey: ['pending-tickets'],
     queryFn: async () => {
       if (!isAdmin) return [];
-      const stored = localStorage.getItem('tickets');
-      const tickets = stored ? JSON.parse(stored) : [];
-      return tickets.filter((t: any) => t.status === 'pending');
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('status', 'pending');
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: isAdmin,
     refetchOnWindowFocus: false,
@@ -66,38 +60,22 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     queryKey: ['pending-submissions'],
     queryFn: async () => {
       if (!isAdmin) return [];
-      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-      return tasks.filter((t: any) => 
-        t.submissions?.some((s: any) => s.status === 'pending')
-      );
+      const { data, error } = await supabase
+        .from('task_submissions')
+        .select('*')
+        .eq('status', 'pending');
+      
+      if (error) throw error;
+      return data || [];
     },
     enabled: isAdmin,
     refetchOnWindowFocus: false,
     refetchInterval: false
   });
 
-  React.useEffect(() => {
-    if (location.pathname === '/tasker/notifications' && currentTasker.id) {
-      const storedNotifications = JSON.parse(localStorage.getItem(`notifications_${currentTasker.id}`) || '[]');
-      const updatedNotifications = storedNotifications.map((n: any) => ({
-        ...n,
-        read: true
-      }));
-      localStorage.setItem(`notifications_${currentTasker.id}`, JSON.stringify(updatedNotifications));
-    }
-  }, [location.pathname, currentTasker.id]);
-
-  const hasUnreadNotifications = notifications.some((n: any) => !n.read);
-  const unreadCount = notifications.filter((n: any) => !n.read).length;
-
   const handleLogout = () => {
     toast.success("Successfully logged out");
     navigate("/");
-  };
-
-  const handleRefresh = () => {
-    queryClient.invalidateQueries();
-    toast.success("Data refreshed successfully");
   };
 
   const links: LinkItem[] = isAdmin ? [
@@ -135,11 +113,9 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         "lg:translate-x-0",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <SidebarHeader 
-          unreadCount={unreadCount}
-          isAdmin={isAdmin}
-          onLogout={handleLogout}
-        />
+        <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
+          <span className="text-2xl font-bold text-primary-DEFAULT">TRAIQ</span>
+        </div>
         <div className="mt-16 lg:mt-0">
           <SidebarNav links={links} />
         </div>
@@ -148,47 +124,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
           <PageTitle />
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleRefresh}
-              className="p-2 hover:bg-gray-100 rounded-full"
-              aria-label="Refresh data"
-            >
-              <RefreshCw size={20} className="text-gray-600" />
-            </button>
-            {!isAdmin && (
-              <button
-                onClick={() => navigate("/tasker/notifications")}
-                className="p-2 hover:bg-gray-100 rounded-full relative"
-                aria-label="Notifications"
-              >
-                {hasUnreadNotifications ? (
-                  <BellDot size={20} className="text-gray-600" />
-                ) : (
-                  <Bell size={20} className="text-gray-600" />
-                )}
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-            )}
-            <button
-              onClick={() => navigate("/tasker/settings")}
-              className="p-2 hover:bg-gray-100 rounded-full"
-              aria-label="User settings"
-            >
-              <User size={20} className="text-gray-600" />
-            </button>
-            <button
-              onClick={handleLogout}
-              className="p-2 hover:bg-gray-100 rounded-full"
-              aria-label="Logout"
-            >
-              <LogOut size={20} className="text-gray-600" />
-            </button>
-          </div>
+          <HeaderActions onLogout={handleLogout} />
         </header>
 
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
