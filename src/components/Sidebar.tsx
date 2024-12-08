@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
@@ -31,22 +31,31 @@ interface SidebarProps {
 
 const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
-  const currentTasker = JSON.parse(localStorage.getItem('currentTasker') || '{}');
+
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
+  });
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
-    queryKey: ['notifications', currentTasker.id],
+    queryKey: ['notifications', session?.user?.id],
     queryFn: async () => {
+      if (!session?.user?.id) return [];
+      
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', currentTasker.id)
+        .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
     },
+    enabled: !!session?.user?.id,
     refetchOnWindowFocus: false,
     refetchInterval: false
   });
@@ -68,7 +77,8 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     refetchInterval: false
   });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast.success("Successfully logged out");
     navigate("/");
   };
