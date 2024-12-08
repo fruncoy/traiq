@@ -2,6 +2,19 @@ import { supabase } from "@/integrations/supabase/client";
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { 
+  LayoutDashboard, 
+  Clipboard, 
+  Upload, 
+  DollarSign,
+  Users,
+  Ticket,
+  Settings,
+  CreditCard,
+  Briefcase,
+  Bell,
+  BellDot
+} from "lucide-react";
 import { SidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarNav } from "./sidebar/SidebarNav";
 import { MobileHeader } from "./sidebar/MobileHeader";
@@ -39,23 +52,6 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     refetchInterval: false
   });
 
-  const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
-    queryKey: ['pending-tickets'],
-    queryFn: async () => {
-      if (!isAdmin) return [];
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('*')
-        .eq('status', 'pending');
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: isAdmin,
-    refetchOnWindowFocus: false,
-    refetchInterval: false
-  });
-
   const { data: pendingSubmissions = [], isLoading: submissionsLoading } = useQuery({
     queryKey: ['pending-submissions'],
     queryFn: async () => {
@@ -78,25 +74,27 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     navigate("/");
   };
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const hasUnreadNotifications = unreadCount > 0;
+
   const links: LinkItem[] = isAdmin ? [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
-    { name: "Tasks", path: "/admin/tasks", icon: ClipboardList },
+    { name: "Tasks", path: "/admin/tasks", icon: Clipboard },
     { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload, badge: pendingSubmissions?.length },
     { name: "Finances", path: "/admin/finances", icon: DollarSign },
     { name: "Taskers", path: "/admin/taskers", icon: Users },
-    { name: "Tickets", path: "/admin/tickets", icon: TicketIcon, badge: pendingTickets?.length },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ] : [
     { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
     { name: "Buy Bids", path: "/tasker/buy-bids", icon: CreditCard },
-    { name: "Tasks", path: "/tasker/tasks", icon: ClipboardList },
+    { name: "Tasks", path: "/tasker/tasks", icon: Clipboard },
     { name: "Bidded Tasks", path: "/tasker/bidded-tasks", icon: Briefcase },
     { name: "Submit Task", path: "/tasker/submit-task", icon: Upload },
     { name: "Notifications", path: "/tasker/notifications", icon: hasUnreadNotifications ? BellDot : Bell, badge: unreadCount },
     { name: "Settings", path: "/tasker/settings", icon: Settings },
   ];
 
-  if (notificationsLoading || ticketsLoading || submissionsLoading) {
+  if (notificationsLoading || submissionsLoading) {
     return <LoadingSpinner />;
   }
 
