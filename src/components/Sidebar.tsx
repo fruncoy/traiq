@@ -44,7 +44,9 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     queryFn: async () => {
       const stored = localStorage.getItem(`notifications_${currentTasker.id}`);
       return stored ? JSON.parse(stored) : [];
-    }
+    },
+    refetchOnWindowFocus: false, // Disable automatic refetching
+    refetchInterval: false // Disable periodic refetching
   });
 
   const { data: pendingTickets = [], isLoading: ticketsLoading } = useQuery({
@@ -55,7 +57,9 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
       const tickets = stored ? JSON.parse(stored) : [];
       return tickets.filter((t: any) => t.status === 'pending');
     },
-    enabled: isAdmin
+    enabled: isAdmin,
+    refetchOnWindowFocus: false,
+    refetchInterval: false
   });
 
   const { data: pendingSubmissions = [], isLoading: submissionsLoading } = useQuery({
@@ -67,7 +71,9 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
         t.submissions?.some((s: any) => s.status === 'pending')
       );
     },
-    enabled: isAdmin
+    enabled: isAdmin,
+    refetchOnWindowFocus: false,
+    refetchInterval: false
   });
 
   React.useEffect(() => {
