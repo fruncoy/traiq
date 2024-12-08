@@ -8,7 +8,6 @@ import {
   Upload, 
   DollarSign,
   Users,
-  Ticket,
   Settings,
   CreditCard,
   Briefcase,

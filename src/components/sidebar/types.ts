@@ -1,8 +1,8 @@
-import { ComponentType } from "react";
+import { LucideIcon } from "lucide-react";
 
 export interface LinkItem {
   name: string;
   path: string;
-  icon: ComponentType<any>;
+  icon: LucideIcon;
   badge?: number;
 }
