@@ -8,9 +8,37 @@ import { TaskList } from "@/components/admin/task/TaskList";
 import { TaskUpload } from "@/components/admin/task/TaskUpload";
 import { useTaskMutations } from "@/hooks/admin/useTaskMutations";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const AdminTasks = () => {
+  const navigate = useNavigate();
   const { resetSystemMutation, deleteMutation, toggleStatusMutation, uploadMutation } = useTaskMutations();
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+
+      // Check if user is admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile?.is_admin) {
+        toast.error("Unauthorized access");
+        navigate('/');
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   const { data: availableTasks = [], isLoading } = useQuery({
     queryKey: ['admin-tasks'],
