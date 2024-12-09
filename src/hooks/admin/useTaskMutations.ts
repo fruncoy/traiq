@@ -9,6 +9,7 @@ export const useTaskMutations = () => {
 
   const resetSystemMutation = useMutation({
     mutationFn: async () => {
+      console.log('Attempting system reset...');
       const { error } = await supabase.rpc('manual_system_reset');
       if (error) {
         console.error('Reset error:', error);
@@ -18,12 +19,11 @@ export const useTaskMutations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
-      localStorage.clear(); // Clear local storage
       toast.success("System has been reset successfully");
     },
     onError: (error) => {
       console.error('Reset error:', error);
-      toast.error("Failed to reset system");
+      toast.error("Failed to reset system. Please try again.");
     }
   });
 
@@ -31,7 +31,7 @@ export const useTaskMutations = () => {
     mutationFn: async (taskIds: string[]) => {
       console.log('Deleting tasks:', taskIds);
       
-      // First delete related records
+      // First delete related records in the correct order
       const { error: submissionsError } = await supabase
         .from('task_submissions')
         .delete()
@@ -52,7 +52,7 @@ export const useTaskMutations = () => {
         throw biddersError;
       }
 
-      // Then delete the tasks
+      // Finally delete the tasks
       const { error: tasksError } = await supabase
         .from('tasks')
         .delete()
@@ -71,7 +71,7 @@ export const useTaskMutations = () => {
     },
     onError: (error) => {
       console.error('Delete error:', error);
-      toast.error("Failed to delete tasks");
+      toast.error("Failed to delete tasks. Please try again.");
     }
   });
 

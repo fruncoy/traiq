@@ -32,7 +32,10 @@ const AdminTasks = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
+      }
 
       return tasksData.map((task: any) => ({
         ...task,
@@ -40,27 +43,38 @@ const AdminTasks = () => {
         bidders: task.task_bidders || [],
         submissions: task.task_submissions || []
       }));
-    },
-    refetchInterval: 5000
+    }
   });
 
   const activeTasks = availableTasks.filter(task => task.status !== 'inactive' && task.status !== 'expired');
   const inactiveTasks = availableTasks.filter(task => task.status === 'inactive' || task.status === 'expired');
 
-  const handleSystemReset = () => {
+  const handleSystemReset = async () => {
     if (window.confirm("Are you sure you want to reset the entire system? This action cannot be undone.")) {
-      resetSystemMutation.mutate();
+      try {
+        await resetSystemMutation.mutateAsync();
+      } catch (error) {
+        console.error('System reset error:', error);
+      }
     }
   };
 
-  const handleDeleteTasks = (taskIds: string[]) => {
+  const handleDeleteTasks = async (taskIds: string[]) => {
     if (window.confirm(`Are you sure you want to delete ${taskIds.length} task(s)? This action cannot be undone.`)) {
-      deleteMutation.mutate(taskIds);
+      try {
+        await deleteMutation.mutateAsync(taskIds);
+      } catch (error) {
+        console.error('Delete tasks error:', error);
+      }
     }
   };
 
-  const handleToggleStatus = (taskIds: string[], newStatus: 'active' | 'inactive') => {
-    toggleStatusMutation.mutate({ taskIds, newStatus });
+  const handleToggleStatus = async (taskIds: string[], newStatus: 'active' | 'inactive') => {
+    try {
+      await toggleStatusMutation.mutateAsync({ taskIds, newStatus });
+    } catch (error) {
+      console.error('Toggle status error:', error);
+    }
   };
 
   if (isLoading) {
@@ -86,7 +100,7 @@ const AdminTasks = () => {
               onClick={handleSystemReset}
               disabled={resetSystemMutation.isPending}
             >
-              Reset System
+              {resetSystemMutation.isPending ? "Resetting..." : "Reset System"}
             </Button>
           </div>
           
