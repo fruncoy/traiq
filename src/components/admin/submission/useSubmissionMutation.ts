@@ -18,6 +18,15 @@ export const useSubmissionMutation = () => {
       action: SubmissionStatus; 
       reason?: string 
     }) => {
+      // Get task details first
+      const { data: taskData, error: taskError } = await supabase
+        .from('tasks')
+        .select('code, title')
+        .eq('id', taskId)
+        .single();
+
+      if (taskError) throw taskError;
+
       // Update submission status
       const { error: submissionError } = await supabase
         .from('task_submissions')
@@ -39,13 +48,17 @@ export const useSubmissionMutation = () => {
         if (statsError) throw statsError;
       }
 
-      // Create notification
+      // Create notification with meaningful message
+      const notificationMessage = action === 'approved'
+        ? `Your submission for task ${taskData.code} (${taskData.title}) has been approved`
+        : `Your submission for task ${taskData.code} (${taskData.title}) has been ${action}${reason ? `. Reason: ${reason}` : ''}`;
+
       const { error: notificationError } = await supabase
         .from('notifications')
         .insert({
           user_id: bidderId,
-          title: `Submission ${action}`,
-          message: `Your submission has been ${action}${reason ? ` (Reason: ${reason})` : ''}`,
+          title: `Task ${action === 'approved' ? 'Approved' : 'Rejected'}`,
+          message: notificationMessage,
           type: 'task_review'
         });
 

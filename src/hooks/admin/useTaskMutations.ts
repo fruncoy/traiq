@@ -10,7 +10,10 @@ export const useTaskMutations = () => {
   const resetSystemMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc('manual_system_reset');
-      if (error) throw error;
+      if (error) {
+        console.error('Reset error:', error);
+        throw error;
+      }
       return true;
     },
     onSuccess: () => {
@@ -27,15 +30,39 @@ export const useTaskMutations = () => {
   const deleteMutation = useMutation({
     mutationFn: async (taskIds: string[]) => {
       console.log('Deleting tasks:', taskIds);
-      const { error } = await supabase
+      
+      // First delete related records
+      const { error: submissionsError } = await supabase
+        .from('task_submissions')
+        .delete()
+        .in('task_id', taskIds);
+
+      if (submissionsError) {
+        console.error('Delete submissions error:', submissionsError);
+        throw submissionsError;
+      }
+
+      const { error: biddersError } = await supabase
+        .from('task_bidders')
+        .delete()
+        .in('task_id', taskIds);
+
+      if (biddersError) {
+        console.error('Delete bidders error:', biddersError);
+        throw biddersError;
+      }
+
+      // Then delete the tasks
+      const { error: tasksError } = await supabase
         .from('tasks')
         .delete()
         .in('id', taskIds);
 
-      if (error) {
-        console.error('Delete error:', error);
-        throw error;
+      if (tasksError) {
+        console.error('Delete tasks error:', tasksError);
+        throw tasksError;
       }
+
       return true;
     },
     onSuccess: () => {

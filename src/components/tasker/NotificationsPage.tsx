@@ -32,8 +32,7 @@ const NotificationsPage = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!session?.user?.id,
-    refetchInterval: 30000
+    enabled: !!session?.user?.id
   });
 
   const clearMutation = useMutation({
@@ -55,6 +54,26 @@ const NotificationsPage = () => {
       toast.error('Failed to clear notifications');
     }
   });
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+
+  const handleNotificationClick = (notificationId: string) => {
+    if (!notifications.find(n => n.id === notificationId)?.read) {
+      markAsReadMutation.mutate(notificationId);
+    }
+  };
 
   return (
     <Sidebar>
@@ -83,7 +102,8 @@ const NotificationsPage = () => {
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className="p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors"
+                    onClick={() => handleNotificationClick(notification.id)}
+                    className="p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>

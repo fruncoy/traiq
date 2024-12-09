@@ -90,6 +90,18 @@ export const handleTaskBid = async (task: any, userBids: number) => {
 
   if (profileError) throw profileError;
 
+  // Create notification for successful bid
+  const { error: notificationError } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: user.id,
+      title: 'Bid Placed Successfully',
+      message: `You have successfully bid on task ${task.code} (${task.title})`,
+      type: 'bid'
+    });
+
+  if (notificationError) throw notificationError;
+
   // Return updated task
   const { data: updatedTask } = await supabase
     .from('tasks')
