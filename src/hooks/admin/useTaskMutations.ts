@@ -10,12 +10,14 @@ export const useTaskMutations = () => {
   const resetSystemMutation = useMutation({
     mutationFn: async () => {
       console.log('Attempting system reset...');
-      const { error } = await supabase.rpc('manual_system_reset');
+      const { data, error } = await supabase.rpc('manual_system_reset');
+      
       if (error) {
         console.error('Reset error:', error);
         throw error;
       }
-      return true;
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
