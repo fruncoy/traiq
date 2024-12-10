@@ -6,8 +6,9 @@ interface TaskUploadProps {
 }
 
 export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleFileChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (file) {
       uploadMutation(file);
     }
@@ -20,7 +21,7 @@ export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.xlsx,.xls';
-        input.onchange = (e) => handleFileChange(e as React.ChangeEvent<HTMLInputElement>);
+        input.onchange = handleFileChange;
         input.click();
       }}
     >

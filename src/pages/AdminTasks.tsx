@@ -38,7 +38,7 @@ const AdminTasks = () => {
     checkAuth();
   }, [navigate]);
 
-  const { data: availableTasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['admin-tasks'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -97,17 +97,23 @@ const AdminTasks = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Task Management</h1>
           <div className="space-x-4">
-            <TaskUpload uploadMutation={uploadMutation} />
+            <TaskUpload uploadMutation={uploadMutation.mutate} />
           </div>
         </div>
 
-        <TaskList tasks={availableTasks} />
+        <TaskList 
+          tasks={tasks} 
+          title="All Tasks"
+          count={tasks.length}
+          onDelete={deleteMutation.mutate}
+          onToggleStatus={(taskIds, newStatus) => toggleStatusMutation.mutate({ taskIds, newStatus })}
+        />
         
         <TaskTable 
-          tasks={availableTasks}
-          onDelete={deleteMutation.mutate}
-          onToggleStatus={toggleStatusMutation.mutate}
-          onResetSystem={resetSystemMutation.mutate}
+          tasks={tasks}
+          selectedTasks={[]}
+          onSelectAll={() => {}}
+          onSelectTask={() => {}}
         />
       </div>
     </div>
