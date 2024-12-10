@@ -5,46 +5,13 @@ import { TaskList } from "@/components/admin/task/TaskList";
 import { TaskUpload } from "@/components/admin/task/TaskUpload";
 import { useTaskMutations } from "@/hooks/admin/useTaskMutations";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Task } from "@/types/task";
 import Sidebar from "@/components/Sidebar";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const AdminTasks = () => {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
   const { resetSystemMutation, deleteMutation, toggleStatusMutation, uploadMutation } = useTaskMutations();
 
-  // Check authentication and admin status
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/login');
-        return;
-      }
-
-      // Check if user is admin
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile?.is_admin) {
-        toast.error("Unauthorized access");
-        navigate('/');
-        return;
-      }
-
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['admin-tasks'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -90,12 +57,11 @@ const AdminTasks = () => {
         bidders: task.task_bidders || [],
         submissions: task.task_submissions || []
       })) || []) as Task[];
-    },
-    enabled: !isLoading // Only fetch tasks after authentication check
+    }
   });
 
-  if (isLoading || tasksLoading) {
-    return <LoadingSpinner />;
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
   return (
