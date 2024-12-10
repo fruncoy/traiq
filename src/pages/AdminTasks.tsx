@@ -5,12 +5,15 @@ import { TaskList } from "@/components/admin/task/TaskList";
 import { TaskUpload } from "@/components/admin/task/TaskUpload";
 import { useTaskMutations } from "@/hooks/admin/useTaskMutations";
 import { toast } from "sonner";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Task } from "@/types/task";
+import Sidebar from "@/components/Sidebar";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const AdminTasks = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const { resetSystemMutation, deleteMutation, toggleStatusMutation, uploadMutation } = useTaskMutations();
 
   // Check authentication and admin status
@@ -32,13 +35,16 @@ const AdminTasks = () => {
       if (!profile?.is_admin) {
         toast.error("Unauthorized access");
         navigate('/');
+        return;
       }
+
+      setIsLoading(false);
     };
 
     checkAuth();
   }, [navigate]);
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['admin-tasks'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -85,38 +91,41 @@ const AdminTasks = () => {
         submissions: task.task_submissions || []
       })) || []) as Task[];
     },
+    enabled: !isLoading // Only fetch tasks after authentication check
   });
 
-  if (isLoading) {
-    return <div>Loading...</div>;
+  if (isLoading || tasksLoading) {
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Task Management</h1>
-          <div className="space-x-4">
-            <TaskUpload uploadMutation={uploadMutation.mutate} />
+    <Sidebar isAdmin>
+      <div className="container mx-auto py-6">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Task Management</h1>
+            <div className="space-x-4">
+              <TaskUpload uploadMutation={uploadMutation.mutate} />
+            </div>
           </div>
-        </div>
 
-        <TaskList 
-          tasks={tasks} 
-          title="All Tasks"
-          count={tasks.length}
-          onDelete={deleteMutation.mutate}
-          onToggleStatus={(taskIds, newStatus) => toggleStatusMutation.mutate({ taskIds, newStatus })}
-        />
-        
-        <TaskTable 
-          tasks={tasks}
-          selectedTasks={[]}
-          onSelectAll={() => {}}
-          onSelectTask={() => {}}
-        />
+          <TaskList 
+            tasks={tasks} 
+            title="All Tasks"
+            count={tasks.length}
+            onDelete={deleteMutation.mutate}
+            onToggleStatus={(taskIds, newStatus) => toggleStatusMutation.mutate({ taskIds, newStatus })}
+          />
+          
+          <TaskTable 
+            tasks={tasks}
+            selectedTasks={[]}
+            onSelectAll={() => {}}
+            onSelectTask={() => {}}
+          />
+        </div>
       </div>
-    </div>
+    </Sidebar>
   );
 };
 
