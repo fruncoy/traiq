@@ -7,6 +7,7 @@ import { useTaskMutations } from "@/hooks/admin/useTaskMutations";
 import { toast } from "sonner";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Task } from "@/types/task";
 
 const AdminTasks = () => {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const AdminTasks = () => {
       const { data, error } = await supabase
         .from('tasks')
         .select(`
+          id,
           code,
           title,
           description,
@@ -54,7 +56,22 @@ const AdminTasks = () => {
           max_bidders,
           current_bids,
           deadline,
-          status
+          status,
+          date_posted,
+          created_at,
+          task_bidders (
+            bidder_id,
+            bid_date
+          ),
+          task_submissions (
+            id,
+            bidder_id,
+            status,
+            rejection_reason,
+            submitted_at,
+            file_name,
+            file_url
+          )
         `);
 
       if (error) {
@@ -62,7 +79,11 @@ const AdminTasks = () => {
         throw error;
       }
 
-      return data || [];
+      return (data?.map(task => ({
+        ...task,
+        bidders: task.task_bidders || [],
+        submissions: task.task_submissions || []
+      })) || []) as Task[];
     },
   });
 
@@ -76,7 +97,7 @@ const AdminTasks = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Task Management</h1>
           <div className="space-x-4">
-            <TaskUpload onUpload={uploadMutation.mutate} />
+            <TaskUpload uploadMutation={uploadMutation} />
           </div>
         </div>
 

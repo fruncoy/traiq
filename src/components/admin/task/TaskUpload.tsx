@@ -1,31 +1,30 @@
+import { UseMutateFunction } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
-import { UseMutationResult } from "@tanstack/react-query";
 
 interface TaskUploadProps {
-  uploadMutation: UseMutationResult<any, Error, File, unknown>;
+  uploadMutation: UseMutateFunction<unknown, Error, File, unknown>;
 }
 
 export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      uploadMutation.mutate(file);
+      uploadMutation(file);
     }
   };
 
   return (
-    <div className="relative">
-      <input
-        type="file"
-        accept=".xlsx,.xls"
-        onChange={handleFileUpload}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-      />
-      <Button className="flex items-center gap-2">
-        <Upload size={16} />
-        Upload Tasks
-      </Button>
-    </div>
+    <Button
+      variant="outline"
+      onClick={() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.xlsx,.xls';
+        input.onchange = (e) => handleFileChange(e as React.ChangeEvent<HTMLInputElement>);
+        input.click();
+      }}
+    >
+      Upload Tasks
+    </Button>
   );
 };
