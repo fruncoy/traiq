@@ -8,7 +8,7 @@ interface TaskUploadProps {
 }
 
 export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
-  const handleFileChange = (event: Event) => {
+  const handleFileChange = async (event: Event) => {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     
@@ -32,10 +32,15 @@ export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
     }
 
     try {
-      uploadMutation(file);
+      toast.loading("Uploading tasks...", { id: "task-upload" });
+      await uploadMutation(file);
+      toast.success("Tasks uploaded successfully", { id: "task-upload" });
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error("Failed to upload file. Please try again.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload tasks. Please try again.",
+        { id: "task-upload" }
+      );
     }
   };
 
