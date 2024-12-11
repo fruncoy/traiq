@@ -104,36 +104,65 @@ export const useTaskMutations = () => {
       return new Promise((resolve, reject) => {
         reader.onload = async (e) => {
           try {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            if (!e.target?.result) {
+              throw new Error('Failed to read file');
+            }
+
+            const data = new Uint8Array(e.target.result as ArrayBuffer);
             const workbook = XLSX.read(data, { type: 'array' });
+            
+            if (!workbook.SheetNames.length) {
+              throw new Error('Excel file is empty');
+            }
+
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-            const processedTasks = jsonData.map((row: any) => ({
-              code: row.UniqueCode,
-              title: row.Title,
-              description: row.Description,
-              category: (row.Category?.toLowerCase() === 'genai' ? 'genai' : 'creai') as TaskCategory,
-              payout: row.Category?.toLowerCase() === 'genai' ? 500 : 250,
-              tasker_payout: row.Category?.toLowerCase() === 'genai' ? 400 : 200,
-              platform_fee: row.Category?.toLowerCase() === 'genai' ? 100 : 50,
-              bids_needed: row.Category?.toLowerCase() === 'genai' ? 10 : 5,
-              max_bidders: 10,
-              current_bids: 0,
-              deadline: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
-              status: "pending"
-            }));
+            if (!jsonData.length) {
+              throw new Error('No data found in Excel file');
+            }
+
+            const processedTasks = jsonData.map((row: any) => {
+              if (!row.UniqueCode || !row.Title || !row.Category) {
+                throw new Error('Missing required fields in Excel file');
+              }
+
+              return {
+                code: row.UniqueCode,
+                title: row.Title,
+                description: row.Description || '',
+                category: (row.Category?.toLowerCase() === 'genai' ? 'genai' : 'creai') as TaskCategory,
+                payout: row.Category?.toLowerCase() === 'genai' ? 500 : 250,
+                tasker_payout: row.Category?.toLowerCase() === 'genai' ? 400 : 200,
+                platform_fee: row.Category?.toLowerCase() === 'genai' ? 100 : 50,
+                bids_needed: row.Category?.toLowerCase() === 'genai' ? 10 : 5,
+                max_bidders: 10,
+                current_bids: 0,
+                deadline: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
+                status: "pending"
+              };
+            });
 
             const { error: insertError } = await supabase
               .from('tasks')
               .insert(processedTasks);
 
-            if (insertError) throw insertError;
+            if (insertError) {
+              console.error('Insert error:', insertError);
+              throw insertError;
+            }
+
             return true;
           } catch (error) {
+            console.error('Processing error:', error);
             reject(error);
           }
         };
+
+        reader.onerror = () => {
+          reject(new Error('Failed to read file'));
+        };
+
         reader.readAsArrayBuffer(file);
       });
     },
@@ -141,9 +170,9 @@ export const useTaskMutations = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
       toast.success("Tasks uploaded successfully");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Upload error:', error);
-      toast.error("Failed to upload tasks");
+      toast.error(error.message || "Failed to upload tasks");
     }
   });
 
