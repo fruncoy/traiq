@@ -122,20 +122,32 @@ export const useTaskMutations = () => {
               throw new Error('No data found in Excel file');
             }
 
-            const processedTasks = jsonData.map((row: any) => {
-              if (!row.UniqueCode || !row.Title || !row.Category) {
-                throw new Error('Missing required fields in Excel file');
+            const processedTasks = jsonData.map((row: any, index: number) => {
+              // Validate required fields
+              if (!row.UniqueCode) {
+                throw new Error(`Missing UniqueCode in row ${index + 1}`);
+              }
+              if (!row.Title) {
+                throw new Error(`Missing Title in row ${index + 1}`);
+              }
+              if (!row.Category) {
+                throw new Error(`Missing Category in row ${index + 1}`);
+              }
+
+              const category = row.Category?.toLowerCase();
+              if (category !== 'genai' && category !== 'creai') {
+                throw new Error(`Invalid Category "${row.Category}" in row ${index + 1}. Must be either "genai" or "creai"`);
               }
 
               return {
                 code: row.UniqueCode,
                 title: row.Title,
                 description: row.Description || '',
-                category: (row.Category?.toLowerCase() === 'genai' ? 'genai' : 'creai') as TaskCategory,
-                payout: row.Category?.toLowerCase() === 'genai' ? 500 : 250,
-                tasker_payout: row.Category?.toLowerCase() === 'genai' ? 400 : 200,
-                platform_fee: row.Category?.toLowerCase() === 'genai' ? 100 : 50,
-                bids_needed: row.Category?.toLowerCase() === 'genai' ? 10 : 5,
+                category: category as TaskCategory,
+                payout: category === 'genai' ? 500 : 250,
+                tasker_payout: category === 'genai' ? 400 : 200,
+                platform_fee: category === 'genai' ? 100 : 50,
+                bids_needed: category === 'genai' ? 10 : 5,
                 max_bidders: 10,
                 current_bids: 0,
                 deadline: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(),
@@ -149,10 +161,10 @@ export const useTaskMutations = () => {
 
             if (insertError) {
               console.error('Insert error:', insertError);
-              throw insertError;
+              throw new Error(`Failed to insert tasks: ${insertError.message}`);
             }
 
-            return true;
+            return processedTasks.length;
           } catch (error) {
             console.error('Processing error:', error);
             reject(error);
@@ -166,9 +178,9 @@ export const useTaskMutations = () => {
         reader.readAsArrayBuffer(file);
       });
     },
-    onSuccess: () => {
+    onSuccess: (tasksCount) => {
       queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
-      toast.success("Tasks uploaded successfully");
+      toast.success(`Successfully uploaded ${tasksCount} tasks`);
     },
     onError: (error: Error) => {
       console.error('Upload error:', error);
