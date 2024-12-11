@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskTable } from "@/components/admin/task/TaskTable";
 import { TaskList } from "@/components/admin/task/TaskList";
@@ -11,7 +12,7 @@ import Sidebar from "@/components/Sidebar";
 const AdminTasks = () => {
   const { resetSystemMutation, deleteMutation, toggleStatusMutation, uploadMutation } = useTaskMutations();
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-tasks'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,6 +60,29 @@ const AdminTasks = () => {
       })) || []) as Task[];
     }
   });
+
+  useEffect(() => {
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('tasks-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        () => {
+          console.log('Tasks table changed, refetching...');
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   if (isLoading) {
     return <div>Loading...</div>;

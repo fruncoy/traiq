@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskCategory } from "@/types/task";
 import { LoadingSpinner } from "./ui/loading-spinner";
@@ -35,7 +35,7 @@ const TaskList = ({
 
   const { data: userBids = 0 } = useUserBids(session?.user?.id);
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading, refetch } = useQuery({
     queryKey: ['tasks', session?.user?.id, isAdmin],
     queryFn: async () => {
       const query = supabase
@@ -80,9 +80,31 @@ const TaskList = ({
       }
 
       return transformedTasks;
-    },
-    refetchInterval: 5000
+    }
   });
+
+  useEffect(() => {
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('tasks-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        () => {
+          console.log('Tasks table changed, refetching...');
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   const bidMutation = useTaskBidding(tasks, userBids);
 
