@@ -36,22 +36,21 @@ export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
 
     try {
       setIsUploading(true);
-      toast.loading("Uploading tasks...", { 
-        id: "task-upload",
-        duration: Infinity,
+      const toastId = toast.loading("Uploading tasks...", { 
+        position: "bottom-right",
       });
 
       await uploadMutation(file);
       
       toast.success("Tasks uploaded successfully", { 
-        id: "task-upload",
-        duration: 3000,
+        id: toastId,
+        position: "bottom-right",
       });
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(
         error instanceof Error ? error.message : "Failed to upload tasks. Please try again.",
-        { id: "task-upload" }
+        { position: "bottom-right" }
       );
     } finally {
       setIsUploading(false);

@@ -11,7 +11,8 @@ export const HeaderActions = ({ onLogout, isAdmin = false }: HeaderActionsProps)
   const navigate = useNavigate();
 
   const handleUserClick = () => {
-    navigate(isAdmin ? "/admin/settings" : "/tasker/settings");
+    const route = isAdmin ? "/admin/settings" : "/tasker/settings";
+    navigate(route);
   };
 
   return (
