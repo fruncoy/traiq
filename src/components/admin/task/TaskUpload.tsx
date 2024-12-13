@@ -1,8 +1,9 @@
 import { UseMutateFunction } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import * as XLSX from 'xlsx';
 
 interface TaskUploadProps {
   uploadMutation: UseMutateFunction<unknown, Error, File, unknown>;
@@ -10,6 +11,24 @@ interface TaskUploadProps {
 
 export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
+
+  const downloadTemplate = () => {
+    const template = [
+      {
+        UniqueCode: 'TASK001',
+        Title: 'Sample Task Title',
+        Description: 'Sample task description',
+        Category: 'genai'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    
+    // Generate and download the file
+    XLSX.writeFile(wb, "task_upload_template.xlsx");
+  };
 
   const handleFileChange = async (event: Event) => {
     const input = event.target as HTMLInputElement;
@@ -49,33 +68,45 @@ export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to upload tasks. Please try again.",
+        `Upload failed: ${error instanceof Error ? error.message : "Please check the file format"}. Required columns: UniqueCode, Title, Category (genai/creai)`,
         { position: "bottom-right" }
       );
     } finally {
       setIsUploading(false);
+      if (input) input.value = ''; // Reset input
     }
   };
 
   return (
-    <Button
-      variant="outline"
-      onClick={() => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.xlsx,.xls';
-        input.onchange = handleFileChange;
-        input.click();
-      }}
-      className="flex items-center gap-2"
-      disabled={isUploading}
-    >
-      {isUploading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Upload className="h-4 w-4" />
-      )}
-      {isUploading ? "Uploading..." : "Upload Tasks"}
-    </Button>
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        onClick={() => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.xlsx,.xls';
+          input.onchange = handleFileChange;
+          input.click();
+        }}
+        className="flex items-center gap-2"
+        disabled={isUploading}
+      >
+        {isUploading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Upload className="h-4 w-4" />
+        )}
+        {isUploading ? "Uploading..." : "Upload Tasks"}
+      </Button>
+
+      <Button
+        variant="outline"
+        onClick={downloadTemplate}
+        className="flex items-center gap-2"
+      >
+        <Download className="h-4 w-4" />
+        Download Template
+      </Button>
+    </div>
   );
 };
