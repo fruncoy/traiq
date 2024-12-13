@@ -1,13 +1,16 @@
 import { UseMutateFunction } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 interface TaskUploadProps {
   uploadMutation: UseMutateFunction<unknown, Error, File, unknown>;
 }
 
 export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
+  const [isUploading, setIsUploading] = useState(false);
+
   const handleFileChange = async (event: Event) => {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -32,15 +35,26 @@ export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
     }
 
     try {
-      toast.loading("Uploading tasks...", { id: "task-upload" });
+      setIsUploading(true);
+      toast.loading("Uploading tasks...", { 
+        id: "task-upload",
+        duration: Infinity,
+      });
+
       await uploadMutation(file);
-      toast.success("Tasks uploaded successfully", { id: "task-upload" });
+      
+      toast.success("Tasks uploaded successfully", { 
+        id: "task-upload",
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(
         error instanceof Error ? error.message : "Failed to upload tasks. Please try again.",
         { id: "task-upload" }
       );
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -55,9 +69,14 @@ export const TaskUpload = ({ uploadMutation }: TaskUploadProps) => {
         input.click();
       }}
       className="flex items-center gap-2"
+      disabled={isUploading}
     >
-      <Upload className="h-4 w-4" />
-      Upload Tasks
+      {isUploading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Upload className="h-4 w-4" />
+      )}
+      {isUploading ? "Uploading..." : "Upload Tasks"}
     </Button>
   );
 };
