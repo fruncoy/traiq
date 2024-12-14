@@ -1,15 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TaskTable } from "@/components/admin/task/TaskTable";
 import { TaskList } from "@/components/admin/task/TaskList";
 import { TaskUpload } from "@/components/admin/task/TaskUpload";
 import { useTaskMutations } from "@/hooks/admin/useTaskMutations";
 import { toast } from "sonner";
 import { Task } from "@/types/task";
 import Sidebar from "@/components/Sidebar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AdminTasks = () => {
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const { resetSystemMutation, deleteMutation, toggleStatusMutation, uploadMutation } = useTaskMutations();
 
   const { data: tasks = [], isLoading, refetch } = useQuery({
@@ -61,32 +62,12 @@ const AdminTasks = () => {
     }
   });
 
-  useEffect(() => {
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel('tasks-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks'
-        },
-        () => {
-          console.log('Tasks table changed, refetching...');
-          refetch();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
+
+  const activeTasks = tasks.filter(task => task.status === 'active' || task.status === 'pending');
+  const inactiveTasks = tasks.filter(task => task.status === 'inactive');
 
   return (
     <Sidebar isAdmin>
@@ -99,20 +80,32 @@ const AdminTasks = () => {
             </div>
           </div>
 
-          <TaskList 
-            tasks={tasks} 
-            title="All Tasks"
-            count={tasks.length}
-            onDelete={deleteMutation.mutate}
-            onToggleStatus={(taskIds, newStatus) => toggleStatusMutation.mutate({ taskIds, newStatus })}
-          />
-          
-          <TaskTable 
-            tasks={tasks}
-            selectedTasks={[]}
-            onSelectAll={() => {}}
-            onSelectTask={() => {}}
-          />
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'active' | 'inactive')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="active">Active Tasks ({activeTasks.length})</TabsTrigger>
+              <TabsTrigger value="inactive">Inactive Tasks ({inactiveTasks.length})</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="active">
+              <TaskList 
+                tasks={activeTasks}
+                title="Active Tasks"
+                count={activeTasks.length}
+                onDelete={deleteMutation.mutate}
+                onToggleStatus={(taskIds) => toggleStatusMutation.mutate({ taskIds, newStatus: 'inactive' })}
+              />
+            </TabsContent>
+            
+            <TabsContent value="inactive">
+              <TaskList 
+                tasks={inactiveTasks}
+                title="Inactive Tasks"
+                count={inactiveTasks.length}
+                onDelete={deleteMutation.mutate}
+                onToggleStatus={(taskIds) => toggleStatusMutation.mutate({ taskIds, newStatus: 'active' })}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </Sidebar>
