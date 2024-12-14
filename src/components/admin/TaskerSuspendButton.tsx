@@ -29,7 +29,7 @@ export const TaskerSuspendButton = ({ taskerId, isSuspended }: TaskerSuspendButt
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-taskers'] });
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
-      toast.success(`Tasker ${isSuspended ? 'unsuspended' : 'suspended'} successfully`);
+      toast.success(`Tasker ${isSuspended ? 'activated' : 'suspended'} successfully`);
     },
     onError: (error) => {
       console.error('Suspension error:', error);
@@ -47,7 +47,7 @@ export const TaskerSuspendButton = ({ taskerId, isSuspended }: TaskerSuspendButt
       onClick={() => suspendMutation.mutate()}
       disabled={isPending}
     >
-      {isPending ? "Processing..." : (isSuspended ? "Unsuspend" : "Suspend")}
+      {isPending ? "Processing..." : (isSuspended ? "Activate" : "Suspend")}
     </Button>
   );
 };
