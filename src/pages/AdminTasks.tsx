@@ -13,57 +13,63 @@ const AdminTasks = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const { resetSystemMutation, deleteMutation, toggleStatusMutation, uploadMutation } = useTaskMutations();
 
-  const { data: tasks = [], isLoading, refetch } = useQuery({
+  const { data: tasks = [], isLoading, error } = useQuery({
     queryKey: ['admin-tasks'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select(`
-          id,
-          code,
-          title,
-          description,
-          category,
-          payout,
-          tasker_payout,
-          platform_fee,
-          bids_needed,
-          max_bidders,
-          current_bids,
-          deadline,
-          status,
-          date_posted,
-          created_at,
-          task_bidders (
-            bidder_id,
-            bid_date
-          ),
-          task_submissions (
-            id,
-            bidder_id,
-            status,
-            rejection_reason,
-            submitted_at,
-            file_name,
-            file_url
-          )
-        `);
+      console.log('Fetching tasks...');
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select(`
+            *,
+            task_bidders (
+              bidder_id,
+              bid_date
+            ),
+            task_submissions (
+              id,
+              bidder_id,
+              status,
+              rejection_reason,
+              submitted_at,
+              file_name,
+              file_url
+            )
+          `);
 
-      if (error) {
-        toast.error("Failed to fetch tasks");
-        throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
+
+        console.log('Tasks fetched:', data);
+        return (data?.map(task => ({
+          ...task,
+          bidders: task.task_bidders || [],
+          submissions: task.task_submissions || []
+        })) || []) as Task[];
+      } catch (err) {
+        console.error('Failed to fetch tasks:', err);
+        toast.error("Failed to fetch tasks. Please try again.");
+        throw err;
       }
-
-      return (data?.map(task => ({
-        ...task,
-        bidders: task.task_bidders || [],
-        submissions: task.task_submissions || []
-      })) || []) as Task[];
-    }
+    },
+    retry: 1
   });
 
+  if (error) {
+    console.error('Query error:', error);
+    toast.error("Error loading tasks. Please refresh the page.");
+  }
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <Sidebar isAdmin>
+        <div className="container mx-auto py-6">
+          <div>Loading tasks...</div>
+        </div>
+      </Sidebar>
+    );
   }
 
   const activeTasks = tasks.filter(task => task.status === 'active' || task.status === 'pending');
