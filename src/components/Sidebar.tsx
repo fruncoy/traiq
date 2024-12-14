@@ -12,7 +12,8 @@ import {
   CreditCard,
   Briefcase,
   Bell,
-  BellDot
+  BellDot,
+  Terminal
 } from "lucide-react";
 import { SidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarNav } from "./sidebar/SidebarNav";
@@ -92,6 +93,7 @@ const Sidebar = ({ isAdmin = false, children }: SidebarProps) => {
     { name: "Submitted Tasks", path: "/admin/submitted-tasks", icon: Upload, badge: pendingSubmissions?.length },
     { name: "Finances", path: "/admin/finances", icon: DollarSign },
     { name: "Taskers", path: "/admin/taskers", icon: Users },
+    { name: "Console Logs", path: "/admin/console-logs", icon: Terminal },
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ] : [
     { name: "Dashboard", path: "/tasker", icon: LayoutDashboard },
