@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import Sidebar from "../Sidebar";
+import { SystemLog } from "@/integrations/supabase/types/logs";
 
 const ConsoleLogsPage = () => {
-  const { data: logs = [] } = useQuery({
+  const { data: logs = [] } = useQuery<SystemLog[]>({
     queryKey: ['console-logs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -37,10 +38,10 @@ const ConsoleLogsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {logs.map((log: any) => (
+                {logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell>
-                      {format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss')}
+                      {format(new Date(log.created_at || ''), 'MMM d, yyyy HH:mm:ss')}
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
