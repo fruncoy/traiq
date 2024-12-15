@@ -85,7 +85,7 @@ const ConsoleLogsPage = () => {
                 {logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(log.created_at), 'MMM dd, yyyy HH:mm:ss')}
+                      {format(new Date(log.created_at || ''), 'MMM dd, yyyy HH:mm:ss')}
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(log.type)}`}>
@@ -98,7 +98,7 @@ const ConsoleLogsPage = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {(log.profiles as any)?.email || 'System'}
+                      {log.profiles?.email || 'System'}
                     </TableCell>
                     <TableCell className="max-w-xl">
                       <div className="break-words">

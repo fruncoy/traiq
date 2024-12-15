@@ -5,4 +5,7 @@ export interface SystemLog {
   user_type: string;
   created_at: string | null;
   user_id: string | null;
+  profiles?: {
+    email: string | null;
+  } | null;
 }
