@@ -1,18 +1,24 @@
-import { User, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { LogOut, RefreshCw, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface HeaderActionsProps {
   onLogout: () => void;
   isAdmin?: boolean;
 }
 
-export const HeaderActions = ({ onLogout, isAdmin = false }: HeaderActionsProps) => {
-  const navigate = useNavigate();
+export const HeaderActions = ({ onLogout, isAdmin }: HeaderActionsProps) => {
+  const queryClient = useQueryClient();
 
-  const handleUserClick = () => {
-    const route = isAdmin ? "/admin/settings" : "/tasker/settings";
-    navigate(route);
+  const handleRefresh = async () => {
+    try {
+      // Invalidate all queries to refresh data
+      await queryClient.invalidateQueries();
+      toast.success("Data refreshed successfully");
+    } catch (error) {
+      toast.error("Failed to refresh data");
+    }
   };
 
   return (
@@ -20,20 +26,25 @@ export const HeaderActions = ({ onLogout, isAdmin = false }: HeaderActionsProps)
       <Button
         variant="ghost"
         size="icon"
-        onClick={handleUserClick}
-        className="hover:bg-gray-100 rounded-full"
-        aria-label="User settings"
+        onClick={handleRefresh}
+        className="hover:bg-gray-100"
       >
-        <User size={20} className="text-gray-600" />
+        <RefreshCw className="h-5 w-5 text-gray-600" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="hover:bg-gray-100"
+      >
+        <User className="h-5 w-5 text-gray-600" />
       </Button>
       <Button
         variant="ghost"
         size="icon"
         onClick={onLogout}
-        className="hover:bg-gray-100 rounded-full"
-        aria-label="Logout"
+        className="hover:bg-gray-100"
       >
-        <LogOut size={20} className="text-gray-600" />
+        <LogOut className="h-5 w-5 text-gray-600" />
       </Button>
     </div>
   );
